@@ -4,23 +4,29 @@ from .drawing import drawRect, drawCircle, clear_canvas, drawText
 
 logging = root_logger.getLogger(__name__)
 
-def drawDCEL(ctx, dcel, textFlag=True):
+def drawDCEL(ctx, dcel, text=False, faces=True, edges=False, verts=False,
+             face_colour=[0.2, 0.2, 0.9, 1],
+             edge_colour=[0.4, 0.8, 0.1, 1],
+             vert_colour=[0.9, 0.1, 0.1, 1]):
     """ A top level function to draw a dcel  """
-    ctx.set_source_rgba(0.2, 0.2, 0.9, 1)
-    #draw the faces
-    draw_dcel_faces(ctx, dcel, textFlag=textFlag)
-    ctx.set_source_rgba(0.4, 0.8, 0.1, 1)
-    #draw edges
-    #draw_dcel_edges(ctx, dcel, drawText=drawText)
-    ctx.set_source_rgba(0.9, 0.1, 0.1, 1)
-    #draw vertices
-    #draw_dcel_vertices(ctx, dcel)
+    clear_canvas(ctx)
+    if faces:
+        ctx.set_source_rgba(*face_colour)
+        draw_dcel_faces(ctx, dcel, text=text)
 
-def draw_dcel_faces(ctx, dcel, textFlag=True):
+    if edges:
+        ctx.set_source_rgba(*edge_colour)
+        draw_dcel_edges(ctx, dcel, text=text)
+
+    if verts:        
+        ctx.set_source_rgba(*vert_colour)
+        draw_dcel_vertices(ctx, dcel)
+
+def draw_dcel_faces(ctx, dcel, text=True):
     for f in dcel.faces:
-        draw_dcel_single_face(ctx, dcel, f, clear=False, textFlag=textFlag)
+        draw_dcel_single_face(ctx, dcel, f, clear=False, text=text)
 
-def draw_dcel_single_face(ctx, dcel, face, clear=True, force_centre=False, textFlag=True):
+def draw_dcel_single_face(ctx, dcel, face, clear=True, force_centre=False, text=True):
     if clear:
         clear_canvas(ctx)
     if len(face.edgeList) < 2:
@@ -34,7 +40,7 @@ def draw_dcel_single_face(ctx, dcel, face, clear=True, force_centre=False, textF
     ctx.set_line_width(0.004)
     faceCentre = face.getCentroid()
     
-    if textFlag:
+    if text:
         drawText(ctx, *faceCentre, str("F: {}".format(face.index)))
         
     ctx.set_source_rgba(*END)
@@ -70,7 +76,7 @@ def draw_dcel_single_face(ctx, dcel, face, clear=True, force_centre=False, textF
         ctx.translate(*centre)
 
 
-def draw_dcel_edges(ctx, dcel, textFlag=True):
+def draw_dcel_edges(ctx, dcel, text=True):
     drawnEdges = []
     ctx.set_line_width(0.004)
     for e in dcel.halfEdges:
@@ -85,7 +91,7 @@ def draw_dcel_edges(ctx, dcel, textFlag=True):
             ctx.move_to(v1.x, v1.y)
             ctx.line_to(v2.x, v2.y)
             ctx.stroke()
-            if textFlag:
+            if text:
                 drawText(ctx, *centre, "E: {}".format(i))
                 drawText(ctx, v1.x, v1.y-0.05, "S{}".format(i))
                 drawText(ctx, v2.x, v2.y+0.05, "{}E".format(i))
@@ -95,7 +101,7 @@ def draw_dcel_edges(ctx, dcel, textFlag=True):
         else:
             logging.warning("Trying to draw a line thats missing at least one vertex")
 
-def draw_dcel_halfEdge(ctx, halfEdge, clear=True, textFlag=True):
+def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True):
     if clear:
         clear_canvas(ctx)
     ctx.set_line_width(0.002)
@@ -118,9 +124,9 @@ def draw_dcel_halfEdge(ctx, halfEdge, clear=True, textFlag=True):
 
         if halfEdge.face is not None:
             centre = halfEdge.face.getCentroid()
-            if textFlag:
+            if text:
                 drawText(ctx, *centre, "F:{}.{}".format(halfEdge.face.index, halfEdge.index))
-        elif textFlag:
+        elif text:
             drawText(ctx, *centre, "HE: {}".format(halfEdge.index))
 
 def draw_dcel_vertices(ctx, dcel):

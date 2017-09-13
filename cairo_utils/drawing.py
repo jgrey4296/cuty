@@ -1,8 +1,18 @@
+import cairo
 import logging as root_logger
 from .constants import TEXT, BACKGROUND, TWOPI, FRONT
 import random
 
 logging = root_logger.getLogger(__name__)
+
+def setup_cairo(N=5, font_size=0.03):
+    size = pow(2, N)
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
+    ctx = cairo.Context(surface)
+    ctx.scale(size, size)
+    ctx.set_font_size(font_size)
+    return (surface, ctx, size, N)
+
 
 def write_to_png(surface, filename, i=None):
     if i:
@@ -26,8 +36,8 @@ def drawCircle(ctx, x, y, r, fill=True):
     else:
         ctx.stroke()
 
-def clear_canvas(ctx):
-    ctx.set_source_rgba(*BACKGROUND)
+def clear_canvas(ctx, colour=BACKGROUND):
+    ctx.set_source_rgba(*colour)
     ctx.rectangle(0, 0, 1, 1)
     ctx.fill()
     ctx.set_source_rgba(*FRONT)

@@ -25,13 +25,10 @@ QPI = PI * 0.5
 #for importing data into the dcel:
 DataPair = namedtuple('DataPair', 'key obj data')
 
-
-# An implementation of a Double-Edge Connected List
-# from de Berg's Computational Geometry Book
-# Intended for use with cairo
-
 class DCEL(object):
-    """ The total DCEL data structure,  stores vertices,  edges,  and faces """
+    """ The total DCEL data structure,  stores vertices,  edges,  and faces,
+    Based on de Berg's Computational Geometry
+    """
 
     def __init__(self, bbox=None):
         if bbox is None:
