@@ -3,7 +3,7 @@ import numpy.random
 from scipy.interpolate import splprep, splev
 import random
 
-from .constants import TWOPI
+from .constants import TWOPI, QUARTERPI
 
 #take a position and radius,  get a set of random positions on that circle
 def sampleCircle(x, y, radius, numOfSteps):
