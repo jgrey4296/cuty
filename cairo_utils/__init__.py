@@ -6,3 +6,5 @@ from .math_utils import *
 from .draw_utils import *
 from .dcel_drawing import *
 
+_author = "jgrey"
+_version = "0.1.2"
