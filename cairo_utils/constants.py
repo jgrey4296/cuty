@@ -18,5 +18,6 @@ ALPHA = 0.1
 BACKGROUND = [0, 0, 0, 1]
 FRONT = [0.8, 0.1, 0.71, ALPHA]
 TWOPI = 2 * pi
+QUARTERPI = 0.5 * pi
 THREEFOURTHSTWOPI = 3/4 * TWOPI
 EPSILON = sys.float_info.epsilon
