@@ -3,7 +3,7 @@ from math import sqrt
 from numbers import Number
 import logging as root_logger
 import numpy as np
-import cairo_utils.math import intersect, get_distance
+from cairo_utils.math import intersect, get_distance
 
 logging = root_logger.getLogger(__name__)
 
