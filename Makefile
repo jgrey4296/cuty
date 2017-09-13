@@ -1,11 +1,11 @@
 INSTALL_DIR=$(shell echo $(JG_PYLIBS))
 LIBNAME=cairo_utils
 
-install: clean
-	cp -r ./${LIBNAME} ${INSTALL_DIR}/${LIBNAME}
+install: clean uninstall
+	cp -rf ./${LIBNAME} ${INSTALL_DIR}/${LIBNAME}
 
 uninstall:
-	rm -r ${INSTALL_DIR}/${LIBNAME}
+	-rm -r ${INSTALL_DIR}/${LIBNAME}
 
 clean :
 	find . -name "__pycache__" | xargs rm -r
