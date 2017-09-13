@@ -1,8 +1,8 @@
 import logging as root_logger
 import math
 from string import ascii_uppercase
+from cairo_utils import Parabola
 from .NilNode import NilNode
-from .Parabola import Parabola
 from .operations import Directions
 
 logging = root_logger.getLogger(__name__)

@@ -1,6 +1,5 @@
 import logging as root_logger
-from . import operations
-from .operations import Directions
+from .operations import Directions, rbTreeDelete_textbook, rbtreeFixup
 from .NilNode import NilNode
 from .Node import Node
 logging = root_logger.getLogger(__name__)
@@ -116,7 +115,7 @@ class BeachLine:
             logging.debug("Deleting Arc: {}".format(tripleString))
         else:
             logging.debug("Deleting Value: {}".format(node.value))
-        utils.rbTreeDelete_textbook(self,node)
+        rbTreeDelete_textbook(self,node)
         if node in self.nodes:
             self.nodes.remove(node)
         #del node
@@ -164,7 +163,7 @@ class BeachLine:
         
     def balance(self,node):
         assert(node is NilNode or isinstance(node, Node))
-        utils.rbtreeFixup(self,node)
+        rbtreeFixup(self,node)
 
     def get_chain(self):
         """ Get the sequence of leaf values, from left to right """
