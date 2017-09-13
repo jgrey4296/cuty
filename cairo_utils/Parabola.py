@@ -2,7 +2,7 @@ import numpy as np
 import logging
 import IPython
 
-from Quadratic import Quadratic as Q
+from .Quadratic import Quadratic as Q
 
 class Parabola(object):
     #todo: if fy-d == 0: degenerate case, is a straight line
