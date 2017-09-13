@@ -1,4 +1,4 @@
-class Node(object):
+class Node:
 
     def __init__(self,id,value,parent=None,data=None):
         self.id = id

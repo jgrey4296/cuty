@@ -1,4 +1,6 @@
-class RBTree(object):
+from .operations import *
+
+class RBTree:
 
     def __init__(self):
         """ Initialise the rb tree container, ie: the node list """
