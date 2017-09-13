@@ -1,0 +1,19 @@
+from math import pi
+import sys
+
+#constants:
+TEXT = [0, 1, 1, 1]
+EDGE = [1, 0, 0, 1]
+VERTEX = [1, 0, 1, 1]
+FACE = [0, 0, 1, 1]
+START = [0, 1, 0, 1]
+END = [1, 0, 0, 1]
+
+SMALL_RADIUS = 0.003
+
+ALPHA = 0.1
+BACKGROUND = [0, 0, 0, 1]
+FRONT = [0.8, 0.1, 0.71, ALPHA]
+TWOPI = 2 * pi
+THREEFOURTHSTWOPI = 3/4 * TWOPI
+EPSILON = sys.float_info.epsilon
