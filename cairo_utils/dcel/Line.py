@@ -3,7 +3,7 @@ from math import sqrt
 from numbers import Number
 import logging as root_logger
 import numpy as np
-import cairo_utils as utils
+import cairo_utils.math import intersect, get_distance
 
 logging = root_logger.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class Line:
         #intersect one of the bbox lines
         p = None
         while p is None and bool(bbox_lines):
-            p = utils.intersect(npArray_line, bbox_lines.pop())
+            p = intersect(npArray_line, bbox_lines.pop())
         if p is not None:
             summed = pow(p[0]-self.source[0], 2) + pow(p[1]-self.source[1], 2)
             new_length = sqrt(summed)
@@ -59,8 +59,8 @@ class Line:
         assert(len(bbox) == 4)
         #Calculate the line parameters:
         swapped = False
-        d_a = utils.get_distance(np.array([[a.x, a.y]]), CENTRE)
-        d_b = utils.get_distance(np.array([[b.x, b.y]]), CENTRE)
+        d_a = get_distance(np.array([[a.x, a.y]]), CENTRE)
+        d_b = get_distance(np.array([[b.x, b.y]]), CENTRE)
         aInBBox = a.within(bbox)
         bInBBox = b.within(bbox)
         if d_b < d_a and bInBBox:

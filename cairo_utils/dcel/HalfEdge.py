@@ -4,7 +4,6 @@ import sys
 import logging as root_logger
 from math import pi, atan2, copysign
 import numpy as np
-import cairo_utils as utils
 
 from .Vertex import Vertex
 from .Line import Line

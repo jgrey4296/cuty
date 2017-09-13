@@ -9,7 +9,6 @@ from numbers import Number
 import IPython
 import numpy as np
 import pyqtree
-import cairo_utils as utils
 
 from .Face import Face
 from .HalfEdge import HalfEdge

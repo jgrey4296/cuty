@@ -4,7 +4,7 @@ from .Parabola import Parabola
 from .Tree import Tree
 from .math import *
 from .drawing import *
-from .dcel import *
+from .dcel_drawing import *
 
 _author = "jgrey"
 _version = "0.1.2"
