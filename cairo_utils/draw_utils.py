@@ -1,5 +1,5 @@
 import logging as root_logger
-from .constants import TEXT, BACKGROUND, TWOPI
+from .constants import TEXT, BACKGROUND, TWOPI, FRONT
 
 logging = root_logger.getLogger(__name__)
 
