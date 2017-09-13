@@ -1,3 +1,4 @@
+import numpy as np
 from numpy import pi
 import numpy.random
 from scipy.interpolate import splprep, splev

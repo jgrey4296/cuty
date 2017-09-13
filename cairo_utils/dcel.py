@@ -1,5 +1,8 @@
+import logging as root_logger
 from .constants import START, END, SMALL_RADIUS, FACE
-from .draw_utils import drawRect, drawCircle, clear_canvas, drawText
+from .drawing import drawRect, drawCircle, clear_canvas, drawText
+
+logging = root_logger.getLogger(__name__)
 
 def drawDCEL(ctx, dcel, textFlag=True):
     """ A top level function to draw a dcel  """

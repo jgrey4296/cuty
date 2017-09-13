@@ -1,5 +1,6 @@
 import logging as root_logger
 from .constants import TEXT, BACKGROUND, TWOPI, FRONT
+import random
 
 logging = root_logger.getLogger(__name__)
 

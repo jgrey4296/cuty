@@ -1,15 +1,5 @@
 """ Utilities for Cairo and DCEL """
-import math
-from math import sin, cos, atan2
-from random import choice
 import logging
-import sys
-import random
-import numpy as np
-from numpy import pi
-import numpy.random
-from scipy.interpolate import splprep, splev
-import IPython
 import pickle
 from os.path import join,isfile,exists,isdir
 from os import listdir
