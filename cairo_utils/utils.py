@@ -14,9 +14,6 @@ import pickle
 from os.path import join,isfile,exists,isdir
 from os import listdir
 
-
-DRAW_TEXT = True
-
 def pickle_graph(node_dict,nx_graph,filename,directory="."):
     if not exists(directory):
         raise Exception("Directory not found: {}".format(directory))

@@ -1,5 +1,8 @@
 from math import pi
+import logging as root_logger
 import sys
+
+logging = root_logger.getLogger(__name__)
 
 #constants:
 TEXT = [0, 1, 1, 1]
