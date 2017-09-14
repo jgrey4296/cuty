@@ -188,7 +188,6 @@ def get_circle_3p(p1, p2, p3):
         return None
 
 
-
 def extend_line(p1, p2, m):
     """ Extend a line by m units """
     n = get_normal(p1, p2)
