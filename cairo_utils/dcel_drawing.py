@@ -9,7 +9,6 @@ def drawDCEL(ctx, dcel, text=False, faces=True, edges=False, verts=False,
              edge_colour=[0.4, 0.8, 0.1, 1],
              vert_colour=[0.9, 0.1, 0.1, 1]):
     """ A top level function to draw a dcel  """
-    clear_canvas(ctx)
     if faces:
         ctx.set_source_rgba(*face_colour)
         draw_dcel_faces(ctx, dcel, text=text)
