@@ -2,6 +2,7 @@
 import logging as root_logger
 import numpy as np
 from numbers import Number
+import IPython
 
 from .HalfEdge import HalfEdge
 
@@ -55,8 +56,12 @@ class Face(object):
     def removeEdge(self, edge):
         assert(isinstance(edge, HalfEdge))
         #todo: should the edge be connecting next to prev here?
-        self.innerComponents.remove(edge)
-        self.edgeList.remove(edge)
+        if not bool(self.innerComponents) and not bool(self.edgeList):
+            return
+        
+        if edge in self.innerComponents:
+            self.innerComponents.remove(edge)
+            self.edgeList.remove(edge)
 
     def get_bbox(self):
         #TODO: fix this? its rough
