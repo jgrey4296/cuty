@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import pi
+from numpy import cos, sin
 import numpy.random
 from scipy.interpolate import splprep, splev
 import random
@@ -198,7 +199,17 @@ def get_midpoint(p1, p2):
     m = (p1 + p2) / 2
     return m
 
-def rotatePoint(p, cen, rads):
+def rotatePoint(p,cen,rads=None, radMin=-QUARTERPI,radMax=QUARTERPI):
+    #p1 = cen, p2=point, @ is matrix mul
+    if rads is None:
+        rads = randomRad(min=radMin,max=radMax)
+    return cen + ((p-cen) @ rotMatrix(rads))
+
+
+def __rotatePoint_obsolete(p, cen, rads):
+    """ Does what rotate point does, explicitly instead
+    of with matrix multiplication """
+    assert(len(p.shape) == 2)
     c = np.cos(rads)
     s = np.sin(rads)
     centred = p - cen
@@ -208,6 +219,15 @@ def rotatePoint(p, cen, rads):
     ny = sinP[:, 0] + cosP[:, 1]
     unCentred = np.column_stack((nx, ny)) + cen
     return unCentred
+
+
+def randomRad(min=-TWOPI,max=TWOPI):
+    return min + (np.random.random() * (max-min)) 
+
+def rotMatrix(rad):
+    return np.array([[cos(rad),-sin(rad)],
+                     [sin(rad),cos(rad)]])
+
 
 def checksign(a, b):
     return math.copysign(a, b) == a
@@ -365,16 +385,6 @@ def displace_along_line(xys,amnt,num):
     return all_points
     
 
-def randomRad(min=-TWOPI,max=TWOPI):
-    return min + (np.random.random() * (max-min)) 
-
-def rotMatrix(rad):
-    return np.array([[cos(rad),-sin(rad)],
-                     [sin(rad),cos(rad)]])
-
-def rotatePoint(p1,p2,radMin=-QUARTERPI,radMax=QUARTERPI):
-    rad = randomRad(min=radMin,max=radMax)
-    return p1 + ((p2-p1) @ rotMatrix(rad))
 
 def clamp(n,minn,maxn):
     return max(min(maxn,n),minn)
