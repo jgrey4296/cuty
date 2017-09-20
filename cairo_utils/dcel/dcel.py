@@ -109,6 +109,7 @@ class DCEL(object):
         try:
             for face in local_faces.values():
                 face.obj.edgeList = [local_edges[x].obj for x in face.data['edges']]
+                face.obj.innerComponents = [x.twin for x in face.obj.edgeList if x.twin.face is not None]
         except Exception as e:
             logging.info("Error for face")
             IPython.embed(simple_prompt=True)
@@ -421,6 +422,9 @@ class DCEL(object):
             logging.debug("Result: {}".format([x.index for x in f.getEdges()]))
             logging.debug("----")
 
+
+            f.innerComponents = [x.twin for x in f.edgeList]
+            
         self.delete_marked_faces()
 
     def delete_marked_faces(self):
