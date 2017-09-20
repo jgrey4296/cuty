@@ -62,6 +62,7 @@ class Face(object):
         
         if edge in self.innerComponents:
             self.innerComponents.remove(edge)
+        if edge in self.edgeList:
             self.edgeList.remove(edge)
 
     def get_bbox(self):
