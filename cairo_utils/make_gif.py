@@ -32,18 +32,18 @@ class Make_Gif:
 
     def run(self):
         # Get all Files
-        files = [x for x in listdir(SOURCE_DIR) if isfile(join(SOURCE_DIR,x))]
+        files = [x for x in listdir(self.source_dir) if isfile(join(self.source_dir,x))]
         assert(bool(files))
         logging.info("Making gif of {} frames".format(len(files)))
 
         # Sort by the number extracted from the filename
-        files.sort(key=lambda x: getNum(x))
+        files.sort(key=lambda x: self.getNum(x))
 
         # Export as a Gif
         logging.info("Starting GIF writing")
-        with imageio.get_writer(join(GIF_OUTPUT_DIR,GIF_NAME), mode='I') as writer:
+        with imageio.get_writer(join(self.output_dir,self.gif_name), mode='I') as writer:
             for filename in files:
-                image = imageio.imread(join(SOURCE_DIR,filename))
+                image = imageio.imread(join(self.source_dir,filename))
                 writer.append_data(image)
         logging.info("Finished GIF writing")
 

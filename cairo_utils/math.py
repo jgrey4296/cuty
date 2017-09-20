@@ -4,7 +4,7 @@ from numpy import cos, sin
 import numpy.random
 from scipy.interpolate import splprep, splev
 import random
-
+import IPython
 from .constants import TWOPI, QUARTERPI
 
 #take a position and radius,  get a set of random positions on that circle
@@ -202,8 +202,13 @@ def get_midpoint(p1, p2):
 def rotatePoint(p,cen,rads=None, radMin=-QUARTERPI,radMax=QUARTERPI):
     #p1 = cen, p2=point, @ is matrix mul
     if rads is None:
-        rads = randomRad(min=radMin,max=radMax)
-    return cen + ((p-cen) @ rotMatrix(rads))
+        useRads = randomRad(min=radMin,max=radMax)
+        if isinstance(useRads, np.ndarray):
+            useRads = useRads[0]
+    else:
+        useRads = rads
+    result = cen + ((p-cen) @ rotMatrix(useRads))
+    return result
 
 
 def __rotatePoint_obsolete(p, cen, rads):
@@ -386,5 +391,5 @@ def displace_along_line(xys,amnt,num):
     
 
 
-def clamp(n,minn,maxn):
+def clamp(n,minn=0,maxn=1):
     return max(min(maxn,n),minn)

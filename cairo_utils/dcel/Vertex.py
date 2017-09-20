@@ -23,6 +23,8 @@ class Vertex:
         self.y = y
         self.incidentEdge = iEdge
         self.halfEdges = []
+        self.data = {}
+        
         self.active = True
         if index is None:
             logging.debug("Creating vertex {} at: {:.3f} {:.3f}".format(Vertex.nextIndex, x, y))

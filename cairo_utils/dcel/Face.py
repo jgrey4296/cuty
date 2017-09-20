@@ -28,6 +28,7 @@ class Face(object):
         self.markedForCleanup = False
         #Additional Data:
         self.data = {}
+        
         if index is None:
             logging.debug("Creating Face {}".format(Face.nextIndex))
             self.index = Face.nextIndex

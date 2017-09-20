@@ -9,6 +9,8 @@ from numbers import Number
 import IPython
 import numpy as np
 import pyqtree
+from os.path import isfile
+import pickle
 
 from .Face import Face
 from .HalfEdge import HalfEdge
@@ -63,20 +65,20 @@ class DCEL(object):
         local_faces = {}
 
         #construct vertices by index
+        logging.info("Re-Creating Vertices: {}".format(len(data['vertices'])))
         for vData in data['vertices']:
-            logging.info("Re-Creating Vertex: {}".format(vData['i']))
             newVertex = Vertex(vData['x'], vData['y'], index=vData['i'])
             logging.debug("Re-created vertex: {}".format(newVertex.index))
             local_vertices[newVertex.index] = DataPair(newVertex.index, newVertex, vData)
         #edges by index
+        logging.info("Re-Creating Edges: {}".format(len(data['halfEdges'])))
         for eData in data['halfEdges']:
-            logging.info("Re-Creating Edge: {}".format(eData['i']))
             newEdge = HalfEdge(index=eData['i'])
             logging.debug("Re-created Edge: {}".format(newEdge.index))
             local_edges[newEdge.index] = DataPair(newEdge.index, newEdge, eData)
         #faces by index
+        logging.info("Re-Creating Faces: {}".format(len(data['faces'])))
         for fData in data['faces']:
-            logging.info("Re-Creating Face: {}".format(fData['i']))
             newFace = Face(fData['sitex'], fData['sitey'], index=fData['i'])
             logging.debug("Re-created face: {}".format(newFace.index))
             local_faces[newFace.index] = DataPair(newFace.index, newFace, fData)
@@ -233,6 +235,7 @@ class DCEL(object):
             Otherwise places all the edges in the face """
         assert(isinstance(face, Face))
         assert(isinstance(edge, HalfEdge))
+        IPython.embed(simple_prompt=True)
         start = edge
         current = edge.next
         if isInnerComponentList:
@@ -469,3 +472,14 @@ class DCEL(object):
                     raise Exception("Edge {} in {} already used in {}".format(e.index, f.index, usedEdges[e.index]))
         logging.debug("Edges verified")
         return troublesomeEdges
+
+    @staticmethod
+    def loadfile(filename):
+        if not isfile(filename):
+            raise Exception("Non-existing filename to load into dcel")
+        with open(filename, 'rb') as f:
+            dcel_data = pickle.load(f)
+        the_dcel = DCEL()
+        the_dcel.import_data(dcel_data)
+        return the_dcel
+        

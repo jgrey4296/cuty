@@ -4,7 +4,7 @@ import sys
 import logging as root_logger
 from math import pi, atan2, copysign
 import numpy as np
-
+import IPython
 from .Vertex import Vertex
 from .Line import Line
 
@@ -53,7 +53,7 @@ class HalfEdge:
         self.constrained = False
         self.drawn = False
         self.fixed = False
-
+        self.data = {}
 
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
@@ -285,6 +285,7 @@ class HalfEdge:
         self.twin.face = oldFace
 
     def setNext(self, nextEdge):
+        assert(isinstance(nextEdge ,HalfEdge))
         self.next = nextEdge
         self.next.prev = self
 

@@ -1,6 +1,9 @@
 import logging as root_logger
-from .constants import START, END, SMALL_RADIUS, FACE
+import numpy as np
+from .constants import START, END, SMALL_RADIUS, FACE, EDGE, VERTEX
 from .drawing import drawRect, drawCircle, clear_canvas, drawText
+from .dcel.constants import FaceE, EdgeE, VertE
+from .math import get_midpoint
 
 logging = root_logger.getLogger(__name__)
 
@@ -17,7 +20,7 @@ def drawDCEL(ctx, dcel, text=False, faces=True, edges=False, verts=False,
         ctx.set_source_rgba(*edge_colour)
         draw_dcel_edges(ctx, dcel, text=text)
 
-    if verts:        
+    if verts:
         ctx.set_source_rgba(*vert_colour)
         draw_dcel_vertices(ctx, dcel)
 
@@ -25,51 +28,95 @@ def draw_dcel_faces(ctx, dcel, text=True):
     for f in dcel.faces:
         draw_dcel_single_face(ctx, dcel, f, clear=False, text=text)
 
-def draw_dcel_single_face(ctx, dcel, face, clear=True, force_centre=False, text=True):
-    if clear:
-        clear_canvas(ctx)
+def draw_dcel_single_face(ctx, dcel, face, clear=True, force_centre=False, text=True, data_override=None):
+    """ Draw a single Face from a dcel. 
+    Can be the only thing drawn (clear=True),
+    Can be drawn in the centre of the context for debugging (force_centre=True)
+    """
+    data = face.data.copy()
+    if data_override is not None:
+        assert(isinstance(data, dict))
+        data.update(data_override)
+        
+    #early exits:
     if len(face.edgeList) < 2:
         return
+    if FaceE.NULL in data:
+        return
+    #Custom Clear
+    if clear:
+        clear_canvas(ctx)
+
+    #Data Retrieval:
+    lineWidth = 0.004
+    vertColour = START
+    vertRad = SMALL_RADIUS
+    faceCol = FACE
+    radius = SMALL_RADIUS
+    text_string = "F: {}".format(face.index)
+    should_offset_text = FaceE.TEXT_OFFSET in data
+    drawCentroid = FaceE.CENTROID in data
     
+    if drawCentroid and isinstance(data[FaceE.CENTROID], (list, np.ndarray)):
+        centroidCol = data[FaceE.CENTROID]
+    if FaceE.STARTVERT in data and isinstance(data[FaceE.STARTVERT], (list, np.ndarray)):
+        vertColour = data[FaceE.STARTVERT]
+    if FaceE.STARTRAD in data:
+        vertRad = data[FaceE.STARTRAD]
+    if FaceE.FILL in data and isinstance(data[FaceE.FILL], (list, np.ndarray)):
+        faceCol = data[FaceE.FILL]
+    if FaceE.CEN_RADIUS in data:
+        radius = data[FaceE.CEN_RADIUS]
+    if FaceE.TEXT in data:
+        text_string = data[FaceE.TEXT]
+    if FaceE.WIDTH in data:
+        lineWidth = data[FaceE.WIDTH]
+        
+    #Centre to context
+    faceCentre = face.getCentroid()
     if force_centre:
-        centre = face.getCentroid()
-        invCentre = -centre
+        invCentre = -faceCentre
         ctx.translate(*invCentre)
         ctx.translate(0.5, 0.5)
-    ctx.set_line_width(0.004)
-    faceCentre = face.getCentroid()
-    
-    if text:
-        drawText(ctx, *faceCentre, str("F: {}".format(face.index)))
         
-    ctx.set_source_rgba(*END)
-    drawCircle(ctx, *faceCentre, SMALL_RADIUS)
-    #Draw face edges:
+    ctx.set_line_width(lineWidth)
+    ctx.set_source_rgba(*faceCol)
+    #Setup Edges:
     initial = True
     for x in face.getEdges():
-        if 'fill' in face.data and isinstance(face.data['fill'], list):
-            ctx.set_source_rgba(*face.data['fill'])
-        else:
-            ctx.set_source_rgba(*FACE)
         v1, v2 = x.getVertices()
-        if v1 is not None and v2 is not None:
-            logging.debug("Drawing Face {} edge {}".format(face.index, x.index))
-            logging.debug("Drawing Face edge from ({}, {}) to ({}, {})".format(v1.x, v1.y,
+        assert(v1 is not None)
+        assert(v2 is not None)
+        logging.debug("Drawing Face {} edge {}".format(face.index, x.index))
+        logging.debug("Drawing Face edge from ({}, {}) to ({}, {})".format(v1.x, v1.y,
                                                                                v2.x, v2.y))
-            if initial:
-                ctx.move_to(v1.x, v1.y)
-                initial = False
-            #ctx.set_source_rgba(*np.random.random(3), 1)
-            ctx.line_to(v2.x, v2.y)
+        if initial:
+            ctx.move_to(v1.x, v1.y)
+            initial = False
+        ctx.line_to(v2.x, v2.y)
 
-            #additional things to draw:
-            #ctx.set_source_rgba(*START)
-            #drawCircle(ctx, v1.x, v1.y, SMALL_RADIUS)
-    if face.data is None or 'fill' not in face.data:
+        if FaceE.STARTVERT in data:
+            ctx.set_source_rgba(*vertColour)
+            drawCircle(ctx, v1.x, v1.y, vertRad)
+
+    #****Draw*****
+    if FaceE.FILL not in data:
         ctx.stroke()
     else:
         ctx.close_path()
         ctx.fill()
+
+    #Drawing the Centroid point
+    ctx.set_source_rgba(*END)
+    if drawCentroid:
+        ctx.set_source_rgba(*centroidCol)
+        drawCircle(ctx, *faceCentre, radius)
+        
+    #Text Retrieval and drawing
+    if text or FaceE.TEXT in data:
+        drawText(ctx, *faceCentre, text_string, offset=should_offset_text)
+        
+    #Reset the forced centre
     if force_centre:
         ctx.translate(-0.5, -0.5)
         ctx.translate(*centre)
@@ -77,61 +124,94 @@ def draw_dcel_single_face(ctx, dcel, face, clear=True, force_centre=False, text=
 
 def draw_dcel_edges(ctx, dcel, text=True):
     drawnEdges = []
-    ctx.set_line_width(0.004)
-    for e in dcel.halfEdges:
-        i = e.index
-        #only draw if the end hasnt been drawn yet:
-        if i in drawnEdges:
+    for edge in dcel.halfEdges:
+        if edge.index in drawnEdges or edge.twin.index in drawnEdges:
             continue
-        ctx.set_source_rgba(*EDGE)
-        v1, v2 = e.getVertices()
-        if v1 is not None and v2 is not None:
-            centre = get_midpoint(v1.toArray(), v2.toArray())
-            ctx.move_to(v1.x, v1.y)
-            ctx.line_to(v2.x, v2.y)
-            ctx.stroke()
-            if text:
-                drawText(ctx, *centre, "E: {}".format(i))
-                drawText(ctx, v1.x, v1.y-0.05, "S{}".format(i))
-                drawText(ctx, v2.x, v2.y+0.05, "{}E".format(i))
-            #Record that this line has been drawn
-            drawnEdges.append(e.index)
-            #drawnEdges.append(e.twin.index)
-        else:
-            logging.warning("Trying to draw a line thats missing at least one vertex")
+        draw_dcel_halfEdge(ctx, edge, clear=False, text=text)
+        drawnEdges.append(edge.index)
+        drawnEdges.append(edge.twin.index)
 
-def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True):
+def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True, data_override=None):
     if clear:
         clear_canvas(ctx)
-    ctx.set_line_width(0.002)
-    ctx.set_source_rgba(*EDGE)
+    data = halfEdge.data.copy()
+    if data_override is not None:
+        assert(isinstance(data, dict))
+        data.update(data_override)
+    if EdgeE.NULL in data:
+        return
+        
+    width = 0.002
+    colour = EDGE
+    startEndPoints = False
+    startCol = START
+    endCol = END
+    startRad = 0.01
+    endRad = 0.01
+    
+    
+    if EdgeE.WIDTH in data:
+        width = data[EdgeE.WIDTH]
+    if EdgeE.COLOUR in data:
+        colour = data[EdgeE.COLOUR]
+    if EdgeE.START in data and isinstance(data[EdgeE.START], (list, np.ndarray)):
+        startCol = data[EdgeE.START]
+    if EdgeE.END in data and isinstance(data[EdgeE.END], (list, np.ndarray)):
+        endCol = data[EdgeE.END]
+    if EdgeE.START in data and EdgeE.END in data:
+        startEndPoints = True
+    if EdgeE.STARTRAD in data:
+        startRad = data[EdgeE.STARTRAD]
+    if EdgeE.ENDRAD in data:
+        endRad = data[EdgeE.ENDRAD]
+        
+    ctx.set_line_width(width)
+    ctx.set_source_rgba(*colour)
     v1, v2 = halfEdge.getVertices()
-    if v1 is not None and v2 is not None:
-        centre = get_midpoint(v1.toArray(), v2.toArray())
-        logging.debug("Drawing HalfEdge {} : {}, {} - {}, {}".format(halfEdge.index,
-                                                                     v1.x,
-                                                                     v1.y,
-                                                                     v2.x,
-                                                                     v2.y))
-        ctx.move_to(v1.x, v1.y)
-        ctx.line_to(v2.x, v2.y)
-        ctx.stroke()
-        ctx.set_source_rgba(*START)
-        drawCircle(ctx, v1.x, v1.y, 0.01)
-        ctx.set_source_rgba(*END)
-        drawCircle(ctx, v2.x, v2.y, 0.01)
+    assert(v1 is not None)
+    assert(v2 is not None)
+    centre = get_midpoint(v1.toArray(), v2.toArray())
+    logging.debug("Drawing HalfEdge {} : {}, {} - {}, {}".format(halfEdge.index,
+                                                                 v1.x,
+                                                                 v1.y,
+                                                                 v2.x,
+                                                                 v2.y))
+    ctx.move_to(v1.x, v1.y)
+    ctx.line_to(v2.x, v2.y)
+    ctx.stroke()
+    if startEndPoints:
+        ctx.set_source_rgba(*startCol)
+        drawCircle(ctx, v1.x, v1.y, startRad)
+        ctx.set_source_rgba(*endCol)
+        drawCircle(ctx, v2.x, v2.y, endRad)
 
-        if halfEdge.face is not None:
-            centre = halfEdge.face.getCentroid()
-            if text:
-                drawText(ctx, *centre, "F:{}.{}".format(halfEdge.face.index, halfEdge.index))
-        elif text:
-            drawText(ctx, *centre, "HE: {}".format(halfEdge.index))
+    if halfEdge.face is not None:
+        centre = halfEdge.face.getCentroid()
+        if text:
+            drawText(ctx, *centre, "F:{}.{}".format(halfEdge.face.index, halfEdge.index))
+    elif text:
+        drawText(ctx, *centre, "HE: {}".format(halfEdge.index))
 
 def draw_dcel_vertices(ctx, dcel):
     """ Draw all the vertices in a dcel as dots """
     for v in dcel.vertices:
-        ctx.set_source_rgba(*VERTEX)
-        if v is not None:
-            drawCircle(ctx, v.x, v.y, 0.01)
-
+        draw_dcel_vertex(ctx, v)
+        
+def draw_dcel_vertex(ctx, vertex, data_override=None):
+    data = vertex.data.copy()
+    if data_override is not None:
+        data.update(data_override)
+    if VertE.NULL in data:
+        return
+        
+    vertCol = VERTEX
+    vertRad = 0.01
+    if VertE.STROKE in data and isinstance(data[VertE.STROKE], (list, np.ndarray)):
+        vertCol = data[VertE.STROKE]
+    if VertE.RADIUS in data:
+        vertRad = data[VertE.RADIUS]
+        
+    ctx.set_source_rgba(*VERTEX)
+    drawCircle(ctx, v.x, v.y, 0.01)
+    
+        

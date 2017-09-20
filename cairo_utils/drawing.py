@@ -11,6 +11,7 @@ def setup_cairo(N=5, font_size=0.03):
     ctx = cairo.Context(surface)
     ctx.scale(size, size)
     ctx.set_font_size(font_size)
+    clear_canvas(ctx)
     return (surface, ctx, size, N)
 
 
@@ -42,8 +43,11 @@ def clear_canvas(ctx, colour=BACKGROUND):
     ctx.fill()
     ctx.set_source_rgba(*FRONT)
 
-def drawText(ctx, x, y, string):
-    offset = random.random() * 0.005
+def drawText(ctx, x, y, string, offset=False):
+    if offset:
+        offset = random.random() * 0.005
+    else:
+        offset = 0
     ctx.set_source_rgba(*TEXT)
     ctx.move_to(x+offset, y+offset)
     ctx.show_text(str(string))
