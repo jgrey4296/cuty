@@ -437,15 +437,21 @@ class DCEL(object):
             logging.debug("Result: {}".format([x.index for x in f.getEdges()]))
             logging.debug("----")
 
-
             f.innerComponents = [x.twin for x in f.edgeList]
             
-        self.delete_marked_faces()
 
-    def delete_marked_faces(self):
+
+    def purge_faces(self):
         """ Same as purging halfedges or vertices,  but for faces """
-        #todo: refactor name to 'purge'
-        self.faces = [x for x in self.faces if not x.markedForCleanup]
+        to_clean = [x for x in self.faces if x.markedForCleanup]
+        self.faces = [x for x in self.faces if not x.markedForCleanup or x.has_edges()]
+        for face in to_clean:
+            edges = face.getEdges()
+            for edge in edges:
+                face.removeEdge(edge)
+            for edge in face.innerComponents.copy():
+                face.removeEdge(edge)
+                
 
     def create_corner_vertex(self, e1, e2, bbox):
         """ Given two intersections (0-3),  create the vertex that corners them """
