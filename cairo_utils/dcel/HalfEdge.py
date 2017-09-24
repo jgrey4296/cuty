@@ -5,7 +5,7 @@ import logging as root_logger
 from math import pi, atan2, copysign
 import numpy as np
 import IPython
-from cairo_utils.math import inCircle
+from cairo_utils.math import inCircle, get_distance
 
 from .Vertex import Vertex
 from .Line import Line
