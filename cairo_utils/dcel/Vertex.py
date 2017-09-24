@@ -53,6 +53,14 @@ class Vertex:
     def __str__(self):
         return "({:.3f},{:.3f})".format(self.x, self.y)
 
+    def __repr__(self):
+        if self.incidentEdge is not None:
+            incident = self.incidentEdge.index
+        else:
+            incident = False
+        
+        return "(V: {}, incident:{}, edges: {})".format(self.index, incident, len(self.halfEdges))
+    
     def isEdgeless(self):
         return len(self.halfEdges) == 0
 

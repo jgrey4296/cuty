@@ -44,6 +44,18 @@ class Face(object):
     def __str__(self):
         return "Face: {}".format(self.getCentroid())
 
+    def __repr__(self):
+        if self.outerComponent is not None:
+            outer = self.outerComponent.index
+        else:
+            outer = False
+        inner = len(self.innerComponents)
+        edgeList = len(self.edgeList)
+        return "(Face: {}, outer: {}, inner: {}, edgeList: {})".format(self.index,
+                                                                       outer,
+                                                                       inner,
+                                                                       edgeList)        
+    
     def _export(self):
         """ Export identifiers rather than objects, to allow reconstruction """
         logging.debug("Exporting face: {}".format(self.index))

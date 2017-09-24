@@ -89,6 +89,31 @@ class HalfEdge:
     def __str__(self):
         return "HalfEdge: {} - {}".format(self.origin, self.twin.origin)
 
+    def __repr__(self):
+        origin = self.origin is not None
+        if self.twin is not None:
+            twin = self.twin.index
+            twinOrigin = self.twin.origin is not None
+        else:
+            twin = False
+            twinOrigin = False
+        if self.next is not None:
+            n = self.next.index
+        else:
+            n = False
+        if self.prev is not None:
+            p = self.prev.index
+        else:
+            p = False
+                        
+        
+        return "(HE: {}, Origin: {}, Twin: {}, Twin.Origin: {}, Prev: {}, Next: {})".format(self.index,
+                                                                                            origin,
+                                                                                            twin,
+                                                                                            twinOrigin,
+                                                                                            p,
+                                                                                            n)
+    
     def atan(self, centre=None):
         """ Get the angle to the half edge origin, from the centroid
         of the face it is part of, used to ensure clockwise ordering """
