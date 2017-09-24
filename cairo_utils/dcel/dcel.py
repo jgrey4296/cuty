@@ -307,7 +307,7 @@ class DCEL(object):
         self.purge_vertices()
 
     def purge_infinite_edges(self):
-        """ Remove all edges that don't have a start *and* end """
+        """ Remove all edges that don't have a start or end """
         logging.debug("Purging infinite edges")
         edges_to_purge = [x for x in self.halfEdges if x.isInfinite()]
         for e in edges_to_purge:
