@@ -289,8 +289,7 @@ class HalfEdge:
                 reCheck = self < self.twin
                 reCheck_opposite = self.twin < self
                 #TODO: sort this out
-                if False: #not reCheck or not reCheck_opposite:
-                    logging.warn("Re-Orientation failed")
+                if not reCheck: #or not reCheck_opposite:
                     raise Exception("Re-Orientation failed")
 
             self.fixed = True
