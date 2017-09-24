@@ -489,3 +489,20 @@ class DCEL(object):
         the_dcel.import_data(dcel_data)
         return the_dcel
         
+
+    def verify_faces_and_edges(self):
+        all_face_edges = set()
+        all_face_edge_twins = set()
+        all_face_edgelist = set()
+        all_face_edgelist_twins = set()
+        all_edges = set([x.index for x in self.halfEdges])
+        all_edge_twins = set([x.twin.index for x in self.halfEdges])
+        for face in self.faces:
+            all_face_edges.update([x.index for x in face.innerComponents])
+            all_face_edge_twins.update([x.twin.index for x in face.innerComponents])
+            all_face_edgelist.update([x.index for x in face.edgeList])
+            all_face_edgelist_twins.update([x.twin.index for x in face.edgeList])
+            
+        IPython.embed(simple_prompt=True)
+        return all_face_edges == all_edges
+    
