@@ -307,8 +307,8 @@ def sort_coords(arr):
     ind = np.lexsort((arr[:, 1], arr[:, 0]))
     return arr[ind]
 
-def inCircle(centre, radius, point):
-    d = get_distance(centre, point)
+def inCircle(centre, radius, points):
+    d = get_distance(centre, points)
     return d < radius
 
 def isClockwise(*args, cartesian=True):
