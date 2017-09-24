@@ -335,11 +335,13 @@ class DCEL(object):
         self.vertices = used_vertices
 
 
-    def complete_faces(self, bbox):
+    def complete_faces(self, bbox=None):
         """ Verify each face,  connecting non-connected edges,  taking into account
             corners of the bounding box passed in,  which connects using a pair of edges
         """
         logging.debug("---------- Completing faces")
+        if bbox is None:
+            bbox = np.array([0, 0, 1, 1])
         assert(bbox is not None)
         for f in self.faces:
             logging.debug("Completing face: {}".format(f.index))
