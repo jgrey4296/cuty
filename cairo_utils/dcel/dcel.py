@@ -12,6 +12,7 @@ import pyqtree
 from os.path import isfile
 import pickle
 
+from cairo_utils import get_distance
 from .Face import Face
 from .HalfEdge import HalfEdge
 from .Vertex import Vertex

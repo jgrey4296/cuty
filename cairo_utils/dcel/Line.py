@@ -4,6 +4,7 @@ from numbers import Number
 import logging as root_logger
 import numpy as np
 from cairo_utils.math import intersect, get_distance
+import IPython
 
 logging = root_logger.getLogger(__name__)
 
