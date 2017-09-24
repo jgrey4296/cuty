@@ -83,3 +83,25 @@ class Line:
         #cx = a.x + (dx * l)
         #cy = a.y + (dy * l)
         return Line(a.x, a.y, dx, dy, l, swapped=swapped)
+
+
+    def intersect_with_circle(self, centre, radius):
+        #from http://csharphelper.com/blog/2014/09/determine-where-a-line-intersects-a-circle-in-c/
+        A = sum(pow(self.direction,2))
+        B =  2 * sum(self.direction * (self.source - centre))
+        C = sum(pow(self.source - centre, 2)) - pow(radius, 2)
+
+        det = pow(B,2) - (4 * A * C)
+
+        if np.isclose(A, 0):
+            raise Exception("No Intersection")
+        
+        if np.isclose(det, 0):
+            t = -B / (2 * A)
+            return (self.source + (t * self.direction), None)
+
+        #two intersections:
+        t = (-B + sqrt(det)) / (2 * A)
+        t2 = (-B - sqrt(det)) / (2 * A)
+        return (self.source + (t * self.direction),
+                self.source + (t2 * self.direction))
