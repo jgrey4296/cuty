@@ -318,13 +318,29 @@ class DCEL(object):
         """ Remove all edges that have been marked for cleanup """
         logging.debug("Purging edges marked for cleanup")
         edges_to_purge = [x for x in self.halfEdges if x.markedForCleanup]
+        twin_edges_to_purge = []
         for e in edges_to_purge:
+            twin_edges_to_purge.append(e.twin)
             logging.debug("Purging: e{}".format(e.index))
             e.clearVertices()
             self.halfEdges.remove(e)
-            e.face.removeEdge(e)
+            if e.face is not None:
+                e.face.removeEdge(e)
+            if e.twin.face is not None:
+                e.twin.face.removeEdge(e)
             e.connectNextToPrev()
 
+        twin_edges_to_purge = [x for x in twin_edges_to_purge if x in self.halfEdges]            
+        for e in twin_edges_to_purge:
+            logging.debug("Purging Twin: e{}".format(e.index))
+            e.clearVertices()
+            if e.face is not None:
+                e.face.removeEdge(e)
+            if e.twin.face is not None:
+                e.twin.face.removeEdge(e)
+            e.connectNextToPrev()
+
+            
 
     def purge_vertices(self):
         """ Remove all vertices that aren't connected to at least one edge"""
