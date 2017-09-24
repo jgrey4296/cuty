@@ -240,6 +240,7 @@ def checksign(a, b):
 def intersect(l1, l2):
     #possibly from pgkelley4's line-segments-intersect on github
     #From the line intersection stack overflow post
+    #see: http://ericleong.me/research/circle-line/
     #The points
     p0 = l1[0:2]
     p1 = l1[2:]
