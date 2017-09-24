@@ -190,6 +190,11 @@ class HalfEdge:
         assert(len(bbox) == 4)
         return self.origin.within(bbox) and self.twin.origin.within(bbox)
 
+    def within_circle(self, centre, radius):
+        points = np.row_stack((self.origin.toArray(), self.twin.origin.toArray()))
+        return inCircle(centre, radius, points)
+
+    
     def outside(self, bbox):
         return self.origin.outside(bbox) and self.twin.origin.outside(bbox)
 
@@ -225,6 +230,7 @@ class HalfEdge:
         if self.fixed or self.twin.fixed:
             logging.debug("Fixing an already fixed line")
             return
+        
         if self.origin is not None and self.twin.origin is not None:
             if self.face == self.twin.face:
                 raise Exception("Duplicate faces?")
@@ -257,6 +263,7 @@ class HalfEdge:
 
                 reCheck = self < self.twin
                 reCheck_opposite = self.twin < self
+                #TODO: sort this out
                 if False: #not reCheck or not reCheck_opposite:
                     logging.warn("Re-Orientation failed")
                     raise Exception("Re-Orientation failed")
