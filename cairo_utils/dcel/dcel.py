@@ -302,10 +302,6 @@ class DCEL(object):
                 e.setConstrained()
                 logging.debug("Result: {}".format(e))
 
-        #remove edges marked for cleanup
-        self.purge_edges()
-        #remove vertices with no associated edges
-        self.purge_vertices()
 
     def purge_infinite_edges(self):
         """ Remove all edges that don't have a start or end """
