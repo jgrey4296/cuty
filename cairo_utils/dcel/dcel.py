@@ -525,7 +525,58 @@ class DCEL(object):
         if (all_face_edges == all_edges):
             IPython.embed(simple_prompt=True)
             
+
+    def constrain_to_circle(self, centre, radius):
+        removed_edges = []
+        modified_edges = []
+        
+        for he in self.halfEdges:
+            results = he.within_circle(centre, radius)
+            arr = he.origin.toArray()
+            if all(results): #if both within circle: leave
+                continue
+            elif not any(results): #if both without: remove
+                he.markForCleanup()
+                removed_edges.append(he)
+            else: #one within, one without, modify
+                #Get the further point
+                closer, further, isOrigin = he.getCloserAndFurther(centre, radius)
+                #create a line
+                if isOrigin:
+                    asLine = Line.newLine(he.origin, he.twin.origin, np.array([0,0,1,1]))
+                else:
+                    asLine = Line.newLine(he.twin.origin, he.origin, np.array([0,0,1,1]))
+                #solve in relation to the circle
+                intersection = asLine.intersect_with_circle(centre, radius)
+                #get the appropriate intersection
+                if intersection[0] is None:
+                    closest = intersection[1]
+                elif intersection[1] is None:
+                    closest = intersection[0]
+                else:
+                    closest = intersection[np.argmin(get_distance(np.array(intersection), further))]
+                #Create a new vertex to replace the old out of bounds vertex
+                newVert = self.newVertex(*closest)
+                orig1, orig2 = he.getVertices()
+                he.clearVertices()
+                #re-add the old vertex and new vertex to the half edge
+                if isOrigin:
+                    #origin is closer, replace the twin
+                    he.addVertex(orig1)
+                    he.addVertex(newVert)
+                else:
+                    #twin is closer, replace the origin
+                    he.addVertex(newVert)
+                    he.addVertex(orig2)
+                    modified_edges.append(he)
+
+        #todo: fixup faces
+        
+        self.purge_edges()
+        self.purge_vertices()
+        self.purge_faces()
+        self.purge_infinite_edges()
+        self.complete_faces()
+
+        
             
-        IPython.embed(simple_prompt=True)
-        return all_face_edges == all_edges
-    
