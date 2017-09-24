@@ -4,6 +4,8 @@ from numbers import Number
 import logging as root_logger
 import numpy as np
 
+from cairo_utils.math import inCircle
+
 logging = root_logger.getLogger(__name__)
 EPSILON = sys.float_info.epsilon
 
@@ -89,6 +91,9 @@ class Vertex:
         inYBounds = bbox[1] <= self.y and self.y <= bbox[3]
         return inXBounds and inYBounds
 
+    def within_circle(self, centre, radius):
+        return inCircle(centre, radius, self.toArray())[0]
+    
     def outside(self, bbox):
         """ Check the vertex is entirely outside of the bbox [x,y,x2,y2] """
         return not self.within(bbox)
