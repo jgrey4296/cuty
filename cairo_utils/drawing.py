@@ -1,11 +1,11 @@
 import cairo
 import logging as root_logger
-from .constants import TEXT, BACKGROUND, TWOPI, FRONT
+from .constants import TEXT, BACKGROUND, TWOPI, FRONT, FONT_SIZE
 import random
 
 logging = root_logger.getLogger(__name__)
 
-def setup_cairo(N=5, font_size=0.03):
+def setup_cairo(N=5, font_size=FONT_SIZE):
     size = pow(2, N)
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
     ctx = cairo.Context(surface)

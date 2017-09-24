@@ -13,6 +13,7 @@ START = [0, 1, 0, 1]
 END = [1, 0, 0, 1]
 
 SMALL_RADIUS = 0.003
+FONT_SIZE = 0.03
 
 ALPHA = 0.1
 BACKGROUND = [0, 0, 0, 1]
