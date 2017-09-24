@@ -5,8 +5,11 @@ import logging as root_logger
 from math import pi, atan2, copysign
 import numpy as np
 import IPython
+from cairo_utils.math import inCircle
+
 from .Vertex import Vertex
 from .Line import Line
+
 
 logging = root_logger.getLogger(__name__)
 
