@@ -71,12 +71,14 @@ class Face(object):
         #todo: should the edge be connecting next to prev here?
         if not bool(self.innerComponents) and not bool(self.edgeList):
             return
-        
         if edge in self.innerComponents:
             self.innerComponents.remove(edge)
         if edge in self.edgeList:
             self.edgeList.remove(edge)
+        if edge.face is self:
+            edge.face = None
 
+            
     def get_bbox(self):
         #TODO: fix this? its rough
         vertices = [x.origin for x in self.edgeList]
