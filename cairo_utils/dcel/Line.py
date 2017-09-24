@@ -53,8 +53,10 @@ class Line:
             return np.row_stack((self.source, self.destination()))
 
     @staticmethod
-    def newLine(a, b, bbox):
+    def newLine(a, b, bbox=None):
         """ Create a new line from two vertices """
+        if bbox is None:
+            bbox = np.array([0, 0, 1, 1])
         assert(isinstance(bbox, np.ndarray))
         assert(len(bbox) == 4)
         #Calculate the line parameters:
