@@ -27,11 +27,7 @@ def drawRect(ctx, x, y, sx, sy):
     ctx.fill()
     
 def drawCircle(ctx, x, y, r, fill=True):
-    try:
-        ctx.arc(x, y, r, 0, TWOPI)
-    except TypeError as e:
-        logging.error(x, y, r)
-        raise e
+    ctx.arc(x, y, r, 0, TWOPI)
     if fill:
         ctx.fill()
     else:
