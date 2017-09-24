@@ -205,13 +205,13 @@ def draw_dcel_vertex(ctx, vertex, data_override=None):
         return
         
     vertCol = VERTEX
-    vertRad = 0.01
+    vertRad = 0.005
     if VertE.STROKE in data and isinstance(data[VertE.STROKE], (list, np.ndarray)):
         vertCol = data[VertE.STROKE]
     if VertE.RADIUS in data:
         vertRad = data[VertE.RADIUS]
         
-    ctx.set_source_rgba(*VERTEX)
-    drawCircle(ctx, v.x, v.y, 0.01)
+    ctx.set_source_rgba(*vertCol)
+    drawCircle(ctx, vertex.x, vertex.y, vertRad)
     
         
