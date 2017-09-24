@@ -349,3 +349,12 @@ class HalfEdge:
 
     def markForCleanup(self):
         self.markedForCleanup = True
+
+    def getCloserAndFurther(self, centre, radius):
+        originD = get_distance(centre, self.origin.toArray())
+        twinD = get_distance(centre, self.twin.origin.toArray())
+        if originD < twinD:
+            return (self.origin.toArray(), self.twin.origin.toArray(), True)
+        else:
+            return (self.twin.origin.toArray(), self.origin.toArray(), False)
+        
