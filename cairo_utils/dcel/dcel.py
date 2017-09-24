@@ -236,7 +236,7 @@ class DCEL(object):
             Otherwise places all the edges in the face """
         assert(isinstance(face, Face))
         assert(isinstance(edge, HalfEdge))
-        IPython.embed(simple_prompt=True)
+
         start = edge
         current = edge.next
         if isInnerComponentList:
@@ -280,7 +280,7 @@ class DCEL(object):
             #if both vertices are out of the bounding box,  clean away entirely
             if e.outside(bbox):
                 logging.debug("marking for cleanup: e{}".format(e.index))
-                e.markedForCleanup = True
+                e.markForCleanup()
                 continue
             else:
                 logging.debug("Constraining")
@@ -347,7 +347,7 @@ class DCEL(object):
             f.sort_edges()
             edgeList = f.getEdges()
             if not bool(edgeList):
-                f.markedForCleanup = True
+                f.markForCleanup()
                 continue
             #reverse to allow popping off
             edgeList.reverse()
