@@ -185,12 +185,8 @@ def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True, data_override=None)
         ctx.set_source_rgba(*endCol)
         drawCircle(ctx, v2.x, v2.y, endRad)
 
-    if halfEdge.face is not None:
-        centre = halfEdge.face.getCentroid()
-        if text:
-            drawText(ctx, *centre, "F:{}.{}".format(halfEdge.face.index, halfEdge.index))
-    elif text:
-        drawText(ctx, *centre, "HE: {}".format(halfEdge.index))
+    if text:
+        drawText(ctx, *centre, "HE:{}.{}".format(halfEdge.index, halfEdge.twin.index))
 
 def draw_dcel_vertices(ctx, dcel):
     """ Draw all the vertices in a dcel as dots """
