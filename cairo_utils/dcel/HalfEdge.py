@@ -322,3 +322,6 @@ class HalfEdge:
         """ If a halfedge has only one defined point, it stretches
             off into infinity """
         return self.origin is None or self.twin is None or self.twin.origin is None
+
+    def markForCleanup(self):
+        self.markedForCleanup = True
