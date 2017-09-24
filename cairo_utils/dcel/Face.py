@@ -138,3 +138,11 @@ class Face(object):
         atanEdges.reverse()
         self.edgeList = [e for (a, e) in atanEdges]
         logging.debug("Sorted edges: {}".format([str(x.index) for x in self.edgeList]))
+
+    def has_edges(self):
+        innerEdges = bool(self.innerComponents)
+        outerEdges = bool(self.edgeList)
+        return innerEdges and outerEdges
+
+    def markForCleanup(self):
+        self.markedForCleanup = True
