@@ -148,7 +148,7 @@ def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True, data_override=None)
     endCol = END
     startRad = 0.01
     endRad = 0.01
-    
+    writeText = "HE:{}.{}".format(halfEdge.index, halfEdge.twin.index)
     
     if EdgeE.WIDTH in data:
         width = data[EdgeE.WIDTH]
@@ -164,6 +164,11 @@ def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True, data_override=None)
         startRad = data[EdgeE.STARTRAD]
     if EdgeE.ENDRAD in data:
         endRad = data[EdgeE.ENDRAD]
+    if EdgeE.TEXT in data:
+        text = True
+        if isinstance(data[EdgeE.TEXT], str):
+            writeText = data[EdgeE.TEXT]
+
         
     ctx.set_line_width(width)
     ctx.set_source_rgba(*colour)
@@ -186,7 +191,7 @@ def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True, data_override=None)
         drawCircle(ctx, v2.x, v2.y, endRad)
 
     if text:
-        drawText(ctx, *centre, "HE:{}.{}".format(halfEdge.index, halfEdge.twin.index))
+        drawText(ctx, *centre, writeText)
 
 def draw_dcel_vertices(ctx, dcel):
     """ Draw all the vertices in a dcel as dots """
