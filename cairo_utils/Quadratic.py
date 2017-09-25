@@ -4,13 +4,17 @@ import logging
 import IPython
 
 class Quadratic(object):
-
+    """ A Class to hold a quadratic equation 
+    (y = ax^2 + bx + c)
+    and perform operations on it """
+    
     def __init__(self,a,b,c):
         self.a = a
         self.b = b
         self.c = c
 
     def __call__(self,x):
+        """ Shorthand to get y for a given x """
         if x is None:
             return None
         result = (self.a * pow(x,2)) + (self.b * x) + self.c
@@ -18,6 +22,7 @@ class Quadratic(object):
 
     def intersect(self,q2):
         """ Get the x coordinates of the intersections of the two quadratics """
+        assert(isinstance(q2, Quadratic))
         aprime = q2.a - self.a
         bprime = q2.b - self.b
         cprime = q2.c - self.c
@@ -32,7 +37,8 @@ class Quadratic(object):
         return pow(self.b,2) - (4 * self.a * self.c)
 
     def solve(self):
-        returnVal = None
+        """ Solve the quadratic, returning up to two values"""
+        returnVal = []
         D = self.discriminant()
         numerator_a = -self.b
         denominator = 2 * self.a
