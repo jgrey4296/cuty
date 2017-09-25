@@ -5,13 +5,15 @@ import IPython
 from .Quadratic import Quadratic as Q
 
 class Parabola(object):
-    #todo: if fy-d == 0: degenerate case, is a straight line
-    #todo: let calculate take a current d line
+    """ A class to represent and calculate a parabola. holds both forms of definition,
+    focus/directrix AND standard form.
+    Handles the degenerate case of focus and directrix being the same by designating 
+    as a vertical line
+    """
     id = 0
     
     def __init__(self,fx,fy,d):
         """ Create a parabola with a focus x and y, and a directrix y """
-        #breakout for degenerate case
         self.id = Parabola.id
         Parabola.id += 1
         self.vertical_line = True
@@ -59,6 +61,7 @@ class Parabola(object):
         """ Take the quadratic representations of parabolas, and
             get the 0, 1 or 2 points that are the intersections
         """
+        assert(isinstance(p2, Parabola))
         if d:
             self.update_d(d)
             p2.update_d(d)
@@ -69,30 +72,13 @@ class Parabola(object):
         if p2.vertical_line:
             logging.debug("Intersecting other vertical line")
             return np.array([self(p2.fx)[0]])
-        #normal:
+        #normal (as quadratic class):
         q1 = Q(self.sa,self.sb,self.sc)
         q2 = Q(p2.sa,p2.sb,p2.sc)
         xs = q1.intersect(q2)
         logging.debug("Resulting intersects: {}".format(xs))
         xys = self(xs)
         return xys
-        
-        
-    def toStandardForm(self,a,h,k):
-        """ Calculate the standard form of the parabola from a vertex form """
-        return [
-            a,
-            -2*a*h,
-            a*pow(h,2)+k
-        ]
-
-    def toVertexForm(self,a,b,c):
-        """ Calculate the vertex form of the parabola from a standard form """
-        return [
-            a,
-            -b/(2*a),
-            c-(a * (pow(b,2) / 4 * a))
-        ]
     
     def calcStandardForm(self,x):
         """ Get the y value of the parabola at an x position using the standard
@@ -111,6 +97,7 @@ class Parabola(object):
         return np.column_stack((x,self.calcVertexForm(x)))
     
     def __call__(self,x):
+        """ Shorthand for calculating an the entire parabola """
         if self.vertical_line:
             ys = np.linspace(0,self.fy,1000)
             xs = np.repeat(self.fx,1000)
@@ -126,6 +113,8 @@ class Parabola(object):
             ])
         
     def __eq__(self,parabola2):
+        """ Compare two parabolas """
+        assert(isinstance(parabola2, Parabola))
         if parabola2 is None:
             return False
         a = self.to_numpy_array()
@@ -134,3 +123,21 @@ class Parabola(object):
 
     def get_focus(self):
         return np.array([[self.fx,self.fy]])
+
+    @staticmethod
+    def toStandardForm(a,h,k):
+        """ Calculate the standard form of the parabola from a vertex form """
+        return [
+            a,
+            -2*a*h,
+            a*pow(h,2)+k
+        ]
+
+    @staticmetod
+    def toVertexForm(a,b,c):
+        """ Calculate the vertex form of the parabola from a standard form """
+        return [
+            a,
+            -b/(2*a),
+            c-(a * (pow(b,2) / 4 * a))
+        ]
