@@ -22,6 +22,7 @@ class Face(object):
         #Starting point for bounding edges, going anti-clockwise
         self.outerComponent = None
         #Clockwise inner loops
+        #todo: this is a misnomer. should be... edge opposites?
         self.innerComponents = []
         self.edgeList = []
         #mark face for cleanup:
