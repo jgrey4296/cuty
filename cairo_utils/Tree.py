@@ -1,5 +1,9 @@
 class Tree:
-
+    """ A Simple Binary Tree Class. Trees are nodes themselves.
+    Each node can hold a *value* (used for searching, ordering etc),
+    and *data*, that can be anything, especially a dictionary.
+    """
+    
     def __init__(self,value,root=False,data=None):
         self.value = value
         self.data = data
