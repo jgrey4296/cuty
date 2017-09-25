@@ -13,6 +13,11 @@ class BeachLine:
     3) Every leaf is Black, leaves are null nodes
     4) If a node is red, it's children are black
     5) All paths from a node to its leaves contain the same number of black nodes
+
+    The beachline is intended to hold parabola arcs, and each node contains successor and
+    predecessor links, to traverse the tree leaves laterally.
+    The red-black properties are used to ensure arcs are ordered from left to right appropriately
+    for their intersections
     """
 
     def __init__(self,arc=True):
