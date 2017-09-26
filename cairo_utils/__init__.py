@@ -6,5 +6,9 @@ from .beachline.BeachLine import BeachLine
 from .dcel.dcel import DCEL
 from .make_gif import Make_Gif
 
+from . import drawing
+from . import math
+
+
 _author = "jgrey"
 _version = "0.1.2"
