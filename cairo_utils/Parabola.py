@@ -133,7 +133,7 @@ class Parabola(object):
             a*pow(h,2)+k
         ]
 
-    @staticmetod
+    @staticmethod
     def toVertexForm(a,b,c):
         """ Calculate the vertex form of the parabola from a standard form """
         return [
