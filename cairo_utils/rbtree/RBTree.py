@@ -61,23 +61,23 @@ class RBTree:
         return self.root.getMax()
 
     def countBlackHeight(self,node=None):
-    """ Given a node, count all paths and check they have the same black height """
-    if node is None:
-        if self.root is None:
-            return None
-        node = self.root
-    stack = [node]
-    leaves = []
-    while len(stack) > 0:
-        current = stack.pop()
-        if current.left is None and current.right is None:
-            leaves.append(current)
-        else:
-            if current.left is not None:
-                stack.append(current.left)
-            if current.right is not None:
-                stack.append(current.right)
+        """ Given a node, count all paths and check they have the same black height """
+        if node is None:
+            if self.root is None:
+                return None
+            node = self.root
+        stack = [node]
+        leaves = []
+        while len(stack) > 0:
+            current = stack.pop()
+            if current.left is None and current.right is None:
+                leaves.append(current)
+            else:
+                if current.left is not None:
+                    stack.append(current.left)
+                if current.right is not None:
+                    stack.append(current.right)
 
-    allHeights = [x.getBlackHeight(node) for x in leaves]
-    return allHeights
+        allHeights = [x.getBlackHeight(node) for x in leaves]
+        return allHeights
 
