@@ -13,8 +13,7 @@ def rotateLeft(tree,node):
     """ Rotate the given node left, making the new head be node.right """
     logging.debug("Rotating Left: {}".format(node))
     if node.right == NilNode or node == NilNode:
-        return
-        #raise Exception("Rotating left when there is no right")
+        return #early exit it rotating is unnecessary
     newHead = node.right #Get the right subtree
     originalParent = node.parent
     #left subtree becomes the right subtree:
