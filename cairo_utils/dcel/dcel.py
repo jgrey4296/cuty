@@ -1,18 +1,18 @@
 """ The Top Level DCEL DataStructure. """
-import math
-from math import atan2
-from random import random
-import logging
-import sys
 from collections import namedtuple
+from math import atan2
 from numbers import Number
-import IPython
-import numpy as np
-import pyqtree
 from os.path import isfile
+from random import random
+import IPython
+import logging
+import math
+import numpy as np
 import pickle
+import pyqtree
+import sys
 
-from cairo_utils import get_distance
+from cairo_utils.math import get_distance
 from .Face import Face
 from .HalfEdge import HalfEdge
 from .Vertex import Vertex
