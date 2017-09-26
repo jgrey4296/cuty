@@ -1,10 +1,9 @@
-import numpy as np
-from numpy import pi
 from numpy import cos, sin
-import numpy.random
+from numpy import pi
 from scipy.interpolate import splprep, splev
+import numpy as np
+import numpy.random
 import random
-import IPython
 from .constants import TWOPI, QUARTERPI
 
 #take a position and radius,  get a set of random positions on that circle
@@ -37,8 +36,6 @@ def getDirections(xys):
     #hypotenuse
     dd = np.sqrt(np.square(dx)+np.square(dy))
     return (directions, dd)
-
-
 def granulate(xys, grains=10, mult=2):
     #xys.shape = (n, 2)
     #directions.shape = (n, 3)
