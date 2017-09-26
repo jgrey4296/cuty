@@ -1,9 +1,9 @@
 import logging as root_logger
 import numpy as np
-from .constants import START, END, SMALL_RADIUS, FACE, EDGE, VERTEX
-from .drawing import drawRect, drawCircle, clear_canvas, drawText
-from .dcel.constants import FaceE, EdgeE, VertE
-from .math import get_midpoint
+from cairo_utils.constants import START, END, SMALL_RADIUS, FACE, EDGE, VERTEX
+from cairo_utils.drawing import drawRect, drawCircle, clear_canvas, drawText
+from cairo_utils.math import get_midpoint
+from .constants import FaceE, EdgeE, VertE
 
 logging = root_logger.getLogger(__name__)
 
