@@ -21,9 +21,10 @@ class Face(object):
         self.site = np.array([site_x, site_y])
         #Starting point for bounding edges, going anti-clockwise
         self.outerComponent = None
-        #Clockwise inner loops
-        #todo: this is a misnomer. should be... edge opposites?
-        self.innerComponents = []
+        #Clockwise inner loops - check this
+        #Opposing face halfedges
+        self.outerBoundaryEdges = []
+        #Primary list of edges for this face
         self.edgeList = []
         #mark face for cleanup:
         self.markedForCleanup = False
@@ -50,7 +51,7 @@ class Face(object):
             outer = self.outerComponent.index
         else:
             outer = False
-        inner = len(self.innerComponents)
+        inner = len(self.outerBoundaryEdges)
         edgeList = len(self.edgeList)
         return "(Face: {}, outer: {}, inner: {}, edgeList: {})".format(self.index,
                                                                        outer,
@@ -70,10 +71,10 @@ class Face(object):
     def removeEdge(self, edge):
         assert(isinstance(edge, HalfEdge))
         #todo: should the edge be connecting next to prev here?
-        if not bool(self.innerComponents) and not bool(self.edgeList):
+        if not bool(self.outerBoundaryEdges) and not bool(self.edgeList):
             return
-        if edge in self.innerComponents:
-            self.innerComponents.remove(edge)
+        if edge in self.outerBoundaryEdges:
+            self.outerBoundaryEdges.remove(edge)
         if edge in self.edgeList:
             self.edgeList.remove(edge)
         if edge.face is self:
@@ -141,11 +142,11 @@ class Face(object):
         assert(isinstance(edge, HalfEdge))
         if edge.face is None:
             edge.face = self
-        self.innerComponents.append(edge)
+        self.outerBoundaryEdges.append(edge)
         self.edgeList.append(edge)
 
     def sort_edges(self):
-        """ Order the edges anti-clockwise, by starting point """
+        """ Order the edges clockwise, by starting point """
         logging.debug("Sorting edges")
         centre = self.getCentroid()
         atanEdges = [(x.atan(), x) for x in self.edgeList]
@@ -155,7 +156,7 @@ class Face(object):
         logging.debug("Sorted edges: {}".format([str(x.index) for x in self.edgeList]))
 
     def has_edges(self):
-        innerEdges = bool(self.innerComponents)
+        innerEdges = bool(self.outerBoundaryEdges)
         outerEdges = bool(self.edgeList)
         return innerEdges and outerEdges
 

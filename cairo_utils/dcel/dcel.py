@@ -110,7 +110,7 @@ class DCEL(object):
         try:
             for face in local_faces.values():
                 face.obj.edgeList = [local_edges[x].obj for x in face.data['edges']]
-                face.obj.innerComponents = [x.twin for x in face.obj.edgeList if x.twin.face is not None]
+                face.obj.outerBoundaryEdges = [x.twin for x in face.obj.edgeList if x.twin.face is not None]
         except Exception as e:
             logging.info("Error for face")
             IPython.embed(simple_prompt=True)
@@ -153,7 +153,7 @@ class DCEL(object):
         edgelessVertices = [x for x in self.vertices if x.isEdgeless()]
         edgelessVerticesDescription = "Edgeless vertices: num: {}".format(len(edgelessVertices))
 
-        edgeCountForFaces = [str(len(f.innerComponents)) for f in self.faces]
+        edgeCountForFaces = [str(len(f.outerBoundaryEdges)) for f in self.faces]
         edgeCountForFacesDescription = "Edge Counts for Faces: {}".format("-".join(edgeCountForFaces))
 
         return "\n".join(["---- DCEL Description: ",
@@ -241,7 +241,7 @@ class DCEL(object):
         start = edge
         current = edge.next
         if isInnerComponentList:
-            face.innerComponents.append(start)
+            face.outerBoundaryEdges.append(start)
         else:
             face.outerComponent = start
         start.face = face
@@ -249,7 +249,7 @@ class DCEL(object):
             current.face = face
             current = current.next
             if isInnerComponentList:
-                face.innerComponents.append(current)
+                face.outerBoundaryEdges.append(current)
 
 
     def orderVertices(self, focus, vertices):
@@ -437,19 +437,21 @@ class DCEL(object):
             logging.debug("Result: {}".format([x.index for x in f.getEdges()]))
             logging.debug("----")
 
-            f.innerComponents = [x.twin for x in f.edgeList]
+            #Get the opposites
+            f.outerBoundaryEdges = [x.twin for x in f.edgeList]
+            
             
 
 
     def purge_faces(self):
         """ Same as purging halfedges or vertices,  but for faces """
-        to_clean = [x for x in self.faces if x.markedForCleanup]
+        to_clean = [x for x in self.faces if x.markedForCleanup or not x.has_edges()]
         self.faces = [x for x in self.faces if not x.markedForCleanup or x.has_edges()]
         for face in to_clean:
             edges = face.getEdges()
             for edge in edges:
                 face.removeEdge(edge)
-            for edge in face.innerComponents.copy():
+            for edge in face.outerBoundaryEdges.copy():
                 face.removeEdge(edge)
                 
 
@@ -517,8 +519,8 @@ class DCEL(object):
         all_edges = set([x for x in self.halfEdges])
         all_edge_twins = set([x.twin for x in self.halfEdges])
         for face in self.faces:
-            all_face_edges.update([x for x in face.innerComponents])
-            all_face_edge_twins.update([x.twin for x in face.innerComponents])
+            all_face_edges.update([x for x in face.outerBoundaryEdges])
+            all_face_edge_twins.update([x.twin for x in face.outerBoundaryEdges])
             all_face_edgelist.update([x for x in face.edgeList])
             all_face_edgelist_twins.update([x.twin for x in face.edgeList])
 
