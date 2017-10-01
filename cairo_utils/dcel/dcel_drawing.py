@@ -123,20 +123,15 @@ def draw_dcel_single_face(ctx, dcel, face, clear=True, force_centre=False, text=
 
 
 def draw_dcel_edges(ctx, dcel, text=True):
-    drawnEdges = []
     for edge in dcel.halfEdges:
-        if edge.index in drawnEdges or edge.twin.index in drawnEdges:
-            continue
         draw_dcel_halfEdge(ctx, edge, clear=False, text=text)
-        drawnEdges.append(edge.index)
-        drawnEdges.append(edge.twin.index)
 
 def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True, data_override=None):
     if clear:
         clear_canvas(ctx)
     data = halfEdge.data.copy()
     if data_override is not None:
-        assert(isinstance(data, dict))
+        assert(isinstance(data_override, dict))
         data.update(data_override)
     if EdgeE.NULL in data:
         return
