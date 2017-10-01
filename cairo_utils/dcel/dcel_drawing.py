@@ -140,7 +140,7 @@ def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True, data_override=None)
         data.update(data_override)
     if EdgeE.NULL in data:
         return
-        
+    
     width = 0.002
     colour = EDGE
     startEndPoints = False

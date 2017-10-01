@@ -1,5 +1,4 @@
 """ HalfEdge: The intermediate level datastructure of the dcel """
-
 import sys
 import logging as root_logger
 from math import pi, atan2, copysign
