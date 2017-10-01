@@ -370,73 +370,17 @@ class DCEL(object):
                 f.markForCleanup()
                 continue
             #reverse to allow popping off
-            edgeList.reverse()
+            #edgeList.reverse()
             first_edge = edgeList[-1]
             while len(edgeList) > 1:
                 #pop off in anti-clockwise order
                 current_edge = edgeList.pop()
-                nextEdge = edgeList[-1]
-                logging.debug("---- Edge Pair: {} - {}".format(current_edge.index, nextEdge.index))
-                if current_edge.connections_align(nextEdge):
-                    current_edge.setNext(nextEdge)
-                else:
-                    logging.debug("Edges do not align:\n\t e1: {} \n\t e2: {}".format(current_edge.twin.origin, nextEdge.origin))
-                    #if they intersect with different bounding walls,  they need a corner
-                    intersect_1 = current_edge.intersects_edge(bbox)
-                    intersect_2 = nextEdge.intersects_edge(bbox)
-                    logging.debug("Intersect Values: {} {}".format(intersect_1, intersect_2))
-
-                    if intersect_1 is None or intersect_2 is None:
-                        logging.debug("Non- side intersecting lines")
-
-                    if intersect_1 == intersect_2 or intersect_1 is None or intersect_2 is None:
-                        logging.debug("Intersects match,  creating a simple edge between: {}={}".format(current_edge.index, nextEdge.index))
-                        #connect together with simple edge
-                        newEdge = self.newEdge(current_edge.twin.origin, nextEdge.origin, face=f, prev=current_edge)
-                        current_edge.setNext(newEdge)
-                        newEdge.setNext(nextEdge)
-
-                    else:
-                        logging.debug("Creating a corner edge connection between: {}={}".format(current_edge.index, nextEdge.index))
-                        #connect via a corner
-                        newVertex = self.create_corner_vertex(intersect_1, intersect_2, bbox)
-                        logging.debug("Corner Edge: {}".format(newVertex))
-                        newEdge_1 = self.newEdge(current_edge.twin.origin, newVertex, face=f, prev=current_edge)
-                        newEdge_2 = self.newEdge(newVertex, nextEdge.origin, face=f, prev=newEdge_1)
-
-                        current_edge.setNext(newEdge_1)
-                        newEdge_1.setNext(newEdge_2)
-                        newEdge_2.setNext(nextEdge)
-
-            #at this point,  only the last hasn't been processed
-            #as above,  but:
-            logging.debug("Checking final edge pair")
-            current_edge = edgeList.pop()
-            if current_edge.connections_align(first_edge):
-                current_edge.setNext(first_edge)
-            else:
-                intersect_1 = current_edge.intersects_edge(bbox)
-                intersect_2 = first_edge.intersects_edge(bbox)
-                if intersect_1 is None or intersect_2 is None:
-                    logging.debug("Edge Intersection is None")
-                elif intersect_1 == intersect_2:
-                    logging.debug("Intersects match,  creating final simple edge")
-                    #connect with simple edge
-                    newEdge = self.newEdge(current_edge.twin.origin, first_edge.origin, face=f, prev=current_edge)
-                    current_edge.setNext(newEdge)
-                    newEdge.setNext(first_edge)
-                else:
-                    logging.debug("Creating final corner edge connection between: {}={}".format(current_edge.index, first_edge.index))
-                    #connect via a corner
-                    newVertex = self.create_corner_vertex(intersect_1, intersect_2, bbox)
-                    newEdge_1 = self.newEdge(current_edge.twin.origin, newVertex, face=current_edge.face, prev=current_edge)
-                    newEdge_2 = self.newEdge(newVertex, first_edge.origin, face=current_edge.face, prev=newEdge_1)
-                    #newEdge_1 = self.newEdge(current_edge.twin.origin, newVertex, face=current_edge.face, prev=current_edge)
-                    #newEdge_2 = self.newEdge(newVertex, nextEdge.origin, face=current_edge.face, prev=newEdge_1)
-                    current_edge.setNext(newEdge_1)
-                    newEdge_1.setNext(newEdge_2)
-                    newEdge_2.setNext(first_edge)
-
+                prior_edge = edgeList[-1]
+                logging.debug("---- Edge Pair: {} - {}".format(current_edge.index, prior_edge.index))
+                self.calculate_edge_connections(current_edge, prior_edge, bbox, f)
+                
+            #after everything, connect the ends of the loop
+            self.calculate_edge_connections(edgeList.pop(), first_edge, bbox, f)
             logging.debug("Final sort of face: {}".format(f.index))
             f.sort_edges()
             logging.debug("Result: {}".format([x.index for x in f.getEdges()]))
