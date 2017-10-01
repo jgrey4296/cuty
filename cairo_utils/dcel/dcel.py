@@ -334,15 +334,15 @@ class DCEL(object):
                 e.twin.face.removeEdge(e)
             e.connectNextToPrev()
 
-        twin_edges_to_purge = [x for x in twin_edges_to_purge if x in self.halfEdges]            
-        for e in twin_edges_to_purge:
-            logging.debug("Purging Twin: e{}".format(e.index))
-            e.clearVertices()
-            if e.face is not None:
-                e.face.removeEdge(e)
-            if e.twin.face is not None:
-                e.twin.face.removeEdge(e)
-            e.connectNextToPrev()
+        # twin_edges_to_purge = [x for x in twin_edges_to_purge if x in self.halfEdges]            
+        # for e in twin_edges_to_purge:
+        #     logging.debug("Purging Twin: e{}".format(e.index))
+        #     e.clearVertices()
+        #     if e.face is not None:
+        #         e.face.removeEdge(e)
+        #     if e.twin.face is not None:
+        #         e.twin.face.removeEdge(e)
+        #     e.connectNextToPrev()
 
             
 
