@@ -194,13 +194,11 @@ class HalfEdge:
         assert(isinstance(other, HalfEdge))
         if self.twin.origin is None or other.origin is None:
             raise Exception("Invalid connection test")
+        
         if self.origin == other.origin \
-           or self.twin.origin == other.twin.origin \
-           or self.origin == other.twin.origin:
-            logging.debug("Unexpected connection alignment")
-            #There is a reason this no longer raises.
-            #todo: find out why
-            #raise Exception("Unexpected Connection Alignment")
+           or self.twin.origin == other.twin.origin:
+            raise Exception("Unexpected Connection Alignment")
+        
         return self.twin.origin == other.origin
 
     def isConstrained(self):
