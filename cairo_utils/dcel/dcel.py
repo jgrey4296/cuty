@@ -389,7 +389,51 @@ class DCEL(object):
             #Get the opposites
             f.outerBoundaryEdges = [x.twin for x in f.edgeList]
             
+
+    def calculate_edge_connections(self, current_edge, prior_edge, bbox, f):
+        assert(isinstance(f, Face))
+        if prior_edge.connections_align(current_edge):
+            current_edge.setPrev(prior_edge)
+            return
+
+        logging.debug("Edges do not align:\n\t e1: {} \n\t e2: {}".format(current_edge.twin.origin,
+                                                                          prior_edge.origin))
+        #if they intersect with different bounding walls,  they need a corner
+        intersect_1 = current_edge.intersects_edge(bbox)
+        intersect_2 = prior_edge.intersects_edge(bbox)
+        logging.debug("Intersect Values: {} {}".format(intersect_1, intersect_2))
+
+        if intersect_1 is None or intersect_2 is None:
+            logging.debug("Non- side intersecting lines")
+
+            #Simple connection requirement, straight line between end points
+        if intersect_1 == intersect_2 or any([x is None for x in [intersect_1, intersect_2]]):
+            logging.debug("Match, new simple edge between: {}={}".format(current_edge.index,
+                                                                         prior_edge.index))
+            #connect together with simple edge
+            #twin face is not set because theres no face outside of bounds
+            newEdge = self.newEdge(prior_edge.twin.origin,
+                                   current_edge.origin,
+                                   face=f,
+                                   prev=prior_edge)
+            newEdge.data[EdgeE.COLOUR] = [1, 0, 0, 1]
+            newEdge.setPrev(prior_edge)
+            current_edge.setPrev(newEdge)
+
+        else:
+            logging.debug("Creating a corner edge connection between: {}={}".format(current_edge.index, prior_edge.index))
+            #Connect the edges via an intermediate, corner vertex
+            newVertex = self.create_corner_vertex(intersect_1, intersect_2, bbox)
+            logging.debug("Corner Vertex: {}".format(newVertex))
+            newEdge_1 = self.newEdge(prior_edge.twin.origin, newVertex, face=f, prev=prior_edge)
+            newEdge_2 = self.newEdge(newVertex, current_edge.origin, face=f, prev=newEdge_1)
+
+            newEdge_1.data[EdgeE.COLOUR] = [0, 1, 0, 1]
+            newEdge_2.data[EdgeE.COLOUR] = [0, 0, 1, 0]
             
+            current_edge.setPrev(newEdge_2)
+            newEdge_2.setPrev(newEdge_1)
+            newEdge_1.setPrev(prior_edge)
 
 
     def purge_faces(self):
