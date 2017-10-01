@@ -272,6 +272,7 @@ class DCEL(object):
         for e in self.halfEdges:
 
             logging.debug("\n---- Checking constraint for: {}/{} {}".format(e.index, numEdges, e))
+            #If its going to be removed, ignore it
             if e.markedForCleanup:
                 continue
             #if both vertices are within the bounding box,  don't touch
@@ -365,6 +366,7 @@ class DCEL(object):
             f.sort_edges()
             edgeList = f.getEdges()
             if not bool(edgeList):
+                #cleanup if the face is empty
                 f.markForCleanup()
                 continue
             #reverse to allow popping off
