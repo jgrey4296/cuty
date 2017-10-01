@@ -17,6 +17,7 @@ from .Face import Face
 from .HalfEdge import HalfEdge
 from .Vertex import Vertex
 from .Line import Line
+from .constants import EdgeE
 
 EPSILON = sys.float_info.epsilon
 CENTRE = np.array([[0.5, 0.5]])
