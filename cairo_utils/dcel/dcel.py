@@ -284,30 +284,32 @@ class DCEL(object):
                 logging.debug("marking for cleanup: e{}".format(e.index))
                 e.markForCleanup()
                 continue
-            else:
-                logging.debug("Constraining")
-                #else constrain the point outside the bounding box:
-                newBounds = e.constrain(bbox)
-                orig_1, orig_2 = e.getVertices()
-                e.clearVertices()
-                v1 = self.newVertex(newBounds[0][0], newBounds[0][1])
-                v2 = self.newVertex(newBounds[1][0], newBounds[1][1])
-                if not (v1 == orig_1 or v1 == orig_2 or v2 == orig_1 or v2 == orig_2):
-                    logging.debug("Vertex Changes upon constraint:")
-                    logging.debug(" Originally: {},  {}".format(orig_1, orig_2))
-                    logging.debug(" New: {},  {}".format(v1, v2))
-                    raise Exception("One vertex shouldn't change")
 
-                e.addVertex(v1)
-                e.addVertex(v2)
-                e.setConstrained()
-                logging.debug("Result: {}".format(e))
+            #constrain the point outside the bounding box:
+            logging.debug("Constraining")
+            newBounds = e.constrain(bbox)
+            orig_1, orig_2 = e.getVertices()
+            e.clearVertices()
+            v1 = self.newVertex(newBounds[0][0], newBounds[0][1])
+            v2 = self.newVertex(newBounds[1][0], newBounds[1][1])
+            #This doesn't account for an edge that crosses the entire bbox
+            if not (v1 == orig_1 or v1 == orig_2 or v2 == orig_1 or v2 == orig_2):
+                logging.debug("Vertex Changes upon constraint:")
+                logging.debug(" Originally: {},  {}".format(orig_1, orig_2))
+                logging.debug(" New: {},  {}".format(v1, v2))
+                raise Exception("One vertex shouldn't change")
+
+            e.addVertex(v1)
+            e.addVertex(v2)
+            e.setConstrained()
+            logging.debug("Result: {}".format(e))
 
 
     def purge_infinite_edges(self):
         """ Remove all edges that don't have a start or end """
         logging.debug("Purging infinite edges")
         edges_to_purge = [x for x in self.halfEdges if x.isInfinite()]
+        logging.info("Purging {} infinite edges".format(len(edges_to_purge)))
         for e in edges_to_purge:
             logging.debug("Purging infinite: e{}".format(e.index))
             e.clearVertices()
