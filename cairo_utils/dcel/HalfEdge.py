@@ -133,11 +133,14 @@ class HalfEdge:
 
     def __lt__(self, other):
         """ Compare to another half edge,
-        returns true if self is anticlockwise in comparison to other
+        returns true if self is anticlockwise in comparison to other,
+        relative to a face
         todo: Verify this
         """
         assert(isinstance(other, HalfEdge))
         assert(hasattr(self.face, 'getCentroid'))
+        if self.face is None:
+            return True        
         centre = self.face.getCentroid()
         a = self.origin.toArray()
         b = other.origin.toArray()
