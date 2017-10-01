@@ -475,6 +475,7 @@ class DCEL(object):
             e.fixup()
 
     def verify_edges(self):
+        raise Exception("Broken")
         #make sure every halfedge is only used once
         logging.debug("Verifying edges")
         troublesomeEdges = [] #for debugging
