@@ -257,44 +257,52 @@ class HalfEdge:
             logging.debug("Fixing an already fixed line")
             return
         
-        if self.origin is not None and self.twin.origin is not None:
-            if self.face == self.twin.face:
-                raise Exception("Duplicate faces?")
-            selfcmp = self < self.twin
-            othercmp = self.twin < self
-            logging.debug("Cmp Pair: {} - {}".format(selfcmp, othercmp))
-            if selfcmp != othercmp:
-                logging.debug("Mismatched Indices: {}-{}".format(self.index,
-                                                                 self.twin.index))
-                logging.debug("Mismatched: {} - {}, ({} | {})".format(self,
-                                                                      self.twin,
-                                                                      self.face.getCentroid(),
-                                                                      self.twin.face.getCentroid()))
-                raise Exception("Mismatched orientations")
-            logging.debug("CMP: {}".format(selfcmp))
-            if not selfcmp:
-                logging.debug("Swapping the vertices of line {} and {}".format(self.index,
-                                                                               self.twin.index))
-                #unregister
-                self.twin.origin.unregisterHalfEdge(self.twin)
-                self.origin.unregisterHalfEdge(self)
-                #cache
-                temp = self.twin.origin
-                #switch
-                self.twin.origin = self.origin
-                self.origin = temp
-                #re-register
-                self.twin.origin.registerHalfEdge(self.twin)
-                self.origin.registerHalfEdge(self)
+        if self.origin is None or self.twin.origin is None:
+            return
+        
+        if self.face == self.twin.face:
+            raise Exception("Duplicate faces?")
+        selfcmp = self < self.twin
+        othercmp = self.twin < self
+        logging.debug("Cmp Pair: {} - {}".format(selfcmp, othercmp))
 
-                reCheck = self < self.twin
-                reCheck_opposite = self.twin < self
-                #TODO: sort this out
-                if not reCheck: #or not reCheck_opposite:
-                    raise Exception("Re-Orientation failed")
+        #Each should be less than, relative to their owned face
+        if selfcmp != othercmp:
+            logging.debug("Mismatched Indices: {}-{}".format(self.index,
+                                                             self.twin.index))
+            logging.debug("Mismatched: {} - {}, ({} | {})".format(self,
+                                                                  self.twin,
+                                                                  self.face.getCentroid(),
+                                                                  self.twin.face.getCentroid()))
+            raise Exception("Mismatched orientations")
+            
+        logging.debug("CMP: {}".format(selfcmp))
 
-            self.fixed = True
-            self.twin.fixed = True
+        #if self is not anticlockwise from its twin, swap them
+        if not selfcmp:
+            logging.debug("Swapping the vertices of line {} and {}".format(self.index,
+                                                                           self.twin.index))
+            #unregister the vertices
+            self.twin.origin.unregisterHalfEdge(self.twin)
+            self.origin.unregisterHalfEdge(self)
+            #cache
+            temp = self.twin.origin
+            #switch
+            self.twin.origin = self.origin
+            self.origin = temp
+            #re-register the vertices
+            self.twin.origin.registerHalfEdge(self.twin)
+            self.origin.registerHalfEdge(self)
+
+            #verify
+            reCheck = self < self.twin
+            reCheck_opposite = self.twin < self
+            #both edges should now be orited correctly relative to their face
+            if (not reCheck) or (not reCheck_opposite):
+                raise Exception("Re-Orientation failed")
+            
+        self.fixed = True
+        self.twin.fixed = True
 
     def clearVertices(self):
         """ remove vertices from the edge, clearing the vertex->edge references as well   """
