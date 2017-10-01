@@ -165,6 +165,7 @@ class HalfEdge:
         1 : Top Horizontal Edge
         2 : Right Vertical Edge
         3 : Bottom Horizontal Edge
+        None: no intersection
             bbox is [min_x, min_y, max_x, max_y]
         """
         assert(isinstance(bbox, np.ndarray))
