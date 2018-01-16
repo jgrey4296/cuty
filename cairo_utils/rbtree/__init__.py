@@ -6,9 +6,4 @@
 # 4) If a node is red, it's children are black
 # 5) All paths from a node to its leaves contain the same number of black nodes
 
-
-
-#Constants of colours
-RED = 0
-BLACK = 1
-            
+from .RBTree import RBTree

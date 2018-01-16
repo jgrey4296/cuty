@@ -1,4 +1,5 @@
 from .operations import *
+from .Node import Node
 
 class RBTree:
 
