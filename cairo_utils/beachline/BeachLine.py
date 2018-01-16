@@ -72,7 +72,7 @@ class BeachLine:
             return self.root
         else:
             node,direction = self.search(value)
-            if direction is Directions.RIGHT or direction is directions.CENTRE:
+            if direction is Directions.RIGHT or direction is Directions.CENTRE:
                 return self.insert_successor(node,value)
             else: #isinstance(direction,Left):
                 return self.insert_predecessor(node,value)
