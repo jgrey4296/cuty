@@ -1,3 +1,4 @@
+from .operations import COLOUR
 class Node:
 
     def __init__(self,id,value,parent=None,data=None):
@@ -8,7 +9,7 @@ class Node:
         #Parent:
         self.parent = parent
         #Node Date:
-        self.colour = RED
+        self.colour = COLOUR.RED
         self.value = value
         self.data = data
 
@@ -16,7 +17,7 @@ class Node:
         current = self
         height = 0
         while current is not None:
-            if current.colour == BLACK:
+            if current.colour == COLOUR.BLACK:
                 height += 1
             if current == parent:
                 current = None
@@ -25,7 +26,7 @@ class Node:
         return height
         
     def __str__(self):
-        if self.colour == RED:
+        if self.colour == COLOUR.RED:
             colour = "R"
         else:
             colour = "B"
