@@ -11,6 +11,7 @@ import numpy as np
 import pickle
 import pyqtree
 import sys
+from itertools import cycle, islice
 
 from cairo_utils.math import get_distance
 from .Face import Face
@@ -44,7 +45,17 @@ class DCEL(object):
         self.halfEdges = []
         self.bbox = bbox
         self.vertex_quad_tree = pyqtree.Index(bbox=self.bbox)
+        self.frontier = set()
 
+    def reset_frontier(self):
+        self.frontier = set()
+
+
+    def __copy__(self):
+        newDCEL = DCEL(self.bbox)
+        newDCEL.import_data(self.export_data())        
+        return newDCEL
+        
     def export_data(self):
         """ Export a simple format to define vertices,  halfedges,  faces,
         uses identifiers instead of objects,  allows reconstruction """
@@ -69,19 +80,19 @@ class DCEL(object):
         #construct vertices by index
         logging.info("Re-Creating Vertices: {}".format(len(data['vertices'])))
         for vData in data['vertices']:
-            newVertex = Vertex(vData['x'], vData['y'], index=vData['i'])
+            newVertex = Vertex(vData['x'], vData['y'], index=vData['i'], dcel=self)
             logging.debug("Re-created vertex: {}".format(newVertex.index))
             local_vertices[newVertex.index] = DataPair(newVertex.index, newVertex, vData)
         #edges by index
         logging.info("Re-Creating Edges: {}".format(len(data['halfEdges'])))
         for eData in data['halfEdges']:
-            newEdge = HalfEdge(index=eData['i'])
+            newEdge = HalfEdge(index=eData['i'], dcel=self)
             logging.debug("Re-created Edge: {}".format(newEdge.index))
             local_edges[newEdge.index] = DataPair(newEdge.index, newEdge, eData)
         #faces by index
         logging.info("Re-Creating Faces: {}".format(len(data['faces'])))
         for fData in data['faces']:
-            newFace = Face(fData['sitex'], fData['sitey'], index=fData['i'])
+            newFace = Face(fData['sitex'], fData['sitey'], index=fData['i'], dcel=self)
             logging.debug("Re-created face: {}".format(newFace.index))
             local_faces[newFace.index] = DataPair(newFace.index, newFace, fData)
         #Everything now exists,  so:
@@ -124,11 +135,16 @@ class DCEL(object):
 
 
     def clear_quad_tree(self):
-        self.vertex_quad_tree = None
-
-    def calculate_quad_tree(self):
         self.vertex_quad_tree = pyqtree.Index(bbox=self.bbox)
-        for vertex in self.vertices:
+
+    def calculate_quad_tree(self, subverts=None):
+        """ Recalculate the quad tree with all vertices, or a subselection of vertices """
+        self.vertex_quad_tree = pyqtree.Index(bbox=self.bbox)
+        verts = self.vertices
+        if subverts is not None:
+            assert(all([isinstance(x, Vertex) for x in subverts]))
+            verts = subverts
+        for vertex in verts:
             self.vertex_quad_tree.insert(item=vertex, bbox=vertex.bbox())
 
     def __str__(self):
@@ -169,22 +185,26 @@ class DCEL(object):
                           "----\n"])
 
 
-
+    #--------------------
+    # MAIN VERTEX, HALFEDGE, FACE CREATION:
+    #--------------------
     def newVertex(self, x, y):
         """ Get a new vertex,  or reuse an existing vertex """
         assert(isinstance(x, Number))
         assert(isinstance(y, Number))
-        newVertex = Vertex(x, y)
-        matchingVertices = self.vertex_quad_tree.intersect(newVertex.bbox())
+        newVertex = None
+        matchingVertices = self.vertex_quad_tree.intersect(Vertex.free_bbox(x, y))
         if matchingVertices:
             #a good enough vertex exists
             newVertex = matchingVertices.pop()
             logging.debug("Found a matching vertex: {}".format(newVertex))
         else:
             #no matching vertex,  add this new one
+            newVertex = Vertex(x, y, dcel=self)
             logging.debug("No matching vertex,  storing: {}".format(newVertex))
             self.vertices.append(newVertex)
             self.vertex_quad_tree.insert(item=newVertex, bbox=newVertex.bbox())
+        assert(newVertex is not None)
         return newVertex
 
     def newEdge(self, originVertex, twinVertex, face=None, twinFace=None, prev=None, prev2=None):
@@ -194,8 +214,8 @@ class DCEL(object):
         """
         assert(originVertex is None or isinstance(originVertex, Vertex))
         assert(twinVertex is None or isinstance(twinVertex, Vertex))
-        e1 = HalfEdge(originVertex, None)
-        e2 = HalfEdge(twinVertex, e1)
+        e1 = HalfEdge(originVertex, None, dcel=self)
+        e2 = HalfEdge(twinVertex, e1, dcel=self)
         e1.twin = e2 #fixup
         if face:
             assert(isinstance(face, Face))
@@ -222,11 +242,46 @@ class DCEL(object):
         """ Creates a new face to link edges """
         assert(isinstance(site_x, Number))
         assert(isinstance(site_y, Number))
-        newFace = Face(site_x, site_y)
+        newFace = Face(site_x, site_y, dcel=self)
         self.faces.append(newFace)
         return newFace
 
+    #--------------------
+    # UTILITY CREATION METHODS
+    #--------------------
+    def createEdge(self, origin, end, edata=None, vdata=None):
+        """ Utility to create two vertices, and put them into a pair of halfedges,
+        returning a halfedge """
+        v1 = self.newVertex(*origin)
+        v2 = self.newVertex(*end)
+        e = self.newEdge(v1, v2)
+        if vdata is not None:
+            assert(isinstance(vdata, dict))
+            v1.data.update(vdata)
+            v2.data.update(vdata)
+        if edata is not None:
+            assert(isinstance(edata, dict))
+            e.data.update(edata)
+
+        return e
+
+    def createPath(self, vs, close=False, edata=None, vdata=None):
+        """ Create multiple halfEdges, that connect to one another.
+        With optional path closing """
+        vertices = vs
+        pathVerts = zip(vertices, islice(cycle(vertices), 1, None))
+        path = []
+        for a,b in pathVerts:
+            if not close and a == vertices[-1]:
+                continue
+            path.append(self.createEdge(a,b, edata=edata, vdata=vdata))
+        return path        
+    
+    #--------------------
+    #MISC METHODS:
+    #--------------------
     def linkEdgesTogether(self, edges):
+        """ Given a list of half edges, set their prev and next fields in order """
         assert(all([isinstance(x, HalfEdge) for x in edges]))
         for i, e in enumerate(edges):
             e.prev = edges[i-1]
@@ -256,10 +311,12 @@ class DCEL(object):
     def orderVertices(self, focus, vertices):
         """ Given a focus point and a list of vertices,  sort them
             by the counter-clockwise angle position they take relative """
+        #TODO: Rewrite this, make focus optional
         assert(all([isinstance(x, Vertex) for x in vertices]))
-        relativePositions = [[x-focus[0], y-focus[1]] for x, y in vertices]        
+        relativePositions = [[x-focus[0], y-focus[1]] for x, y in vertices]
         angled = [(atan2(yp, xp), x, y) for xp, yp, x, y in zip(relativePositions, vertices)]
         sortedAngled = sorted(angled)
+        #todo: use scipy.spatial.ConvexHull
         return sortedAngled
 
     def constrain_half_edges(self, bbox):
@@ -391,6 +448,7 @@ class DCEL(object):
             
 
     def calculate_edge_connections(self, current_edge, prior_edge, bbox, f):
+        """ Connect two edges within a bbox, with a corner if necessary  """
         assert(isinstance(f, Face))
         if prior_edge.connections_align(current_edge):
             current_edge.setPrev(prior_edge)
@@ -449,7 +507,8 @@ class DCEL(object):
                 
 
     def create_corner_vertex(self, e1, e2, bbox):
-        """ Given two intersections (0-3),  create the vertex that corners them """
+        """ Given two intersections (0-3) describing the corner,  
+        create the vertex at the boundary of the bbox """
         assert(isinstance(e1, int))
         assert(isinstance(e2, int))
         assert(isinstance(bbox, np.ndarray))
@@ -470,11 +529,13 @@ class DCEL(object):
         return self.newVertex(*v3)
 
     def fixup_halfedges(self):
+        """ Fix all halfedges to ensure they are counter-clockwise ordered """
         logging.debug("---- Fixing order of vertices for each edge")
         for e in self.halfEdges:
             e.fixup()
 
     def verify_edges(self):
+        """ check all edges... are well formed?  """
         raise Exception("Broken")
         #make sure every halfedge is only used once
         logging.debug("Verifying edges")
@@ -496,6 +557,7 @@ class DCEL(object):
 
     @staticmethod
     def loadfile(filename):
+        """ Create a DCEL from a saved pickle """
         if not isfile(filename):
             raise Exception("Non-existing filename to load into dcel")
         with open(filename, 'rb') as f:
@@ -503,9 +565,16 @@ class DCEL(object):
         the_dcel = DCEL()
         the_dcel.import_data(dcel_data)
         return the_dcel
+
+    def savefile(self, filename):
+        """ Save dcel data to a pickle """
+        theData = self.export_data()
+        with open(filename, 'wb') as f:
+            pickle.dump(theData, f)
         
 
     def verify_faces_and_edges(self):
+        """ Verify all faces and edges are well formed """
         all_face_edges = set()
         all_face_edge_twins = set()
         all_face_edgelist = set()
@@ -523,6 +592,8 @@ class DCEL(object):
             
 
     def constrain_to_circle(self, centre, radius):
+        """ Limit all faces, edges, and vertices to be within a circle,
+        adding boundary verts and edges as necessary """
         assert(isinstance(centre, np.ndarray))
         assert(isinstance(radius, float))
         assert(centre.shape == (2,))
