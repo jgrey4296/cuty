@@ -22,9 +22,8 @@ class Cairo_Util_Tests(unittest.TestCase):
         self.assertTrue(hasattr(utils, 'Tree'))
         self.assertTrue(hasattr(utils, 'RBTree'))
         self.assertTrue(hasattr(utils, 'DCEL'))
-
-    def test_has_math(self):;
-    self.assertTrue(hasattr(utils, 'math'))
+        self.assertTrue(hasattr(utils, 'Make_Gif'))
+        self.assertTrue(hasattr(utils, 'math'))
         
         
 if __name__ == "__main__":
