@@ -2,6 +2,8 @@
 import logging as root_logger
 import numpy as np
 from numbers import Number
+from itertools import cycle, islice
+from functools import partial, cmp_to_key
 import IPython
 
 from .HalfEdge import HalfEdge
@@ -14,7 +16,7 @@ class Face(object):
 
     nextIndex = 0
 
-    def __init__(self, site_x, site_y, index=None):
+    def __init__(self, site_x, site_y, index=None, dcel=None):
         assert(isinstance(site_x, Number))
         assert(isinstance(site_y, Number))
         #Site is the voronoi point that the face is built around
@@ -30,6 +32,9 @@ class Face(object):
         self.markedForCleanup = False
         #Additional Data:
         self.data = {}
+        self.dcel = dcel
+        
+        #todo: add a 'free vertices' field, which can be used to build the face
         
         if index is None:
             logging.debug("Creating Face {}".format(Face.nextIndex))
@@ -69,6 +74,8 @@ class Face(object):
         }
 
     def removeEdge(self, edge):
+        """ Remove an edge from this face, if the edge has this face
+        registered, remove that too """
         assert(isinstance(edge, HalfEdge))
         #todo: should the edge be connecting next to prev here?
         if not bool(self.outerBoundaryEdges) and not bool(self.edgeList):
@@ -82,6 +89,7 @@ class Face(object):
 
             
     def get_bbox(self):
+        """ Get a rough bbox of the face """
         #TODO: fix this? its rough
         vertices = [x.origin for x in self.edgeList]
         vertexArrays = [x.toArray() for x in vertices if x is not None]
@@ -94,7 +102,7 @@ class Face(object):
         return bbox
 
     def getAvgCentroid(self):
-        """ Get the averaged centre point of the face """
+        """ Get the averaged centre point of the face from the vertices of the edges """
         k = len(self.edgeList)
         xs = [x.origin.x for x in self.edgeList]
         ys = [x.origin.y for x in self.edgeList]
@@ -104,6 +112,7 @@ class Face(object):
 
 
     def getCentroid(self):
+        """ Get the user defined 'centre' of the face """
         return self.site.copy()
 
     def getCentroidFromBBox(self):
@@ -135,8 +144,14 @@ class Face(object):
         return centroid
 
     def getEdges(self):
+        """ Return a copy of the edgelist for this face """
         return self.edgeList.copy()
 
+    def add_edges(self, edges):
+        assert(isinstance(edges, list))
+        for x in edges:
+            self.add_edge(x)
+    
     def add_edge(self, edge):
         """ Add a constructed edge to the face """
         assert(isinstance(edge, HalfEdge))
@@ -148,17 +163,46 @@ class Face(object):
     def sort_edges(self):
         """ Order the edges clockwise, by starting point """
         logging.debug("Sorting edges")
-        centre = self.getCentroid()
-        atanEdges = [(x.atan(), x) for x in self.edgeList]
-        atanEdges = sorted(atanEdges)
-        atanEdges.reverse()
-        self.edgeList = [e for (a, e) in atanEdges]
-        logging.debug("Sorted edges: {}".format([str(x.index) for x in self.edgeList]))
+        centre = self.getAvgCentroid()
+        self.edgeList.sort(key=cmp_to_key(partial(HalfEdge.compareEdges, centre)))
+        self.edgeList.reverse()
+
+        paired = zip(self.edgeList, islice(cycle(self.edgeList), 1, None))
+        try:
+            for a,b in paired:
+                assert(a.twin.origin == b.origin)
+        except AssertionError as e:
+            IPython.embed(simple_prompt=True)
 
     def has_edges(self):
+        """ Check if its a null face or has actual edges """
         innerEdges = bool(self.outerBoundaryEdges)
         outerEdges = bool(self.edgeList)
         return innerEdges and outerEdges
 
     def markForCleanup(self):
         self.markedForCleanup = True
+
+    def subdivide(self, edge_a, r_a, edge_b, r_b):
+        """ Divide a face in half by creating a new line
+        between the ratio point on edge_a -> ration point of edge_b,
+        returning the new pair of faces
+        """
+        #TODO
+        #todo: add a check for if the new edge intersects any other 
+        assert(edge_a is not edge_b)
+        assert(isinstance(edge_a, HalfEdge))
+        assert(isinstance(edge_b, HalfEdge))
+        assert(0 <= r_a <= 1)
+        assert(0 <= r_b <= 1)
+
+        #split the two edges
+        #create a new line between them
+
+        #sort all vertices of the face
+        #get the sequence of new av -> ... -> ab
+        #get the disjoint set from that sequence
+        #create a new face
+        #put the av->bv sequence in one, disjoint set in the other
+        
+        return ()
