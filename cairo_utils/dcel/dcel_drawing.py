@@ -10,15 +10,18 @@ logging = root_logger.getLogger(__name__)
 def drawDCEL(ctx, dcel, text=False, faces=True, edges=False, verts=False,
              face_colour=[0.2, 0.2, 0.9, 1],
              edge_colour=[0.4, 0.8, 0.1, 1],
-             vert_colour=[0.9, 0.1, 0.1, 1]):
+             vert_colour=[0.9, 0.1, 0.1, 1],
+             background_colour=[0,0,0,1], edge_width=0.002):
     """ A top level function to draw a dcel  """
+    clear_canvas(ctx, colour=background_colour)
+    
     if faces:
         ctx.set_source_rgba(*face_colour)
         draw_dcel_faces(ctx, dcel, text=text)
 
     if edges:
         ctx.set_source_rgba(*edge_colour)
-        draw_dcel_edges(ctx, dcel, text=text)
+        draw_dcel_edges(ctx, dcel, text=text, width=edge_width)
 
     if verts:
         ctx.set_source_rgba(*vert_colour)
@@ -95,6 +98,7 @@ def draw_dcel_single_face(ctx, dcel, face, clear=True, force_centre=False, text=
             initial = False
         ctx.line_to(v2.x, v2.y)
 
+        #todo move this out
         if FaceE.STARTVERT in data:
             ctx.set_source_rgba(*vertColour)
             drawCircle(ctx, v1.x, v1.y, vertRad)
@@ -122,11 +126,11 @@ def draw_dcel_single_face(ctx, dcel, face, clear=True, force_centre=False, text=
         ctx.translate(*centre)
 
 
-def draw_dcel_edges(ctx, dcel, text=True):
+def draw_dcel_edges(ctx, dcel, text=True, width=0.002):
     for edge in dcel.halfEdges:
-        draw_dcel_halfEdge(ctx, edge, clear=False, text=text)
+        draw_dcel_halfEdge(ctx, edge, clear=False, text=text, width=0.002)
 
-def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True, data_override=None):
+def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True, data_override=None, width=0.002):
     if clear:
         clear_canvas(ctx)
     data = halfEdge.data.copy()
@@ -136,7 +140,6 @@ def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True, data_override=None)
     if EdgeE.NULL in data:
         return
     
-    width = 0.002
     colour = EDGE
     startEndPoints = False
     startCol = START
@@ -147,8 +150,8 @@ def draw_dcel_halfEdge(ctx, halfEdge, clear=True, text=True, data_override=None)
     
     if EdgeE.WIDTH in data:
         width = data[EdgeE.WIDTH]
-    if EdgeE.COLOUR in data:
-        colour = data[EdgeE.COLOUR]
+    if EdgeE.STROKE in data:
+        colour = data[EdgeE.STROKE]
     if EdgeE.START in data and isinstance(data[EdgeE.START], (list, np.ndarray)):
         startCol = data[EdgeE.START]
     if EdgeE.END in data and isinstance(data[EdgeE.END], (list, np.ndarray)):
