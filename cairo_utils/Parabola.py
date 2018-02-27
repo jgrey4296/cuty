@@ -13,7 +13,7 @@ class Parabola(object):
     id = 0
     
     def __init__(self,fx,fy,d):
-        """ Create a parabola with a focus x and y, and a directrix y """
+        """ Create a parabola with a focus x and y, and a directrix d """
         self.id = Parabola.id
         Parabola.id += 1
         self.vertical_line = True
