@@ -12,7 +12,7 @@ class Node(object):
     """ The internal node class for the rbtree.  """
     i = 0
     
-    def __init__(self,value,parent=NilNode,red=True,arc=True):
+    def __init__(self,value,parent=NilNode,red=True,arc=True, data=None):
         assert(parent is NilNode or isinstance(parent, Node))
         if arc is True:
             assert(isinstance(value, Parabola))
@@ -27,6 +27,9 @@ class Node(object):
         self.right_circle_event = None
         #Additional Data:
         self.data = {}
+        if data is not None:
+            assert(isinstance(data,dict))
+            self.data.update(data)
         #Children:
         self.left = NilNode
         self.right = NilNode
@@ -355,6 +358,7 @@ def isClockwise(*args,cartesian=True):
     #based on stackoverflow.
     #sum over edges, if positive: CW. negative: CCW
     #assumes normal cartesian of y bottom = 0
+    #TODO: Check this
     sum = 0
     p1s = args
     p2s = list(args[1:])
