@@ -1,10 +1,10 @@
 """ HalfEdge: The intermediate level datastructure of the dcel """
 import sys
 import logging as root_logger
-from math import pi, atan2, copysign
+from math import pi, atan2, copysign, degrees
 import numpy as np
 import IPython
-from cairo_utils.math import inCircle, get_distance
+from cairo_utils.math import inCircle, get_distance, intersect, sampleAlongLine
 
 from .Vertex import Vertex
 from .Line import Line
@@ -26,7 +26,7 @@ class HalfEdge:
     """
     nextIndex = 0
 
-    def __init__(self, origin=None, twin=None, index=None):
+    def __init__(self, origin=None, twin=None, index=None, dcel=None):
         assert(origin is None or isinstance(origin, Vertex))
         assert(twin is None or isinstance(twin, HalfEdge))
         self.origin = origin
@@ -34,6 +34,7 @@ class HalfEdge:
         self.face = None
         self.next = None
         self.prev = None
+        self.dcel=dcel
 
         if index is None:
             logging.debug("Creating Edge {}".format(HalfEdge.nextIndex))
@@ -59,6 +60,7 @@ class HalfEdge:
 
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
+        #TODO: export data
         logging.debug("Exporting Edge: {}".format(self.index))
         origin = self.origin
         if origin is not None:
@@ -105,13 +107,16 @@ class HalfEdge:
         else:
             p = False
                         
-        
-        return "(HE: {}, Origin: {}, Twin: {}, Twin.Origin: {}, Prev: {}, Next: {})".format(self.index,
-                                                                                            origin,
-                                                                                            twin,
-                                                                                            twinOrigin,
-                                                                                            p,
-                                                                                            n)
+        coords = [str(x) for x in self.getVertices()]
+
+            
+        return "(HE: {}, Origin: {}, Twin: {}, Twin.Origin: {}, Prev: {}, Next: {}, Coords: {})".format(self.index,
+                                                                                                        origin,
+                                                                                                        twin,
+                                                                                                        twinOrigin,
+                                                                                                        p,
+                                                                                                        n,
+                                                                                                        coords)
     
     def atan(self, centre=None):
         """ Get the angle to the half edge origin, from the centroid
@@ -137,27 +142,42 @@ class HalfEdge:
         relative to a face
         todo: Verify this
         """
-        assert(isinstance(other, HalfEdge))
-        assert(hasattr(self.face, 'getCentroid'))
-        if self.face is None:
-            return True        
-        centre = self.face.getCentroid()
-        a = self.origin.toArray()
-        b = other.origin.toArray()
-        logging.debug("Lt: {}, {}, {}".format(centre, a, b))
-        centre *= [1, -1]
-        a *= [1, -1]
-        b *= [1, -1]
-        centre += [0, 1]
-        a += [0, 1]
-        b += [0, 1]
+        raise Exception("Deprecate: HalfEdge.__lt__")
 
-        c = centre
-        atob = b - a
-        btoc = c - b
-        cross = np.cross(atob, btoc)
-        return cross <= 0.0
 
+    def split(self, x,y, copy_data=True):
+        """ Take an s -> e, and make it now two edges s -> (x,y) -> e 
+        returns (firstHalf, newPoint, secondHalf)"""
+        start = self.origin
+        end = self.twin.origin
+        newPoint = self.dcel.newVertex(x,y)
+        if copy_data:
+            newPoint.data.update(start.data)
+        newEdge = self.dcel.newEdge(newPoint, end)
+        if copy_data:
+            newEdge.data.update(self.data)
+        self.twin.origin = newPoint
+        #update registrations:
+        end.unregisterHalfEdge(self)
+        newPoint.registerHalfEdge(self)        
+        return [self, newPoint, newEdge]
+
+    def split_by_ratio(self, r=0.5):
+        """ Split an edge by a ratio of 0.0 - 1.0 : start - end.
+        defaults to 0.5, the middle """
+        point = sampleAlongLine(*self.getNVertices(), r)
+        self.split(*point[0])        
+
+        
+    def intersect(self, otherEdge):
+        """ Intersect two edges mathematically,
+        returns intersection point or None """
+        assert(isinstance(otherEdge, HalfEdge))
+        lineSegment1 = self.getNVertices()
+        lineSegment2 = otherEdge.getNVertices()
+        return intersect(lineSegment1, lineSegment2)
+        
+    
 
     def intersects_edge(self, bbox):
         """ Return an integer 0-3 of the edge of a bbox the line intersects
@@ -252,6 +272,7 @@ class HalfEdge:
 
     def fixup(self):
         """ Fix the clockwise/counter-clockwise property of the edge """
+        #TODO: rewrite to remove use of __lt__?
         #Swap to maintain counter-clockwise property
         if self.fixed or self.twin.fixed:
             logging.debug("Fixing an already fixed line")
@@ -351,6 +372,10 @@ class HalfEdge:
         assert(self.twin is not None)
         return (self.origin, self.twin.origin)
 
+    def getNVertices(self):
+        """ Get an ndarray of the bounds of the edge """
+        return np.concatenate((self.origin.toArray(), self.twin.origin.toArray()))
+    
     def isInfinite(self):
         """ If a halfedge has only one defined point, it stretches
             off into infinity """
@@ -359,11 +384,50 @@ class HalfEdge:
     def markForCleanup(self):
         self.markedForCleanup = True
 
-    def getCloserAndFurther(self, centre, radius):
+    def getCloserAndFurther(self, centre):
+        """ Return the edge vertices ordered to be [nearer, further] from a point,
+        with a flag of whether the points have been switched from the edge ordering """
         originD = get_distance(centre, self.origin.toArray())
         twinD = get_distance(centre, self.twin.origin.toArray())
         if originD < twinD:
             return (self.origin.toArray(), self.twin.origin.toArray(), True)
         else:
             return (self.twin.origin.toArray(), self.origin.toArray(), False)
+
+    def rotate(self, x, y, r):
+        """ Rotate the edge around a point by rads """
+        raise Exception("unimplemented")
+
+    def extend(self, x=None, y=None, d=1):
+        """ Extend the line with a new line in the direction (x,y), 
+        by distance d. If no (x,y) is passed in, it extends in the existing line direction """
+        raise Exception("unimplemented")
+        
+        
+
+    @staticmethod
+    def compareEdges(center, a, b):
+        """ Compare two halfedges against a centre point, returning whether a is CCW, equal, or CW
+        from b 
+        TODO: Verify this
+        """
+        assert(isinstance(center, np.ndarray))
+        assert(isinstance(a, HalfEdge))
+        assert(isinstance(b, HalfEdge))
+
+        offset_a = a.origin.toArray() - center
+        offset_b = b.origin.toArray() - center
+
+        deg_a = (degrees(atan2(offset_a[1], offset_a[0])) + 360) % 360
+        deg_b = (degrees(atan2(offset_b[1], offset_b[0])) + 360) % 360
+
+        if deg_a < deg_b:
+            return -1
+        elif deg_a == deg_b:
+            return 0
+        else:
+            return 1
+
+        
+
         
