@@ -6,22 +6,30 @@ import numpy.random
 import random
 from .constants import TWOPI, QUARTERPI
 
-#take a position and radius,  get a set of random positions on that circle
+
 def sampleCircle(x, y, radius, numOfSteps):
+    """ take a position and radius,  get a set of random positions on that circle """
     randI = np.sort(np.random.random(numOfSteps)) * TWOPI
     xPos = x + (np.cos(randI) * radius)
     yPos = y + (np.sin(randI) * radius)
     return np.column_stack((xPos, yPos))
 
-#takes array of [[x1, y1]] to smooth
 def _interpolate(xy, num_points, smoothing=0.2):
+    """ given a set of points, generate values between those points """
+    assert(isinstance(xy, np.ndarray))
+    assert(len(xy.shape) == 2)
+    assert(xy.shape[1] == 2)
     splineTuple, splineValues = splprep([xy[:, 0], xy[:, 1]], s=smoothing)
     interpolatePoints = np.linspace(0, 1, num_points)
     smoothedXY = np.column_stack(splev(interpolatePoints, splineTuple))
     return smoothedXY
 
 def getDirections(xys):
-    #xys.shape = (n, 2)
+    """ Given a set of points, get the unit direction
+    from each point to the next point
+    """
+    assert(isinstance(xys, np.ndarray))
+    assert(len(xys.shape) == 2)
     #convert to vectors:
     #xysPrime.shape = (n, 4)
     xysPrime = np.column_stack((xys[1:, :], xys[:-1, :]))
@@ -36,10 +44,13 @@ def getDirections(xys):
     #hypotenuse
     dd = np.sqrt(np.square(dx)+np.square(dy))
     return (directions, dd)
+
 def granulate(xys, grains=10, mult=2):
-    #xys.shape = (n, 2)
-    #directions.shape = (n, 3)
-    #dd.shape = (n, )
+    """ Given a set of points, duplicate each point and offset each slightly
+    by the direction between the points
+    """
+    assert(isinstance(xys, np.ndarray))
+    assert(len(xys.shape) == 2)
     directions, dd = getDirections(xys)
     granulated = None
     for i, d in enumerate(dd):
@@ -52,6 +63,11 @@ def granulate(xys, grains=10, mult=2):
 
 
 def vary(xys, stepSize, pix):
+    """ 
+    for a given set of points, wiggle them slightly
+    """
+    assert(isinstance(xys, np.ndarray))
+    assert(len(xys.shape) == 2)
     r = (1.0-2.0 * np.random.random((len(xys), 1)))
     scale = np.reshape(np.arange(len(xys)).astype('float'), (len(xys), 1))
     noise = (r*scale*stepSize)
@@ -64,25 +80,32 @@ def vary(xys, stepSize, pix):
 
 
 def sampleAlongLine(x, y, ex, ey, t):
+    """ Get a point as a ratio along the given start and end points,
+    returns as a 2d np array """
     o_x = (1 - t) * x + t * ex
     o_y = (1 - t) * y + t * ey
     return np.column_stack((o_x, o_y))
 
 def createLine(x, y, ex, ey, t):
+    """ Given a start and end, create t number of points along that line """
     lin = np.linspace(0, 1, t)
     line = sampleAlongLine(x, y, ex, ey, lin)
-
     return line
 
 def bezier1cp(start, cp, end, t):
+    """ Given the start, end, and a control point, create t number of points along that bezier """
+    assert(hasattr(start, '__len__'))
+    assert(hasattr(cp, '__len__'))
+    assert(hasattr(end, '__len__'))
     samplePoints = np.linspace(0, 1, t)
     line1 = createLine(*start, *cp, t)
     line2 = createLine(*cp, *end, t)
-
     out = sampleAlongLine(line1[:, 0], line1[:, 1], line2[:, 0], line2[:, 1], samplePoints)
     return out
 
 def bezier2cp(start, cp1, cp2, end, t):
+    """ Given a start, end, and two control points along the way, create t number of points along that bezier """
+    assert(all([hasattr(a, '__len__') for a in [start, cp1, cp2, end]]))
     samplePoints = np.linspace(0, 1, t)
     line1 = createLine(*start, *cp1, t)
     line2 = createLine(*cp1, *cp2, t)
@@ -107,6 +130,9 @@ def bezier2cp(start, cp1, cp2, end, t):
     return out
 
 def get_distance_raw(p1, p2):
+    """ Get the non-square-root distance for pairs of points """
+    assert(isinstance(p1, np.ndarray))
+    assert(isinstance(p2, np.ndarray))
     p1 = p1.reshape(-1, 2)
     p2 = p2.reshape(-1, 2)
     dSquared = pow(p2-p1, 2)
@@ -114,16 +140,22 @@ def get_distance_raw(p1, p2):
     return summed
 
 def get_distance(p1, p2):
+    """ Get the square-root distance of pairs of points """
+    assert(isinstance(p1, np.ndarray))
+    assert(isinstance(p2, np.ndarray))
     summed = get_distance_raw(p1, p2)
     sqrtd = np.sqrt(summed)
     return sqrtd
 
 def get_distance_xyxy(x1,y1,x2,y2):
+    """ Utility to get the raw distance of points as separate x's and y's  """
     return get_distance_raw(np.array([x1,y1]),np.array([x2,y2]))[0]
 
 
 def get_normal(p1, p2):
     """ Get the normalized direction from two points """
+    assert(isinstance(p1, np.ndarray))
+    assert(isinstance(p2, np.ndarray))
     d = get_distance(p1, p2)
     if np.allclose(d, 0):
         return np.array([0, 0])
@@ -133,7 +165,11 @@ def get_normal(p1, p2):
 
 
 def get_bisector(p1, p2, r=False):
-    """ With a normalised line,  rotate 90 degrees """
+    """ With a normalised line,  rotate 90 degrees,
+    r=True : to the... right?
+    r=False : the the ...left?
+    TODO: check directions
+    """
     n = get_normal(p1, p2)
     if r:
         nPrime = n.dot([[0, -1],
@@ -149,6 +185,7 @@ def get_circle_3p(p1, p2, p3):
     intersect them to find the centre,  then calculate the radius
     Thus: circumcircle
     """
+    #TODO: assert that p1,2 and 3 are arrays
     arb_height = 200
     #mid points and norms:
     m1 = get_midpoint(p2, p1)
@@ -193,10 +230,14 @@ def extend_line(p1, p2, m):
     return el
 
 def get_midpoint(p1, p2):
+    """ Given two points, get the point directly between them """
     m = (p1 + p2) / 2
     return m
 
 def rotatePoint(p,cen,rads=None, radMin=-QUARTERPI,radMax=QUARTERPI):
+    """ Given a point, rotate it around a centre point by either radians,
+    or within a range of radians
+    """
     #p1 = cen, p2=point, @ is matrix mul
     if rads is None:
         useRads = randomRad(min=radMin,max=radMax)
@@ -224,19 +265,28 @@ def __rotatePoint_obsolete(p, cen, rads):
 
 
 def randomRad(min=-TWOPI,max=TWOPI):
+    """ Get a random value within the range of radians -2pi -> 2pi """ 
     return min + (np.random.random() * (max-min)) 
 
 def rotMatrix(rad):
+    """ Get a matrix for rotating a point by an amount of radians """
     return np.array([[cos(rad),-sin(rad)],
                      [sin(rad),cos(rad)]])
 
 
 def checksign(a, b):
+    """ Test whether two numbers have the same sign """
     return math.copysign(a, b) == a
 
 def intersect(l1, l2):
+    """ Get the intersection points of two line segments
+    so l1:(start, end), l2:(start, end)
+    returns (x,y) of intersection or None
+    """
+    assert(isinstance(l1, np.ndarray))
+    assert(isinstance(l2, np.ndarray))
     #possibly from pgkelley4's line-segments-intersect on github
-    #From the line intersection stack overflow post
+    #and From the line intersection stack overflow post
     #see: http://ericleong.me/research/circle-line/
     #The points
     p0 = l1[0:2]
@@ -275,7 +325,7 @@ def bound_line_in_bbox(line, bbox):
 
 
 def makeHorizontalLine():
-    """ Describe a horizontal line as a vector of start and end points  """
+    """ Utility to Describe a horizontal line as a vector of start and end points  """
     x = random.random()
     x2 = random.random()
     y = random.random()
@@ -286,7 +336,7 @@ def makeHorizontalLine():
 
 
 def makeVerticalLine():
-    """ Describe a vertical line as a vector of start and end points """
+    """ utility Describe a vertical line as a vector of start and end points """
     x = random.random()
     y = random.random()
     y2 = random.random()
@@ -296,20 +346,23 @@ def makeVerticalLine():
         return np.array([x, y2, x, y])
 
 def get_lowest_point_on_circle(centre, radius):
-    """ given a point and a radius,  rotate round 3/4 of 2PI """
+    """ given the centre of a circle and a radius, get the lowest y point on that circle """
     #return centre + np.array([np.cos(THREEFOURTHSTWOPI) * radius,
     #                          np.sin(THREEFOURTHSTWOPI) * radius])
     return centre + np.array([0, radius])
 
 def sort_coords(arr):
+    """ Sort a list of points by x then y value  """
     ind = np.lexsort((arr[:, 1], arr[:, 0]))
     return arr[ind]
 
 def inCircle(centre, radius, points):
+    """ Test a set of points to see if they are within a circle's radius """ 
     d = get_distance(centre, points)
     return d < radius
 
 def isClockwise(*args, cartesian=True):
+    """ Test whether a set of points are in clockwise order  """
     #based on stackoverflow.
     #sum over edges,  if positive: CW. negative: CCW
     #assumes normal cartesian of y bottom = 0
@@ -327,6 +380,7 @@ def isClockwise(*args, cartesian=True):
         return sum < 0
 
 def getMinRangePair(p1, p2):
+    """ TODO: Can't remember, test this """
     d1 = get_distance(p1, p2)
     fp2 = np.flipud(p2)
     d2 = get_distance(p1, fp2)
@@ -341,12 +395,17 @@ def getMinRangePair(p1, p2):
         return np.array([p1[i][0], fp2[i][0]])
 
 def getClosestToFocus(focus, possiblePoints):
+    """ Given a set of points, return the point closest to the focus """
     ds = get_distance(focus, possiblePoints)
     m_d = ds.min()
     i = ds.tolist().index(m_d)
     return possiblePoints[i]
 
 def get_closest_on_side(refPoint, possiblePoints, left=True):
+    """ 
+    given a reference point and a set of candidates, get the closest 
+    point on either the left or right of that reference
+    """
     subbed = possiblePoints - refPoint
     if left:
         onSide = subbed[:, 0] < 0
@@ -369,15 +428,8 @@ def angle_between_points(a, b):
     return atan2(c[1], c[0])
 
 
-# def makeParabola(focus, directrix, xs):
-#     """ Return the xy coords for a given range of xs,  with a focus point and bounding line """
-#     p = Parabola(focus, directrix)
-#     ys = p(xs)
-#     xys = np.column_stack((xs, ys))
-#     return xys
-
-
 def displace_along_line(xys,amnt,num):
+    """ TODO: Can't remember, test """
     t = np.linspace(0,2*pi,num)
     rotation = np.column_stack((sin(t),cos(t)))
     rnd = np.random.random(num)
@@ -387,7 +439,8 @@ def displace_along_line(xys,amnt,num):
     all_points = np.concatenate((xys,mod_points))
     return all_points
     
-
-
 def clamp(n,minn=0,maxn=1):
+    """ Clamp a number between min and max,
+    could be replaced with np.clip
+    """
     return max(min(maxn,n),minn)
