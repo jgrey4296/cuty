@@ -5,13 +5,14 @@ import random
 
 logging = root_logger.getLogger(__name__)
 
-def setup_cairo(N=5, font_size=FONT_SIZE):
+def setup_cairo(N=5, font_size=FONT_SIZE, scale=True, background=BACKGROUND):
     size = pow(2, N)
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
     ctx = cairo.Context(surface)
-    ctx.scale(size, size)
+    if scale:
+        ctx.scale(size, size)
     ctx.set_font_size(font_size)
-    clear_canvas(ctx)
+    clear_canvas(ctx, colour=background)
     return (surface, ctx, size, N)
 
 
