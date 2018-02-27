@@ -16,7 +16,7 @@ class Vertex:
 
     nextIndex = 0
 
-    def __init__(self, x, y, iEdge=None, index=None):
+    def __init__(self, x, y, iEdge=None, index=None, dcel=None):
         assert(isinstance(x, Number))
         assert(isinstance(y, Number))
         assert(iEdge is None or isinstance(iEdge, int))
@@ -24,8 +24,12 @@ class Vertex:
         self.x = x
         self.y = y
         self.incidentEdge = iEdge
+        #The edges this vertex is part of:
         self.halfEdges = []
+        #Custom data of the vertex:
         self.data = {}
+        #Reference back to the dcel
+        self.dcel = dcel
         
         self.active = True
         if index is None:
@@ -42,7 +46,7 @@ class Vertex:
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
         logging.debug("Exporting Vertex: {}".format(self.index))
-        #todo: add 'active'?
+        #todo: add 'active', and data
         return {
             'i': self.index,
             'x': self.x,
@@ -70,21 +74,36 @@ class Vertex:
     def deactivate(self):
         self.active = False
 
-    def bbox(self):
+    def bbox(self, e=EPSILON):
         """ Create a minimal bbox for the vertex,
         for dcel to find overlapping vertices using a quadtree  """
-        return np.array([self.x-EPSILON,
-                         self.y-EPSILON,
-                         self.x+EPSILON,
-                         self.y+EPSILON])
+        return np.array([self.x-e,
+                         self.y-e,
+                         self.x+e,
+                         self.y+e])
 
+    @staticmethod
+    def free_bbox(x, y, e=EPSILON):
+        """ Static method utility to create a bbox. used for quad_tree checking without creating the vertex """
+        return np.array([x-e,
+                         y-e,
+                         x+e,
+                         y+e])
+        
+    def get_nearby_vertices(self, e=EPSILON):
+        """ Utility method to get nearby vertices through the dcel reference """
+        return self.dcel.vertex_quad_tree.intersect(self.bbox(e=e))
+
+    
     def registerHalfEdge(self, he):
+        """ register a halfedge as using this vertex """
         #Don't assert isinstance, as that would require importing halfedge
         assert(hasattr(he, 'index'))
         self.halfEdges.append(he)
         logging.debug("Registered v{} to e{}".format(self.index, he.index))
 
     def unregisterHalfEdge(self, he):
+        """ Remove a halfedge from the list that uses this vertex """
         assert(hasattr(he, 'index'))
         if he in self.halfEdges:
             self.halfEdges.remove(he)
@@ -100,6 +119,7 @@ class Vertex:
         return inXBounds and inYBounds
 
     def within_circle(self, centre, radius):
+        """ Check the vertex is within the radius boundary of a point """
         return inCircle(centre, radius, self.toArray())[0]
     
     def outside(self, bbox):
