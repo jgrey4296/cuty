@@ -1,7 +1,7 @@
 INSTALL_DIR=$(shell echo $(JG_PYLIBS))
 LIBNAME=cairo_utils
 
-install: test clean uninstall finstall
+install: test finstall
 
 finstall : clean uninstall
 	cp -rf ./${LIBNAME} ${INSTALL_DIR}/${LIBNAME}
