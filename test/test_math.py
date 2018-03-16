@@ -1,6 +1,7 @@
 import unittest
 import logging
 import numpy as np
+import IPython
 from test_context import cairo_utils as utils
 from cairo_utils import math as cumath
 
@@ -18,17 +19,18 @@ class CUMath_Tests(unittest.TestCase):
         circ = cumath.sampleCircle(0, 0, 1, 1000)
         self.assertIsInstance(circ, np.ndarray)
         self.assertEqual(circ.shape, (1000, 2))
-        self.assertTrue(np.isclose(circ.min(), -1))
-        self.assertTrue(np.isclose(circ.max(), 1))
+        self.assertTrue(-1 <= circ.min() <= -0.99)
+        self.assertTrue(0.99 <= circ.max() <= 1)
+
 
     #interpolate
     def test_interpolate(self):
-        arr = np.array([[0,0], [1,1]])
+        arr = np.array([[0,0],[0.25, 0.25], [0.5, 0.5], [0.75, 0.75], [1,1]])
         i_arr = cumath._interpolate(arr, 100)
         self.assertIsInstance(i_arr, np.ndarray)
         self.assertEqual(i_arr.shape, (100, 2))
-        self.assertTrue(all(i_arr >= 0))
-        self.assertTrue(all(i_arr <= 1))
+        self.assertTrue((i_arr >= 0).all())
+        self.assertTrue((i_arr <= 1).all())
         
     
     #gerDirections
@@ -49,7 +51,12 @@ class CUMath_Tests(unittest.TestCase):
 
     #createLine
     def test_createLine(self):
-        return
+        line = cumath.createLine(0,0, 0, 1, 10)
+        self.assertTrue(len(line) == 10)
+        self.assertTrue(line[:,0].min() == 0)
+        self.assertTrue(line[:,0].max() == 0)
+        self.assertTrue(line[:,1].min() == 0)
+        self.assertTrue(line[:,1].max() == 1)
     
     #bezier1cp
     def test_bezier1cp(self):
@@ -95,13 +102,50 @@ class CUMath_Tests(unittest.TestCase):
         return
     
     #checksign
-    def test_checksign(a, b):
+    def test_checksign(self):
         return
     
     #intersect
     def test_intersect(self):
-        return
+        """ Check two simple lines intersect """
+        l1 = np.array([0, 0, 0, 1])
+        l2 = np.array([-1,0.5, 1, 0.5])
+        intersection = cumath.intersect(l1, l2)
+        self.assertIsNotNone(intersection)
+        self.assertTrue((intersection == np.array([0, 0.5])).all())
+
+    def test_intersect_fail(self):
+        """ Check that two lines that intersect if infinite, don't intersect
+        because of limited length """
+        l1 = np.array([0, 0, 0, 1])
+        l2 = np.array([-2,0.5, -1, 0.5])
+        intersection = cumath.intersect(l1, l2)
+        self.assertIsNone(intersection)
+
+    def test_intersect_parallel_lines(self):
+        """ Check that two parallel lines don't intersect """
+        l1 = np.array([0, 0, 0, 1])
+        l2 = np.array([0.5, 0, 0.5, 1])
+        intersection = cumath.intersect(l1, l2)
+        self.assertIsNone(intersection)
+
+    #is_point_on_line
+    def test_is_point_on_line(self):
+        """ Test whether points lie on a line or not """
+        l1 = np.array([0, 0, 0, 1])
+        p1 = np.array([0, 0.5])
+        self.assertTrue(cumath.is_point_on_line(p1, l1))
+
+        l2 = np.array([0, 0, 1, 1])
+        p2 = np.array([0.5, 0.5])
+        self.assertTrue(cumath.is_point_on_line(p2, l2))
+
+        p3 = np.array([1.5, 1.5])
+        self.assertFalse(cumath.is_point_on_line(p3, l2))
     
+        p4 = np.array([-1.5, -1.5])
+        self.assertFalse(cumath.is_point_on_line(p4, l2))
+        
     #random_points
     def test_random_points(self):
         return
