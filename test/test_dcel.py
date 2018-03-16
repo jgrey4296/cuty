@@ -1,68 +1,25 @@
+from test_context import cairo_utils as utils
+from cairo_utils import dcel
 import unittest
 import logging
-from test_context import cairo_utils as utils
-from utils import dcel
+import IPython
+#https://ipython.readthedocs.io/en/stable/config/options/terminal.html
+#IPython.embed(simple_prompt=True)
+#in shell: ipython --simple-prompty --matplotlib
+#Import TestCase Instances here:
+from test_dcel_vertex import DCEL_VERTEX_Tests
+from test_dcel_halfedge import DCEL_HALFEDGE_Tests
+from test_dcel_face import DCEL_FACE_Tests
+from test_dcel_actual import DCEL_ACTUAL_Tests
+##
 
+if __name__ == '__main__':
+    #use python $filename to use this logging setup
+    LOGLEVEL = logging.INFO
+    logFileName = "log.dcel_comprehensive_tests"
+    logging.basicConfig(filename=logFileName, level=LOGLEVEL, filemode='w')
+    console = logging.StreamHandler()
+    console.setLevel(logging.WARN)
+    logging.getLogger().addHandler(console)
 
-class DCEL_Tests(unittest.TestCase):
-
-      def setUp(self):
-            return 1
-
-      def tearDown(self):
-            return 1
-
-      #----------
-      #use testcase snippets
-
-      #test dcel creation
-      
-      #test Vertex
-
-      #test halfedge
-
-      #est Line
-
-      #test Face
-
-      #test dcel
-
-      ##export
-      ##import
-      ##loadfile
-      
-      ##new Vertex/Edge/Face
-
-      ##linkEdges
-
-      ##setFaceForEdgeLoop
-
-      ##orderVertices
-
-      ##constrainhalf_edges
-
-      ##purge infinite/edges/vertices/faces
-
-      ##complete_faces
-
-      ##create_corner_vertex
-
-      ##fixup_halfedges
-
-      ##verify_edges
-
-      ##verify_faces_and_edges
-
-      ##constrain_to_circle
-      
-
-if __name__ == "__main__":
-      #use python $filename to use this logging setup
-      LOGLEVEL = logging.INFO
-      logFileName = "log.DCEL_Tests"
-      logging.basicConfig(filename=logFileName, level=LOGLEVEL, filemode='w')
-      console = logging.StreamHandler()
-      console.setLevel(logging.WARN)
-      logging.getLogger().addHandler(console)
-      unittest.main()
-      #reminder: user logging.getLogger().setLevel(logging.NOTSET) for log control
+    unittest.main()
