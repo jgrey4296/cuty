@@ -18,6 +18,7 @@ def _interpolate(xy, num_points, smoothing=0.2):
     """ given a set of points, generate values between those points """
     assert(isinstance(xy, np.ndarray))
     assert(len(xy.shape) == 2)
+    assert(xy.shape[0] >= 4)
     assert(xy.shape[1] == 2)
     splineTuple, splineValues = splprep([xy[:, 0], xy[:, 1]], s=smoothing)
     interpolatePoints = np.linspace(0, 1, num_points)
@@ -223,10 +224,13 @@ def get_circle_3p(p1, p2, p3):
         return None
 
 
-def extend_line(p1, p2, m):
+def extend_line(p1, p2, m, fromStart=True):
     """ Extend a line by m units """
     n = get_normal(p1, p2)
-    el = p1 + (n * m)
+    if fromStart:
+        el = p1 + (n * m)
+    else:
+        el = p2 + (n * m)
     return el
 
 def get_midpoint(p1, p2):
@@ -285,6 +289,8 @@ def intersect(l1, l2):
     """
     assert(isinstance(l1, np.ndarray))
     assert(isinstance(l2, np.ndarray))
+    assert(l1.shape == (4,))
+    assert(l2.shape == (4,))
     #possibly from pgkelley4's line-segments-intersect on github
     #and From the line intersection stack overflow post
     #see: http://ericleong.me/research/circle-line/
@@ -313,6 +319,30 @@ def intersect(l1, l2):
         return np.array([p0[0] + (t * s1[0]), p0[1] + t * s1[1]])
 
     return None
+
+def is_point_on_line(p, l):
+    """ Test to see if a point is on a line """
+    assert(isinstance(p, np.ndarray))
+    assert(isinstance(l, np.ndarray))
+    assert(p.shape == (2,))
+    assert(l.shape == (4,))
+    aligned = l.reshape((2,2))
+    l_min_y = aligned[:,1].min()
+    l_max_y = aligned[:,1].max()
+    l_min_x = aligned[:,0].min()
+    l_max_x = aligned[:,0].max()
+
+    in_bounds_x =  l_min_x <= p[0] <= l_max_x
+    in_bounds_y = l_min_y <= p[1] <= l_max_y
+    
+    if (l[0] - l[2]) == 0:
+        return in_bounds_y and in_bounds_x
+    slope = (l[1] - l[3]) / (l[0] - l[2])
+    y_intersect = - slope * l[0] + l[1]
+    line_y = slope * p[0] + y_intersect
+    
+    return line_y == p[1] and in_bounds_y and in_bounds_x
+        
 
 def random_points(n):
     """ utility to get n 2d points """
@@ -357,7 +387,7 @@ def sort_coords(arr):
     return arr[ind]
 
 def inCircle(centre, radius, points):
-    """ Test a set of points to see if they are within a circle's radius """ 
+    """ Test a set of points to see if they are within a circle's radius """
     d = get_distance(centre, points)
     return d < radius
 
