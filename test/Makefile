@@ -9,7 +9,7 @@ beachline:
 	python -m unittest test_beachline.py -v
 
 dcel:
-	python -m unittest test_dcel.py -v
+	python test_dcel.py -v
 
 math:
 	python -m unittest test_math.py -v
