@@ -5,6 +5,7 @@ import logging as root_logger
 import numpy as np
 
 from cairo_utils.math import inCircle
+from cairo_utils.constants import TWOPI
 
 logging = root_logger.getLogger(__name__)
 EPSILON = sys.float_info.epsilon
@@ -16,24 +17,25 @@ class Vertex:
 
     nextIndex = 0
 
-    def __init__(self, x, y, iEdge=None, index=None, dcel=None):
-        assert(isinstance(x, Number))
-        assert(isinstance(y, Number))
-        assert(iEdge is None or isinstance(iEdge, int))
-        
-        self.x = x
-        self.y = y
-        self.incidentEdge = iEdge
+    def __init__(self, loc, edges=None, index=None, data=None, dcel=None):
+        assert(isinstance(loc, np.ndarray))
+        assert(edges is None or isinstance(edges, list))
+
+        self.loc = loc
         #The edges this vertex is part of:
-        self.halfEdges = []
+        self.halfEdges = set()
+        if edges is not None:
+            self.halfEdges.update(edges)
         #Custom data of the vertex:
         self.data = {}
+        if data is not None:
+            self.data.update(data)
         #Reference back to the dcel
         self.dcel = dcel
         
         self.active = True
         if index is None:
-            logging.debug("Creating vertex {} at: {:.3f} {:.3f}".format(Vertex.nextIndex, x, y))
+            logging.debug("Creating vertex {} at: {:.3f} {:.3f}".format(Vertex.nextIndex, loc[0], loc[1]))
             self.index = Vertex.nextIndex
             Vertex.nextIndex += 1
         else:
@@ -46,16 +48,17 @@ class Vertex:
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
         logging.debug("Exporting Vertex: {}".format(self.index))
-        #todo: add 'active', and data
         return {
             'i': self.index,
-            'x': self.x,
-            'y': self.y,
-            'halfEdges' : [x.index for x in self.halfEdges]
+            'x': self.loc[0],
+            'y': self.loc[1],
+            'halfEdges' : [x.index for x in self.halfEdges],
+            "data" : self.data,
+            "active" : self.active
         }
 
     def __str__(self):
-        return "({:.3f},{:.3f})".format(self.x, self.y)
+        return "({:.3f},{:.3f})".format(self.loc[0], self.loc[1])
 
     def __repr__(self):
         if self.incidentEdge is not None:
@@ -77,34 +80,41 @@ class Vertex:
     def bbox(self, e=EPSILON):
         """ Create a minimal bbox for the vertex,
         for dcel to find overlapping vertices using a quadtree  """
-        return np.array([self.x-e,
-                         self.y-e,
-                         self.x+e,
-                         self.y+e])
+        return np.array([self.loc[0]-e,
+                         self.loc[1]-e,
+                         self.loc[0]+e,
+                         self.loc[1]+e])
 
     @staticmethod
-    def free_bbox(x, y, e=EPSILON):
+    def free_bbox(loc, e=EPSILON):
         """ Static method utility to create a bbox. used for quad_tree checking without creating the vertex """
-        return np.array([x-e,
-                         y-e,
-                         x+e,
-                         y+e])
+        assert(isinstance(loc, np.ndarray))
+        return np.array([loc[0]-e,
+                         loc[1]-e,
+                         loc[0]+e,
+                         loc[1]+e])
         
     def get_nearby_vertices(self, e=EPSILON):
-        """ Utility method to get nearby vertices through the dcel reference """
+        """ Utility method to get nearby vertices through the dcel reference "",
+        returns the list of matches *including* self """
+        assert(self.dcel is not None)
         return self.dcel.vertex_quad_tree.intersect(self.bbox(e=e))
 
     
     def registerHalfEdge(self, he):
-        """ register a halfedge as using this vertex """
+        """ register a halfedge as using this vertex
+        will add the vertex into the first open slot of the halfedge
+        """
         #Don't assert isinstance, as that would require importing halfedge
-        assert(hasattr(he, 'index'))
-        self.halfEdges.append(he)
+        assert(hasattr(he,'index'))
+        self.halfEdges.add(he)
         logging.debug("Registered v{} to e{}".format(self.index, he.index))
 
     def unregisterHalfEdge(self, he):
-        """ Remove a halfedge from the list that uses this vertex """
-        assert(hasattr(he, 'index'))
+        """ Remove a halfedge from the list that uses this vertex,
+        also removes the vertex from the halfEdges' slot
+        """
+        assert(hasattr(he,'index'))
         if he in self.halfEdges:
             self.halfEdges.remove(he)
         logging.debug("Remaining edges: {}".format(len(self.halfEdges)))
@@ -114,8 +124,8 @@ class Vertex:
         """ Check the vertex is within [x,y,x2,y2] """
         assert(isinstance(bbox, np.ndarray))
         assert(len(bbox) == 4)
-        inXBounds = bbox[0] <= self.x and self.x <= bbox[2]
-        inYBounds = bbox[1] <= self.y and self.y <= bbox[3]
+        inXBounds = bbox[0] <= self.loc[0] and self.loc[0] <= bbox[2]
+        inYBounds = bbox[1] <= self.loc[1] and self.loc[1] <= bbox[3]
         return inXBounds and inYBounds
 
     def within_circle(self, centre, radius):
@@ -128,4 +138,32 @@ class Vertex:
 
     def toArray(self):
         """ Convert the Vertex's coords to a simple numpy array """
-        return np.array([self.x, self.y])
+        return self.loc
+
+
+    def extend_line_to(self, dir=None, len=None, rad=None, target=None, edge_data=None):
+        """ create a line extending out from this vertex  """
+        #TODO: calc target from dir, len, rad
+        if target is None:
+            raise Exception("Target is None")
+        assert(isinstance(target, np.ndarray))
+        assert(self.dcel is not None)
+        newEdge = self.dcel.createEdge(self.toArray(),
+                                     target,
+                                     vdata=self.data,
+                                     edata=edge_data)
+
+        #make the edge have faces:
+        self.registerHalfEdge(newEdge)
+        return newEdge
+
+    def get_sorted_edges(self):
+        """ return all half-edges that this vertex starts,
+        sorted by angle. always relative to unit vector (right) """
+        opp_hedges = [x.twin for x in self.halfEdges]
+        verts = np.array([x.origin.toArray() for x in opp_hedges])
+        rads = (np.arctan2(verts[:,1], verts[:,0]) + TWOPI) % TWOPI
+        ordered = sorted(zip(rads, opp_hedges))
+        return [y.twin for x,y in ordered]
+
+    
