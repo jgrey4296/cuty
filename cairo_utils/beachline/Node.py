@@ -356,7 +356,7 @@ class Node(object):
 
 def isClockwise(*args,cartesian=True):
     #based on stackoverflow.
-    #sum over edges, if positive: CW. negative: CCW
+    #cross product over edges, if positive: CCW. negative: CW
     #assumes normal cartesian of y bottom = 0
     #TODO: Check this
     sum = 0
