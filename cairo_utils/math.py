@@ -1,10 +1,18 @@
 from numpy import cos, sin
 from numpy import pi
+from functools import partial
+import IPython
 from scipy.interpolate import splprep, splev
 import numpy as np
 import numpy.random
 import random
 from .constants import TWOPI, QUARTERPI
+
+#Partial Matrix Mul constructor for use in rotate point
+#for slices of a 2d array:
+def constructMatMul(a):
+    assert(isinstance(a, np.ndarray))
+    return partial(lambda x,y: x @ y, a)
 
 
 def sampleCircle(x, y, radius, numOfSteps):
@@ -238,18 +246,30 @@ def get_midpoint(p1, p2):
     m = (p1 + p2) / 2
     return m
 
-def rotatePoint(p,cen,rads=None, radMin=-QUARTERPI,radMax=QUARTERPI):
+
+
+def rotatePoint(p,cen=None,rads=None, radMin=-QUARTERPI,radMax=QUARTERPI):
     """ Given a point, rotate it around a centre point by either radians,
     or within a range of radians
     """
     #p1 = cen, p2=point, @ is matrix mul
+    if cen is None:
+        cen = np.array([0,0])
     if rads is None:
         useRads = randomRad(min=radMin,max=radMax)
         if isinstance(useRads, np.ndarray):
             useRads = useRads[0]
     else:
         useRads = rads
-    result = cen + ((p-cen) @ rotMatrix(useRads))
+    #apply to 1d slices, this allows multiple points to be passed into the function together,
+    #without messing up the rotation matmul
+    rotM = rotMatrix(useRads)
+    offset = (p - cen)
+    if len(p.shape) == 1:
+        applied = rotM @ offset
+    else:
+        applied = np.apply_along_axis(constructMatMul(rotM), 1, offset)
+    result = cen + applied
     return result
 
 
@@ -304,18 +324,23 @@ def intersect(l1, l2):
     s2 = p3 - p2
     #origins vectors
     s3 = p0 - p2
+    #minMaxs
+    minX = np.min((p0[0], p1[0], p2[0], p3[0]))
+    minY = np.min((p0[1], p1[1], p2[1], p3[1]))
+    maxX = np.max((p0[0], p1[0], p2[0], p3[0]))
+    maxY = np.max((p0[1], p1[1], p2[1], p3[1]))
 
+    
     numerator_1 = np.cross(s1, s3)
     numerator_2 = np.cross(s2, s3)
     denominator = np.cross(s1, s2)
-
     if denominator == 0:
         return None
 
     s = numerator_1 / denominator
     t = numerator_2 / denominator
 
-    if 0 < s and s <= 1 and 0 < t and t <= 1:
+    if minX <= s and s <= maxX and minY <= t and t <= maxY:
         return np.array([p0[0] + (t * s1[0]), p0[1] + t * s1[1]])
 
     return None
@@ -325,20 +350,20 @@ def is_point_on_line(p, l):
     assert(isinstance(p, np.ndarray))
     assert(isinstance(l, np.ndarray))
     assert(p.shape == (2,))
-    assert(l.shape == (4,))
-    aligned = l.reshape((2,2))
-    l_min_y = aligned[:,1].min()
-    l_max_y = aligned[:,1].max()
-    l_min_x = aligned[:,0].min()
-    l_max_x = aligned[:,0].max()
+    assert(l.shape == (2,2))
+    the_line = l
+    l_min_y = the_line[:,1].min()
+    l_max_y = the_line[:,1].max()
+    l_min_x = the_line[:,0].min()
+    l_max_x = the_line[:,0].max()
 
     in_bounds_x =  l_min_x <= p[0] <= l_max_x
     in_bounds_y = l_min_y <= p[1] <= l_max_y
     
-    if (l[0] - l[2]) == 0:
+    if (l[0,0] - l[1,0]) == 0:
         return in_bounds_y and in_bounds_x
-    slope = (l[1] - l[3]) / (l[0] - l[2])
-    y_intersect = - slope * l[0] + l[1]
+    slope = (l[0,1] - l[1,1]) / (l[0,0] - l[1,0])
+    y_intersect = - slope * l[0,0] + l[0,1]
     line_y = slope * p[0] + y_intersect
     
     return line_y == p[1] and in_bounds_y and in_bounds_x
