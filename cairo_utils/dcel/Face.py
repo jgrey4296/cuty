@@ -4,8 +4,11 @@ import numpy as np
 from numbers import Number
 from itertools import cycle, islice
 from functools import partial, cmp_to_key
+from math import radians
+from scipy.spatial import ConvexHull
 import IPython
 
+from .Vertex import Vertex
 from .HalfEdge import HalfEdge
 
 logging = root_logger.getLogger(__name__)
@@ -16,22 +19,25 @@ class Face(object):
 
     nextIndex = 0
 
-    def __init__(self, site_x, site_y, index=None, dcel=None):
-        assert(isinstance(site_x, Number))
-        assert(isinstance(site_y, Number))
+    def __init__(self, site=None, index=None, data=None, dcel=None):
+        if site is None:
+            site = np.array([0,0])
+        assert(isinstance(site, np.ndarray))
         #Site is the voronoi point that the face is built around
-        self.site = np.array([site_x, site_y])
+        self.site = site
         #Starting point for bounding edges, going anti-clockwise
         self.outerComponent = None
         #Clockwise inner loops - check this
         #Opposing face halfedges
         self.outerBoundaryEdges = []
-        #Primary list of edges for this face
+        #Primary list of ccw edges for this face
         self.edgeList = []
         #mark face for cleanup:
         self.markedForCleanup = False
         #Additional Data:
         self.data = {}
+        if data is not None:
+            self.data.update(data)
         self.dcel = dcel
         
         #todo: add a 'free vertices' field, which can be used to build the face
@@ -47,7 +53,22 @@ class Face(object):
             if self.index >= Face.nextIndex:
                 Face.nextIndex = self.index + 1
 
+    @staticmethod
+    def hull_from_vertices(verts):
+        """ Given a set of vertices, return the convex hull they form,
+        and the vertices to discard """
+        #TODO: put this into dcel?
+        assert(all([isinstance(x, Vertex) for x in verts]))
+        #convert to numpy:
+        npPairs = [(x.toArray(),x) for x in verts]
+        hull = ConvexHull([x[0] for x in npPairs])
+        hullVerts = [npPairs[x][1] for x in hull.vertices]
+        discardVerts = set(verts).difference(hullVerts)
+        assert(len(discardVerts.intersection(hullVerts)) == 0)
+        assert(len(discardVerts) + len(hullVerts) == len(verts))
+        return (hullVerts, list(discardVerts))
 
+                
     def __str__(self):
         return "Face: {}".format(self.getCentroid())
 
@@ -71,21 +92,9 @@ class Face(object):
             'edges' : [x.index for x in self.edgeList if x is not None],
             'sitex' : self.site[0],
             'sitey' : self.site[1],
+            'data'  : self.data
         }
 
-    def removeEdge(self, edge):
-        """ Remove an edge from this face, if the edge has this face
-        registered, remove that too """
-        assert(isinstance(edge, HalfEdge))
-        #todo: should the edge be connecting next to prev here?
-        if not bool(self.outerBoundaryEdges) and not bool(self.edgeList):
-            return
-        if edge in self.outerBoundaryEdges:
-            self.outerBoundaryEdges.remove(edge)
-        if edge in self.edgeList:
-            self.edgeList.remove(edge)
-        if edge.face is self:
-            edge.face = None
 
             
     def get_bbox(self):
@@ -104,11 +113,12 @@ class Face(object):
     def getAvgCentroid(self):
         """ Get the averaged centre point of the face from the vertices of the edges """
         k = len(self.edgeList)
-        xs = [x.origin.x for x in self.edgeList]
-        ys = [x.origin.y for x in self.edgeList]
+        xs = [x.origin.loc[0] for x in self.edgeList]
+        ys = [x.origin.loc[1] for x in self.edgeList]
         norm_x = sum(xs) / k
         norm_y = sum(ys) / k
-        return np.array([norm_x, norm_y])
+        self.site = np.array([norm_x, norm_y])
+        return self.site
 
 
     def getCentroid(self):
@@ -126,22 +136,23 @@ class Face(object):
 
     def __getCentroid(self):
         """ An iterative construction of the centroid """
-        vertices = [x.origin for x in self.edgeList if x.origin is not None]
-        centroid = np.array([0.0, 0.0])
-        signedArea = 0.0
-        for i, v in enumerate(vertices):
-            if i+1 < len(vertices):
-                n_v = vertices[i+1]
-            else:
-                n_v = vertices[0]
-            a = v.x*n_v.y - n_v.x*v.y
-            signedArea += a
-            centroid += [(v.x+n_v.x)*a, (v.y+n_v.y)*a]
+        raise Exception("Deprecated")
+        # vertices = [x.origin for x in self.edgeList if x.origin is not None]
+        # centroid = np.array([0.0, 0.0])
+        # signedArea = 0.0
+        # for i, v in enumerate(vertices):
+        #     if i+1 < len(vertices):
+        #         n_v = vertices[i+1]
+        #     else:
+        #         n_v = vertices[0]
+        #     a = v.loc[0]*n_v.loc[1] - n_v.loc[0]*v.loc[1]
+        #     signedArea += a
+        #     centroid += [(v.loc[0]+n_v.loc[0])*a, (v.loc[1]+n_v.loc[1])*a]
 
-        signedArea *= 0.5
-        if signedArea != 0:
-            centroid /= (6*signedArea)
-        return centroid
+        # signedArea *= 0.5
+        # if signedArea != 0:
+        #     centroid /= (6*signedArea)
+        # return centroid
 
     def getEdges(self):
         """ Return a copy of the edgelist for this face """
@@ -160,13 +171,29 @@ class Face(object):
         self.outerBoundaryEdges.append(edge)
         self.edgeList.append(edge)
 
+    def remove_edge(self, edge):
+        """ Remove an edge from this face, if the edge has this face
+        registered, remove that too """
+        assert(isinstance(edge, HalfEdge))
+        #todo: should the edge be connecting next to prev here?
+        if not bool(self.outerBoundaryEdges) and not bool(self.edgeList):
+            return
+        if edge in self.outerBoundaryEdges:
+            self.outerBoundaryEdges.remove(edge)
+        if edge in self.edgeList:
+            self.edgeList.remove(edge)
+        if edge.face is self:
+            edge.face = None
+        
     def sort_edges(self):
-        """ Order the edges clockwise, by starting point """
+        """ Order the edges clockwise, by starting point, ie: graham scan """
         logging.debug("Sorting edges")
         centre = self.getAvgCentroid()
-        self.edgeList.sort(key=cmp_to_key(partial(HalfEdge.compareEdges, centre)))
-        self.edgeList.reverse()
-
+        #verify all edges are ccw
+        assert(all([x.he_ccw(centre) for x in self.edgeList]))
+        
+        self.edgeList.sort()
+        #ensure all edges line up
         paired = zip(self.edgeList, islice(cycle(self.edgeList), 1, None))
         try:
             for a,b in paired:
@@ -178,31 +205,72 @@ class Face(object):
         """ Check if its a null face or has actual edges """
         innerEdges = bool(self.outerBoundaryEdges)
         outerEdges = bool(self.edgeList)
-        return innerEdges and outerEdges
+        return bool(innerEdges and outerEdges)
 
     def markForCleanup(self):
         self.markedForCleanup = True
 
-    def subdivide(self, edge_a, r_a, edge_b, r_b):
-        """ Divide a face in half by creating a new line
-        between the ratio point on edge_a -> ration point of edge_b,
-        returning the new pair of faces
+    def subdivide(self, edge, ratio=None, angle=0):
+        """ Bisect / Divide a face in half by creating a new line
+        on the ratio point of the edge, at the angle specified, until it intersects
+        a different line of the face.
+        Angle is +- from 90 degrees.
+        returns the new face
         """
-        #TODO
-        #todo: add a check for if the new edge intersects any other 
-        assert(edge_a is not edge_b)
-        assert(isinstance(edge_a, HalfEdge))
-        assert(isinstance(edge_b, HalfEdge))
-        assert(0 <= r_a <= 1)
-        assert(0 <= r_b <= 1)
-
-        #split the two edges
-        #create a new line between them
-
-        #sort all vertices of the face
-        #get the sequence of new av -> ... -> ab
-        #get the disjoint set from that sequence
-        #create a new face
-        #put the av->bv sequence in one, disjoint set in the other
+        if ratio is None:
+            ratio = 0.5
+        assert(isinstance(edge, HalfEdge))
+        assert(edge in self.edgeList)
+        assert(0 <= ratio <= 1)
+        assert(-90 <= angle <= 90)
+        #split the edge
+        newPoint, newEdge = edge.split_by_ratio(ratio)
+                
+        #extend a line from the new vertex, long enough to intersect the other side
+        bisecting_edge = newEdge.extend(rotate=radians(angle), d=10000)
         
-        return ()
+        #intersect with all lines of the face until the intersection is found
+        intersections = [a for a in [bisecting_edge.intersect(x) for x in self.edgeList] if a is not None]
+        assert(len(intersections) == 1)
+
+        #split that line at the intersection
+        
+        #add the line in
+
+        #sort the vertices
+
+        #pick the new vertex, follow it around until hitting its twin
+        #get the disjoint set of those vertices, those are the two faces
+        
+
+        #clean up the massive line?
+        
+        raise Exception("Unimplemented")
+
+    def add_vertex(self, vert):
+        """ Add a vertex, then recalculate the convex hull """
+        raise Exception("Unimplemented")
+
+    def merge_faces(self, *args):
+        """ Calculate a convex hull from all passed in faces,
+        update one face, remove the others, update all lines and vertices that connected to them """
+        raise Exception("Unimplemented")
+
+    def translate_edge(self, e, transform):
+        raise Exception("Unimplemented")
+
+    def scale(self, amnt=None, vert_weights=None, edge_weights=None):
+        """ Scale an entire face by amnt,
+        or scale by vertex/edge normal weights """
+        raise Exception("unimplemented")
+
+    def cut_out(self):
+        """ Cut the Face out from its verts and halfedges that comprise it,
+        creating new verts and edges, so the face can be moved and scaled
+        without breaking the already existing structure """
+        raise Exception("Unimplemented")
+
+    def rotate(self, rads):
+        """ copy and rotate the entire face """
+        raise Exception("Unimplemented")
+    
