@@ -11,7 +11,8 @@ logging = root_logger.getLogger(__name__)
 CENTRE = np.array([[0.5, 0.5]])
 
 class Line:
-    """ A line as a start x and y, a direction, and a length """
+    """ A line as a start x and y, a direction, and a length, useful for
+    algebraic manipulation """
 
     def __init__(self, sx, sy, dx, dy, l, swapped=False):
         assert(all([isinstance(x, Number) for x in [sx, sy, dx, dy, l]]))
@@ -24,28 +25,23 @@ class Line:
         """ Intersect the line with a bounding box, adjusting points as necessary """
         #min and max: [x,y]
         dest = self.destination()
-        npArray_line = np.array([*self.source, *dest])
-        bbox_lines = [np.array([min_x, min_y, max_x, min_y]),
-                      np.array([min_x, max_y, max_x, max_y]),
-                      np.array([min_x, min_y, min_x, max_y]),
-                      np.array([max_x, min_y, max_x, max_y])]
-        #intersect one of the bbox lines
-        p = None
-        while p is None and bool(bbox_lines):
-            p = intersect(npArray_line, bbox_lines.pop())
-        if p is not None:
-            summed = pow(p[0]-self.source[0], 2) + pow(p[1]-self.source[1], 2)
-            new_length = sqrt(summed)
-            if new_length != 0:
-                self.length = new_length
-            else:
-                logging.warning("Line: new calculated length is 0")
+        nline = np.row_stack((self.source, dest))
+
+        xs_min = nline[:,0] < min_x
+        xs_max = nline[:,0] > max_x
+        ys_min = nline[:,1] < min_y
+        ys_max = nline[:,1] > max_y
+        xs = (nline[:,0] * np.invert(xs_min + xs_max)) + (min_x * xs_min) + (max_x * xs_max)
+        ys = (nline[:,1] * np.invert(ys_min + ys_max)) + (min_y * ys_min) + (max_y * ys_max)
+        return np.column_stack((xs,ys))
+        
 
     def destination(self):
         """ Calculate the destination vector of the line """
-        ex = self.source[0] + (self.length * self.direction[0])
-        ey = self.source[1] + (self.length * self.direction[1])
-        return np.array([ex, ey])
+        return self.source + (self.length * self.direction)
+        # ex = self.source[0] + (self.length * self.direction[0])
+        # ey = self.source[1] + (self.length * self.direction[1])
+        # return np.array([ex, ey])
 
     def bounds(self):
         if self.swapped:
@@ -54,36 +50,20 @@ class Line:
             return np.row_stack((self.source, self.destination()))
 
     @staticmethod
-    def newLine(a, b, bbox=None):
+    def newLine(a, b):
         """ Create a new line from two vertices """
-        if bbox is None:
-            bbox = np.array([0, 0, 1, 1])
-        assert(isinstance(bbox, np.ndarray))
-        assert(len(bbox) == 4)
         #Calculate the line parameters:
-        swapped = False
-        d_a = get_distance(np.array([[a.x, a.y]]), CENTRE)
-        d_b = get_distance(np.array([[b.x, b.y]]), CENTRE)
-        aInBBox = a.within(bbox)
-        bInBBox = b.within(bbox)
-        if d_b < d_a and bInBBox:
-            logging.debug("Swapping vertices for line creation, source is now: {}".format(b))
-            temp = a
-            a = b
-            b = temp
-            swapped = True
-        vx = b.x - a.x
-        vy = b.y - a.y
+        vx = b.loc[0] - a.loc[0]
+        vy = b.loc[1] - a.loc[1]
         l = sqrt(pow(vx, 2) + pow(vy, 2))
+        scale = 0
         if l != 0:
             scale = 1/l
-        else:
-            scale = 0
         dx = vx * scale
         dy = vy * scale
         #cx = a.x + (dx * l)
         #cy = a.y + (dy * l)
-        return Line(a.x, a.y, dx, dy, l, swapped=swapped)
+        return Line(a.loc[0], a.loc[1], dx, dy, l)
 
 
     def intersect_with_circle(self, centre, radius):
@@ -106,3 +86,18 @@ class Line:
         t2 = (-B - sqrt(det)) / (2 * A)
         return (self.source + (t * self.direction),
                 self.source + (t2 * self.direction))
+
+    def __lt__(self, other):
+        #TODO
+        return False
+
+    def __gt__(self, other):
+        #TODO
+        return False
+
+    def intersect(self, other):
+        #TODO
+        return False
+
+    
+        
