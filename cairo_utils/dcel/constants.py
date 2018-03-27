@@ -7,7 +7,7 @@ FaceE = Enum("Face Data Enum", "FILL TEXT TEXT_OFFSET STROKE CENTROID CEN_RADIUS
 EdgeE = Enum("HalfEdge Data Enum", "STROKE WIDTH START END STARTRAD ENDRAD NULL TEXT")
 VertE = Enum("Vertex Data Enum", "STROKE RADIUS NULL TEXT")
 
-
+IntersectEnum = Enum("BBox Intersect Edge", "LEFT RIGHT TOP BOTTOM")
 
 
 
