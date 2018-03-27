@@ -4,6 +4,7 @@ import numpy as np
 import IPython
 from test_context import cairo_utils as utils
 from cairo_utils import math as cumath
+import math
 
 
 class CUMath_Tests(unittest.TestCase):
@@ -91,7 +92,10 @@ class CUMath_Tests(unittest.TestCase):
     
     #rotate_point
     def test_rotatePoint(self):
-        return
+        a = np.array([1,0])
+        result = cumath.rotatePoint(a, rads=math.radians(90))
+        self.assertTrue(np.allclose(result, np.array([0,1])))
+
     
     #randomRad
     def test_randomRad(self):
