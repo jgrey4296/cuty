@@ -8,6 +8,7 @@ import sys
 logging = root_logger.getLogger(__name__)
 
 #constants:
+#BBOX = [min_x, min_y, max_x, max_y]
 SMALL_RADIUS = 0.003
 FONT_SIZE = 0.03
 ALPHA = 0.1
