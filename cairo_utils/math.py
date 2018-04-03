@@ -6,7 +6,7 @@ from scipy.interpolate import splprep, splev
 import numpy as np
 import numpy.random
 import random
-from .constants import TWOPI, QUARTERPI
+from .constants import TWOPI, QUARTERPI, EPSILON, IntersectEnum
 
 #Partial Matrix Mul constructor for use in rotate point
 #for slices of a 2d array:
@@ -302,48 +302,116 @@ def checksign(a, b):
     """ Test whether two numbers have the same sign """
     return math.copysign(a, b) == a
 
-def intersect(l1, l2):
+def intersect_broken(l1, l2):
     """ Get the intersection points of two line segments
     so l1:(start, end), l2:(start, end)
-    returns (x,y) of intersection or None
+    returns np.array([x,y]) of intersection or None
     """
+    raise Exception("BROKEN: Needs fixing")
     assert(isinstance(l1, np.ndarray))
     assert(isinstance(l2, np.ndarray))
-    assert(l1.shape == (4,))
-    assert(l2.shape == (4,))
+    assert(l1.shape == (2,2))
+    assert(l2.shape == (2,2))
     #possibly from pgkelley4's line-segments-intersect on github
     #and From the line intersection stack overflow post
     #see: http://ericleong.me/research/circle-line/
     #The points
-    p0 = l1[0:2]
-    p1 = l1[2:]
-    p2 = l2[0:2]
-    p3 = l2[2:]
+    p0 = l1[0]
+    p1 = l1[1]
+    p2 = l2[0]
+    p3 = l2[1]
     #The vectors of the lines
     s1 = p1 - p0
     s2 = p3 - p2
     #origins vectors
-    s3 = p0 - p2
-    #minMaxs
-    minX = np.min((p0[0], p1[0], p2[0], p3[0]))
-    minY = np.min((p0[1], p1[1], p2[1], p3[1]))
-    maxX = np.max((p0[0], p1[0], p2[0], p3[0]))
-    maxY = np.max((p0[1], p1[1], p2[1], p3[1]))
-
+    s3 = p2 - p0
     
-    numerator_1 = np.cross(s1, s3)
-    numerator_2 = np.cross(s2, s3)
+    numerator_1 = np.cross(s3, s1)
+    numerator_2 = np.cross(s3, s2)
     denominator = np.cross(s1, s2)
+    IPython.embed(simple_prompt=True)
     if denominator == 0:
         return None
 
+    #minMaxs
+    minX = np.min((l1[:,0], l2[:,0]))
+    minY = np.min((l1[:,1], l2[:,1]))
+    maxX = np.max((l1[:,0], l2[:,0]))
+    maxY = np.max((l1[:,1], l2[:,1]))
+
+    
     s = numerator_1 / denominator
     t = numerator_2 / denominator
-
+    IPython.embed(simple_prompt=True)
     if minX <= s and s <= maxX and minY <= t and t <= maxY:
         return np.array([p0[0] + (t * s1[0]), p0[1] + t * s1[1]])
 
     return None
+
+def intersect(l1, l2):
+    """ Get the intersection points of two line segments
+    so l1:(start, end), l2:(start, end)
+    returns np.array([x,y]) of intersection or None
+    """
+    assert(isinstance(l1, np.ndarray))
+    assert(isinstance(l2, np.ndarray))
+    assert(l1.shape == (2,2))
+    assert(l2.shape == (2,2))
+    #see: http://ericleong.me/research/circle-line/
+    #The points
+    p0 = l1[0]
+    p1 = l1[1]
+    p2 = l2[0]
+    p3 = l2[1]
+
+    a1 = p1[1] - p0[1]
+    b1 = p1[0] - p0[0]
+    d1 = p1 - p0
+    c1 = np.dot(d1[::-1], p0)
+    c1b = a1 * p0[0] + b1 * p0[1]
+    assert(c1 == c1b)
+
+    
+    a2 = p3[1] - p2[1]
+    b2 = p3[0] - p2[0]
+    d2 = p3 - p2
+    c2 = np.dot(d2[::-1], p2)
+    c2b = a2*p2[0] + b2*p2[1]
+    assert(c2 == c2b)
+    
+
+    det = np.cross(d1[::-1], d2[::-1])
+    detb = a1 * b2 - a2 * b1
+    assert(det == detb)
+    
+    cd = np.row_stack((d1, d2))
+    cs = np.array([c1, c2])
+    
+    if det == 0:
+        return None
+
+    x = (cd[1,0] * cs[0] - cd[0,0] * cs[1]) / det
+    y = (cd[0,1] * cs[1] - cd[1,1] * cs[0]) /det
+    xy = np.array([x,y])
+    
+    xb = (b2 * c1 - b1 * c2) / det
+    yb = (a1 * c2 - a2 * c1) / det
+    xyb = np.array([xb,yb])
+    assert((xy == xyb).all())
+    
+
+    l1mins = np.min((p0, p1), axis=0)
+    l2mins = np.min((p2,p3), axis=0)
+    l1maxs = np.max((p0, p1), axis=0)
+    l2maxs = np.max((p2,p3), axis=0)
+
+    if (l1mins <= xy).all() and (l2mins <= xy).all() and \
+       (xy <= l1maxs).all() and (xy <= l2maxs).all():
+        return xy
+
+    return None
+    
+
 
 def is_point_on_line(p, l):
     """ Test to see if a point is on a line """
@@ -499,3 +567,22 @@ def clamp(n,minn=0,maxn=1):
     could be replaced with np.clip
     """
     return max(min(maxn,n),minn)
+
+def bbox_to_lines(bbox, epsilon=EPSILON):
+    assert(isinstance(bbox, np.ndarray))
+    assert(bbox.shape == (4,))
+    bbox_e = bbox + np.array([-epsilon, -epsilon, epsilon, epsilon])
+    bbox_t = bbox.reshape((2,2)).transpose()
+    #convert the bbox to bounding lines
+    selX = np.array([1,0])
+    selY = np.array([0,1])
+    mins = bbox_t[:,0]
+    maxs = bbox_t[:,1]
+    minXmaxY = mins * selX + maxs * selY
+    maxXminY =  maxs * selX + mins * selY
+    lines = [ (np.row_stack((mins, maxXminY)), IntersectEnum.HBOTTOM),
+              (np.row_stack((minXmaxY, maxs)), IntersectEnum.HTOP),
+              (np.row_stack((mins, minXmaxY)), IntersectEnum.VLEFT),
+              (np.row_stack((maxXminY, maxs)), IntersectEnum.VRIGHT) ]
+
+    return lines
