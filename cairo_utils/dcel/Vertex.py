@@ -17,7 +17,7 @@ class Vertex:
 
     nextIndex = 0
 
-    def __init__(self, loc, edges=None, index=None, data=None, dcel=None):
+    def __init__(self, loc, edges=None, index=None, data=None, dcel=None, active=None):
         assert(isinstance(loc, np.ndarray))
         assert(edges is None or isinstance(edges, list))
 
@@ -34,6 +34,10 @@ class Vertex:
         self.dcel = dcel
         
         self.active = True
+        if active is not None:
+            assert(isinstance(active, bool))
+            self.active = active
+        
         if index is None:
             logging.debug("Creating vertex {} at: {:.3f} {:.3f}".format(Vertex.nextIndex, loc[0], loc[1]))
             self.index = Vertex.nextIndex
@@ -45,6 +49,13 @@ class Vertex:
             if self.index >= Vertex.nextIndex:
                 Vertex.nextIndex = self.index + 1
 
+    def copy(self):
+        """ Create an isolated copy of this vertex. Doesn't copy halfedge connections, 
+        but does copy data """
+        newVert = self.dcel.newVertex(self.loc, data=self.data.copy(), force=True)
+        return newVert
+
+                
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
         logging.debug("Exporting Vertex: {}".format(self.index))
