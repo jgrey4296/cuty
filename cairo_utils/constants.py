@@ -2,6 +2,7 @@
     Mainly some colours, and math shortcuts
 """
 from math import pi
+from enum import Enum
 import logging as root_logger
 import sys
 
@@ -25,3 +26,5 @@ START = [0, 1, 0, 1]
 END = [1, 0, 0, 1]
 BACKGROUND = [0, 0, 0, 1]
 FRONT = [0.8, 0.1, 0.71, ALPHA]
+
+IntersectEnum = Enum("BBox Intersect Edge", "VLEFT VRIGHT HTOP HBOTTOM")
