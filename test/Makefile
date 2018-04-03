@@ -9,6 +9,7 @@ beachline:
 	python -m unittest test_beachline.py -v
 
 dcel:
+	-rm dcel_actual_save_test.dcel
 	python test_dcel.py -v
 
 math:
