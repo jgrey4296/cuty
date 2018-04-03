@@ -4,16 +4,14 @@ import logging as root_logger
 from math import pi, atan2, copysign, degrees
 import numpy as np
 import IPython
-from cairo_utils.math import inCircle, get_distance, intersect, sampleAlongLine, get_normal, extend_line, rotatePoint, is_point_on_line
-from cairo_utils.constants import TWOPI
-
+from cairo_utils.math import inCircle, get_distance, intersect, sampleAlongLine, get_normal, extend_line, rotatePoint, is_point_on_line, get_distance_raw, bbox_to_lines
+from cairo_utils.constants import TWOPI, IntersectEnum, EPSILON
 from .Vertex import Vertex
 from .Line import Line
 
 
 logging = root_logger.getLogger(__name__)
 
-EPSILON = sys.float_info.epsilon
 PI = pi
 TWOPI = 2 * PI
 HALFPI = PI * 0.5
@@ -32,13 +30,14 @@ class HalfEdge:
         assert(twin is None or isinstance(twin, HalfEdge))
         self.origin = origin
         self.twin = twin
+        self.length_sq = -1
         #need to generate new faces:
         self.face = None
         #connected edges:
         #todo: separate into next *within* segment, and next *segment*?
         #todo: switch these back to individual next/prev
-        self.nexts = set()
-        self.prevs = set()
+        self.next = None
+        self.prev = None
         self.dcel=dcel
 
         if index is None:
@@ -65,6 +64,20 @@ class HalfEdge:
         if data is not None:
             self.data.update(data)
 
+
+    def copy(self):
+        """ Copy the halfedge pair. sub-copies the vertexs too """
+        assert(self.origin is not None)
+        assert(self.twin is not None)
+        #copy the vertices
+        v1 = self.origin.copy()
+        v2 = self.twin.origin.copy()
+        #create the halfedge
+        e = self.dcel.newEdge(v1, v2)
+        #copy data
+        e.data.update(self.data)
+        return e
+            
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
         logging.debug("Exporting Edge: {}".format(self.index))
@@ -77,16 +90,20 @@ class HalfEdge:
         face = self.face
         if face is not None:
             face = face.index
-        nextHEs = [x.index for x in self.nexts]
-        prevHEs = [x.index for x in self.prevs]
+        nextHE = None
+        prevHE = None
+        if self.next is not None:
+            nextHE = self.next.index
+        if self.prev is not None:
+            prevHE = self.prev.index
 
         return {
             'i' : self.index,
             'origin' : origin,
             'twin' : twin,
             'face' : face,
-            'nexts' : nextHEs,
-            'prevs' : prevHEs,
+            'next' : nextHE,
+            'prev' : prevHE,
             'data' : self.data
         }
 
@@ -101,8 +118,12 @@ class HalfEdge:
         else:
             twin = False
             twinOrigin = False
-        n = [x.index for x in self.nexts]
-        p = [x.index for x in self.prevs]
+        n = "n/a"
+        p = "n/a"
+        if self.next is not None:
+            n = self.next.index
+        if self.prev is not None:
+            p = self.prev.index
                         
         coords = [str(x) for x in self.getVertices()]
 
@@ -151,10 +172,22 @@ class HalfEdge:
         newEdge = self.dcel.newEdge(newPoint, end)
         if copy_data:
             newEdge.data.update(self.data)
+        #update the twin
         self.twin.origin = newPoint
         #update registrations:
         end.unregisterHalfEdge(self)
-        newPoint.registerHalfEdge(self)        
+        newPoint.registerHalfEdge(self)
+        newPoint.registerHalfEdge(self.twin)
+        end.unregisterHalfEdge(self.twin)
+        end.registerHalfEdge(newEdge.twin)
+        #recalculate length
+        self.getLength_sq(force=True)
+        self.twin.getLength_sq(force=True)
+        #insert into next/prev ordering
+        newEdge.addNext(self.next, force=True)
+        newEdge.twin.addPrev(self.twin.prev, force=True)
+        self.addNext(newEdge, force=True)
+        newEdge.twin.addNext(self.twin, force=True)
         return (newPoint, newEdge)
 
     def split_by_ratio(self, r=0.5):
@@ -168,8 +201,8 @@ class HalfEdge:
         """ Intersect two edges mathematically,
         returns intersection point or None """
         assert(isinstance(otherEdge, HalfEdge))
-        lineSegment1 = self.toArray().flatten()
-        lineSegment2 = otherEdge.toArray().flatten()
+        lineSegment1 = self.toArray()
+        lineSegment2 = otherEdge.toArray()
         return intersect(lineSegment1, lineSegment2)
 
     def intersects_edge(self,bbox):
@@ -193,12 +226,10 @@ class HalfEdge:
         
     
     def intersects_bbox(self, bbox):
-        """ Return an integer 0-3 of the edge of a bbox the line intersects
-        0 : Left Vertical Edge
-        1 : Top Horizontal Edge
-        2 : Right Vertical Edge
-        3 : Bottom Horizontal Edge
-        None: no intersection
+        """ Return an enum of the edges of a bbox the line intersects
+        returns a cairo_utils.constants.IntersectEnum
+        returns a list. empty list is no intersections
+        
             bbox is [min_x, min_y, max_x, max_y]
         """
         #calculate intersection points for each of the 4 edges of the bbox,
@@ -209,22 +240,23 @@ class HalfEdge:
         if self.origin is None or self.twin.origin is None:
             raise Exception("Invalid line boundary test ")
         #adjust the bbox by an epsilon? not sure why. TODO: test this
-        bbox = bbox + np.array([-EPSILON, -EPSILON, EPSILON, EPSILON])
+        bbox_lines = bbox_to_lines(bbox)
+        selfLineSegment = self.toArray()
         start, end = self.toArray()
 
         logging.debug("Checking edge intersection:\n {}\n {}\n->{}\n----".format(start,
                                                                                  end,
                                                                                  bbox))
-        result = []
-        #convert the bbox
-        #create the test lines
-        #run the 4 intersections
-        #package
-        #return
 
-        
-        #return result
-        raise Exception("Broken")
+        result = []
+        #run the 4 intersections
+        for (curr_line, enumValue) in bbox_lines:
+            intersected = intersect(selfLineSegment, curr_line)
+            if intersected is not None:
+                result.append((intersected, enumValue))
+
+
+        return result
 
 
     def connections_align(self, other):
@@ -319,27 +351,32 @@ class HalfEdge:
         self.face = self.twin.face
         self.twin.face = oldFace
 
-    def addNext(self, nextEdge):
-        assert(isinstance(nextEdge, HalfEdge))
-        self.nexts.add(nextEdge)
-        nextEdge.prevs.add(self)
-        self.twin.prevs.add(nextEdge.twin)
-        nextEdge.twin.nexts.add(self.twin)
+    def addNext(self, nextEdge, force=False):
+        assert(nextEdge is None or isinstance(nextEdge, HalfEdge))
+        if not force:
+            assert(self.next is None)
+            assert(nextEdge is None or nextEdge.prev is None)
+        self.next = nextEdge
+        if self.next is not None:
+            self.next.prev = self
 
-    def addPrev(self, prevEdge):
+    def addPrev(self, prevEdge, force=False):
         """ Set the half edge prior to this one in the CCW ordering """
-        assert(isinstance(prevEdge, HalfEdge))
-        assert(prevEdge.twin.origin == self.origin)
-        self.prevs.add(prevEdge)
-        prevEdge.nexts.add(self)
-        self.twin.nexts.add(nextEdge.twin)
-        nextEdge.twin.prevs.add(self.twin)
+        assert(prevEdge is None or isinstance(prevEdge, HalfEdge))
+        if not force:
+            assert(self.prev is None)
+            assert(prevEdge is None or prevEdge.next is None)
+        self.prev = prevEdge
+        if self.prev is not None:
+            self.prev.next = self
 
     def connectNextToPrev(self):
         """ Removes this Halfedge from the ordering """
-        #for all prevs: connect to all nexts?
-        #for all nexts: connect to all prevs?
-        raise Exception("Unimplemented")
+        if self.prev is not None:
+            self.prev.next = self.next
+        if self.next is not None:
+            self.next.prev = self.prev
+        
 
     def toArray(self):
         """ Get an ndarray of the bounds of the edge """
@@ -406,19 +443,13 @@ class HalfEdge:
             #get the normalized direction of self.origin -> self.twin.origin
             newEnd = extend_line(self.origin.toArray(), self.twin.origin.toArray(), d, fromStart=False)
         #Then create a point at (dir * d), create a new edge to it
-        newEdge = self.dcel.createEdge(self.twin.origin.toArray(), newEnd)
-        #get all edges from this edge,
-        #A.Start
-        #A.End, all of further edges start
-        #EdgeEnds = [x.twin for x in edges if x.origin == A.End]
+        newVert = self.dcel.newVertex(newEnd)
+        newEdge = self.dcel.newEdge(self.twin.origin, newVert, prev=self, twinNext=self.twin)
         
-        #sort ccw order
-        #[HalfEdge.ccw(A.Start, A.End, x) for x in EdgeEnds]
         #apply rules to infer faces
         left_most = False
-        self.fix_faces(newEdge, left_most=left_most)
+        #self.fix_faces(newEdge, left_most=left_most)
         
-        self.addNext(newEdge)
         return newEdge
 
     def avg_direction_of_subsegments(self):
@@ -426,7 +457,7 @@ class HalfEdge:
         total line segment """
         raise Exception("Unimplemented")
 
-    def bbox_intersect(self, e=EPSILON):
+    def vertex_intersections(self, e=EPSILON):
         """ Create a bbox for the total line segment, and intersect check that with the
         dcel quadtree """
         raise Exception("Unimplemented")
@@ -511,4 +542,12 @@ class HalfEdge:
         #self.twin.face = he.face
         raise Exception("unimplemented")
 
-        
+
+    def getLength_sq(self, force=False):
+        """ Gets the calculated length, or calculate it. returns as a np.ndarray"""
+        if not force and self.length_sq is not -1:
+            return self.length_sq
+        #otherwise calculate
+        asArray = self.toArray()
+        self.length_sq = get_distance_raw(asArray[0], asArray[1])
+        return self.length_sq
