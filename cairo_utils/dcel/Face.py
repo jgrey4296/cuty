@@ -10,6 +10,7 @@ import IPython
 
 from .Vertex import Vertex
 from .HalfEdge import HalfEdge
+from cairo_utils.constants import TWOPI
 
 logging = root_logger.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class Face(object):
         #Site is the voronoi point that the face is built around
         self.site = site
         #Starting point for bounding edges, going anti-clockwise
-        self.outerComponent = None
+        #self.outerComponent = None
         #Clockwise inner loops - check this
         #Opposing face halfedges
         self.outerBoundaryEdges = []
@@ -39,8 +40,9 @@ class Face(object):
         if data is not None:
             self.data.update(data)
         self.dcel = dcel
-        
-        #todo: add a 'free vertices' field, which can be used to build the face
+
+        #free vertices to build a convex hull from:
+        self.free_vertices = set()
         
         if index is None:
             logging.debug("Creating Face {}".format(Face.nextIndex))
@@ -53,6 +55,16 @@ class Face(object):
             if self.index >= Face.nextIndex:
                 Face.nextIndex = self.index + 1
 
+    def copy(self):
+        #copy the halfedges
+        es = [x.copy() for x in self.edgeList]
+        #create a new face
+        f = self.dcel.newFace(edges=es)
+        #copy the data
+        f.data.update(self.data)
+        #return it
+        return f
+                
     @staticmethod
     def hull_from_vertices(verts):
         """ Given a set of vertices, return the convex hull they form,
@@ -230,7 +242,7 @@ class Face(object):
         bisecting_edge = newEdge.extend(rotate=radians(angle), d=10000)
         
         #intersect with all lines of the face until the intersection is found
-        intersections = [a for a in [bisecting_edge.intersect(x) for x in self.edgeList] if a is not None]
+        intersections = [a for a in [bisecting_edge.intersect(x) for x in self.edgeList if x is not newEdge and x is not edge] if a is not None]
         assert(len(intersections) == 1)
 
         #split that line at the intersection
@@ -249,14 +261,40 @@ class Face(object):
 
     def add_vertex(self, vert):
         """ Add a vertex, then recalculate the convex hull """
-        raise Exception("Unimplemented")
+        assert(isinstance(vert, Vertex))
+        self.free_vertices.add(vert)
 
+    def get_all_vertices(self):
+        """ Get all vertices of the face. both free and in halfedges """
+        all_verts = set()
+        all_verts.update(self.free_vertices)
+        for e in self.edgeList:
+            all_verts.update(e.getVertices())
+        return all_verts
+
+        
     def merge_faces(self, *args):
         """ Calculate a convex hull from all passed in faces,
-        update one face, remove the others, update all lines and vertices that connected to them """
-        raise Exception("Unimplemented")
+        creating a new face """
+        all_verts = self.get_all_vertices()
+        for f in args:
+            all_verts.update(f.get_all_vertices())
+        f = self.dcel.newFace()
+        f.free_vertices.update(all_verts)
+        #then build the convex hull
+        hull, discarded = Face.hull_from_vertices(f.free_vertices)
+        #create the edges
+                
+        #assign to face
 
+        #return the face
+        raise Exception("unimplemented")
+        
     def translate_edge(self, e, transform):
+        assert(e in self.edgeList)
+        assert(isinstance(transform, np.ndarray))
+        assert(transform.shape == (2,))
+        
         raise Exception("Unimplemented")
 
     def scale(self, amnt=None, vert_weights=None, edge_weights=None):
@@ -268,9 +306,10 @@ class Face(object):
         """ Cut the Face out from its verts and halfedges that comprise it,
         creating new verts and edges, so the face can be moved and scaled
         without breaking the already existing structure """
-        raise Exception("Unimplemented")
+        return self.copy()
 
     def rotate(self, rads):
         """ copy and rotate the entire face """
+        assert(-TWOPI <= rads <= TWOPI)
         raise Exception("Unimplemented")
     
