@@ -29,14 +29,20 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
     
     def test_export_import(self):
         exported = self.e._export()
-        self.assertTrue(all([x in exported for x in ["i","origin","twin","face","nexts","prevs","data"]]))
+        self.assertTrue(all([x in exported for x in ["i","origin","twin","face","next","prev","data"]]))
 
     def test_split(self):
+        originalEnd = self.e.twin.origin
+        otherEnd = self.e.twin
         (newPoint, newEdge) = self.e.split(np.array([0.5, 0]))
         self.assertTrue(all(self.e.twin.origin.toArray() == np.array([0.5,0])))
         self.assertTrue(all(newEdge.origin.toArray() == np.array([0.5,0])))
         self.assertTrue(all(newEdge.twin.origin.toArray() == np.array([1,0])))
 
+        self.assertTrue(newEdge.twin.origin == originalEnd)
+        self.assertTrue(otherEnd.origin == newPoint)
+        self.assertTrue(otherEnd.twin.origin == self.e.origin)
+        
     def test_split_by_ratio(self):
         (newPoint, newEdge) = self.e.split_by_ratio(r=0.5)
         self.assertTrue(all(self.e.twin.origin.toArray() == np.array([0.5,0])))
@@ -59,12 +65,13 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         #check intersection, non-intersection, and double intersection?
         #edge: 0,0 -> 1,0
         e = self.dc.createEdge(np.array([0,0]), np.array([1,0]))
-        result = e.intersects_bbox(np.array([0.5,0,1.5,0]))
+        result = e.intersects_bbox(np.array([-0.5,-0.5,0.5,0.5]))
         self.assertEqual(len(result), 1)
-        (edgeI, coords) = result[0]
-        self.assertIsInstance(edgeI, dcel.constants.IntersectEnum)
-        self.assertEqual(edgeI, dcel.constants.IntersectEnum.LEFT)
-        
+        (coords, edgeI) = result[0]
+        self.assertIsInstance(edgeI, utils.constants.IntersectEnum)
+        self.assertEqual(edgeI, utils.constants.IntersectEnum.VRIGHT)
+
+    #todo: add in a double edge bbox intersection test, and a null test
 
     def test_within(self):
         self.assertTrue(self.e.within(np.array([-0.5, -0.5, 1.5, 1.5])))
@@ -214,8 +221,12 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertTrue(np.allclose(result, np.array([[0,0], [0,1]])))
 
     def test_extend(self):
+        e = self.dc.createEdge(np.array([0,0]), np.array([1,0]))
+        e2 = e.extend(target=np.array([2,0]))
+        self.assertTrue(e2.prev == e)
+        self.assertTrue(e.next == e2)
+
         
-        return 0
 
     def test_avg_direction(self):
         return 0
