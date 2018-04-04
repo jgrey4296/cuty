@@ -4,6 +4,7 @@ import numpy as np
 import IPython
 from test_context import cairo_utils as utils
 from cairo_utils import math as cumath
+from cairo_utils.constants import IntersectEnum as IE
 import math
 
 
@@ -112,8 +113,8 @@ class CUMath_Tests(unittest.TestCase):
     #intersect
     def test_intersect(self):
         """ Check two simple lines intersect """
-        l1 = np.array([0, 0, 0, 1])
-        l2 = np.array([-1,0.5, 1, 0.5])
+        l1 = np.array([0, 0, 0, 1]).reshape((2,2))
+        l2 = np.array([-1,0.5, 1, 0.5]).reshape((2,2))
         intersection = cumath.intersect(l1, l2)
         self.assertIsNotNone(intersection)
         self.assertTrue((intersection == np.array([0, 0.5])).all())
@@ -121,26 +122,33 @@ class CUMath_Tests(unittest.TestCase):
     def test_intersect_fail(self):
         """ Check that two lines that intersect if infinite, don't intersect
         because of limited length """
-        l1 = np.array([0, 0, 0, 1])
-        l2 = np.array([-2,0.5, -1, 0.5])
+        l1 = np.array([0, 0, 0, 1]).reshape((2,2))
+        l2 = np.array([-2,0.5, -1, 0.5]).reshape((2,2))
         intersection = cumath.intersect(l1, l2)
         self.assertIsNone(intersection)
 
     def test_intersect_parallel_lines(self):
         """ Check that two parallel lines don't intersect """
-        l1 = np.array([0, 0, 0, 1])
-        l2 = np.array([0.5, 0, 0.5, 1])
+        l1 = np.array([0, 0, 0, 1]).reshape((2,2))
+        l2 = np.array([0.5, 0, 0.5, 1]).reshape((2,2))
         intersection = cumath.intersect(l1, l2)
         self.assertIsNone(intersection)
 
+    def test_intersect_negative(self):
+        l1 = np.array([-3, -2, -0, -2]).reshape((2,2))
+        l2 = np.array([-2, -3, -2, -1]).reshape((2,2))
+        intersection = cumath.intersect(l1, l2)
+        self.assertIsNotNone(intersection)
+
+        
     #is_point_on_line
     def test_is_point_on_line(self):
         """ Test whether points lie on a line or not """
-        l1 = np.array([0, 0, 0, 1])
+        l1 = np.array([0, 0, 0, 1]).reshape((2,2))
         p1 = np.array([0, 0.5])
         self.assertTrue(cumath.is_point_on_line(p1, l1))
 
-        l2 = np.array([0, 0, 1, 1])
+        l2 = np.array([0, 0, 1, 1]).reshape((2,2))
         p2 = np.array([0.5, 0.5])
         self.assertTrue(cumath.is_point_on_line(p2, l2))
 
@@ -205,6 +213,19 @@ class CUMath_Tests(unittest.TestCase):
     #clamp
     def test_clamp(self):
         return
+
+    def test_bbox_to_lines(self):
+        bbox = np.array([1,2,3,4])
+        result = cumath.bbox_to_lines(bbox, epsilon=0)
+        lines = [l.flatten() for (l, e) in result]
+        enums = [e for (l,e) in result]
+        self.assertEqual(enums, [ IE.HBOTTOM, IE.HTOP, IE.VLEFT, IE.VRIGHT ])
+        self.assertTrue((lines[0] == np.array([1,2,3,2])).all())
+        self.assertTrue((lines[1] == np.array([1,4,3,4])).all())
+        self.assertTrue((lines[2] == np.array([1,2,1,4])).all())
+        self.assertTrue((lines[3] == np.array([3,2,3,4])).all())
+                        
+        
     
           
 if __name__ == "__main__":
