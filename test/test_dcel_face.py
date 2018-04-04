@@ -97,25 +97,28 @@ class DCEL_FACE_Tests(unittest.TestCase):
         self.assertTrue(self.f.markedForCleanup)
 
     def test_subdivide(self):
-        self.f.subdivide(self.f.edgeList[0], ratio=0.5)
+        self.f.subdivide(self.f.edgeList[0], ratio=0.5, angle=90)
 
     def test_add_vertex(self):
-        return 0
+        v1 = self.dc.newVertex(np.array([0,0]))
+        emptyFace = self.dc.newFace()
+        emptyFace.add_vertex(v1)
 
     def test_translate_edge(self):
-        return 0
+        self.f.translate_edge(self.f.edgeList[0], np.array([1,0]))
 
     def test_merge_faces(self):
-        return 0
+        f2 = self.dc.newFace()
+        self.f.merge_faces(f2)
     
     def test_cut_out(self):
-        return 0
+        self.f.cut_out()
 
     def test_scale(self):
-        return 0
+        self.f.scale(amnt=2)
 
     def test_rotate(self):
-        return 0
+        self.f.rotate(1)
     
     
 if __name__ == "__main__":
