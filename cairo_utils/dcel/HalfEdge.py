@@ -4,8 +4,9 @@ import logging as root_logger
 from math import pi, atan2, copysign, degrees
 import numpy as np
 import IPython
-from cairo_utils.math import inCircle, get_distance, intersect, sampleAlongLine, get_normal, extend_line, rotatePoint, is_point_on_line, get_distance_raw, bbox_to_lines
-from cairo_utils.constants import TWOPI, IntersectEnum, EPSILON
+from ..math import inCircle, get_distance, intersect, sampleAlongLine, get_unit_vector, extend_line, rotatePoint, is_point_on_line, get_distance_raw, bbox_to_lines
+from ..constants import TWOPI, IntersectEnum, EPSILON
+from .constants import EditE
 from .Vertex import Vertex
 from .Line import Line
 
@@ -34,8 +35,6 @@ class HalfEdge:
         #need to generate new faces:
         self.face = None
         #connected edges:
-        #todo: separate into next *within* segment, and next *segment*?
-        #todo: switch these back to individual next/prev
         self.next = None
         self.prev = None
         self.dcel=dcel
@@ -64,7 +63,6 @@ class HalfEdge:
         if data is not None:
             self.data.update(data)
 
-
     def copy(self):
         """ Copy the halfedge pair. sub-copies the vertexs too """
         assert(self.origin is not None)
@@ -78,6 +76,13 @@ class HalfEdge:
         e.data.update(self.data)
         return e
             
+        
+
+    #------------------------------
+    # def export
+    #------------------------------
+    
+    
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
         logging.debug("Exporting Edge: {}".format(self.index))
@@ -107,6 +112,10 @@ class HalfEdge:
             'data' : self.data
         }
 
+    #------------------------------
+    # def Human Readable Representations
+    #------------------------------
+    
     def __str__(self):
         return "HalfEdge: {} - {}".format(self.origin, self.twin.origin)
 
@@ -158,8 +167,15 @@ class HalfEdge:
         #TODO: use ccw
         #todo: self.origin -> (self.twin | other.twin)
         raise Exception("Deprecated: HalfEdge.__lt__")
+    #------------------------------
+    # def Math
+    #------------------------------
 
 
+    #------------------------------
+    # def Modifiers
+    #------------------------------
+    
     def split(self, loc, copy_data=True):
         """ Take an s -> e, and make it now two edges s -> (x,y) -> e 
         returns (firstHalf, newPoint, secondHalf)"""
@@ -197,6 +213,13 @@ class HalfEdge:
         return self.split(point[0])        
 
         
+        
+    
+    
+    #------------------------------
+    # def Comparison
+    #------------------------------
+    
     def intersect(self, otherEdge):
         """ Intersect two edges mathematically,
         returns intersection point or None """
@@ -259,6 +282,17 @@ class HalfEdge:
         return result
 
 
+    
+
+    #------------------------------
+    # def Utilities
+    #------------------------------
+
+    
+    #------------------------------
+    # def Verification
+    #------------------------------
+
     def connections_align(self, other):
         """ Verify that this and another halfedge's together form a full edge """
         assert(isinstance(other, HalfEdge))
@@ -307,6 +341,11 @@ class HalfEdge:
         asLine = Line.newLine(self.origin, self.twin.origin)
         return asLine.constrain(*bbox)
 
+    
+    #------------------------------
+    # def Vertex Access
+    #------------------------------
+    
     def addVertex(self, vertex):
         """ Place a vertex into the first available slot of the full edge """
         assert(isinstance(vertex, Vertex))
@@ -351,6 +390,11 @@ class HalfEdge:
         self.face = self.twin.face
         self.twin.face = oldFace
 
+    
+    #------------------------------
+    # def Edge Sequencing
+    #------------------------------
+    
     def addNext(self, nextEdge, force=False):
         assert(nextEdge is None or isinstance(nextEdge, HalfEdge))
         if not force:
@@ -387,6 +431,10 @@ class HalfEdge:
             off into infinity """
         return self.origin is None or self.twin is None or self.twin.origin is None
 
+    #------------------------------
+    # def Cleanup
+    #------------------------------
+                
     def markForCleanup(self):
         """ Marks this halfedge for cleanup. NOT for the twin, due to degenerate cases of hedges at boundaries """
         self.markedForCleanup = True
@@ -468,6 +516,9 @@ class HalfEdge:
         assert(point.shape == (2,))
         coords = self.toArray()
         return is_point_on_line(point, coords)
+    #------------------------------
+    # def deprecated
+    #------------------------------
     
 
     @staticmethod
