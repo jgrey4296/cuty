@@ -5,5 +5,5 @@ from .Vertex import Vertex
 from . import dcel_drawing as drawing
 
 _author = "jgrey"
-_version = "0.1.2"
+_version = "0.1.3"
 
