@@ -1,14 +1,15 @@
 """ Vertex: The lowest level data structure in a dcel """
 import sys
+import IPython
 from numbers import Number
 import logging as root_logger
 import numpy as np
 
-from cairo_utils.math import inCircle
-from cairo_utils.constants import TWOPI
+from .constants import EditE
+from ..math import inCircle, rotatePoint
+from ..constants import TWOPI, D_EPSILON
 
 logging = root_logger.getLogger(__name__)
-EPSILON = sys.float_info.epsilon
 
 class Vertex:
     """ A Simple vertex for two dimensions.
