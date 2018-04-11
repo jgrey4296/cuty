@@ -1,7 +1,7 @@
 import unittest
 import logging
 from test_context import cairo_utils as utils
-from utils import Parabola
+from cairo_utils import Parabola
 
 
 class Parabola_Tests(unittest.TestCase):

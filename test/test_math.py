@@ -140,6 +140,13 @@ class CUMath_Tests(unittest.TestCase):
         intersection = cumath.intersect(l1, l2)
         self.assertIsNotNone(intersection)
 
+    def test_intersect_specific_line(self):
+        l1 = np.array([-3.0355, -3.0355, 0.5, 0.5]).reshape((2,2))
+        l2 = np.array([0, -1, -1, 0]).reshape((2,2)).astype(np.float)
+        intersection = cumath.intersect(l2, l1)
+
+        self.assertIsNotNone(intersection)
+
         
     #is_point_on_line
     def test_is_point_on_line(self):
@@ -184,7 +191,18 @@ class CUMath_Tests(unittest.TestCase):
     
     #inCircle
     def test_inCircle(self):
-        return
+        a = np.array([1,0])
+        result = cumath.inCircle(np.array([0,0]), 1, a)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertEqual(result.shape, (1,))
+        
+    def test_inCircle_multi(self):
+        a = np.array([[1,1],[0,1]])
+        result = cumath.inCircle(np.array([0,0]), 1, a)
+        self.assertIsInstance(result, np.ndarray)
+        self.assertEqual(result.shape, (2,))
+
+        
     
     #isClockwise
     def test_isClockwise(self):

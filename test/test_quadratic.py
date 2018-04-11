@@ -1,7 +1,7 @@
 import unittest
 import logging
 from test_context import cairo_utils as utils
-from utils import Quadratic
+from cairo_utils import Quadratic
 
 
 class Quadratic_Tests(unittest.TestCase):
