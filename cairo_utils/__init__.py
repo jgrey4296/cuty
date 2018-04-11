@@ -11,4 +11,4 @@ from . import math
 
 
 _author = "jgrey"
-_version = "0.1.2"
+_version = "0.1.3"
