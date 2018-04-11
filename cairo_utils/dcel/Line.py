@@ -3,7 +3,7 @@ from math import sqrt
 from numbers import Number
 import logging as root_logger
 import numpy as np
-from cairo_utils.math import intersect, get_distance
+from ..math import intersect, get_distance
 import IPython
 
 logging = root_logger.getLogger(__name__)
@@ -14,13 +14,19 @@ class Line:
     """ A line as a start x and y, a direction, and a length, useful for
     algebraic manipulation """
 
-    def __init__(self, sx, sy, dx, dy, l, swapped=False):
-        assert(all([isinstance(x, Number) for x in [sx, sy, dx, dy, l]]))
-        self.source = np.array([sx, sy])
-        self.direction = np.array([dx, dy])
+    def __init__(self, s, d, l, swapped=False):
+        assert(all([isinstance(x, np.ndarray) for x in [s,d]]))
+        self.source = s
+        self.direction = d
         self.length = l
         self.swapped = swapped
 
+    def __repr__(self):
+        return "Line(S: {}, D: {}, L: {}, SW: {})".format(self.source,
+                                                          self.direction,
+                                                          self.length,
+                                                          self.swapped)
+        
     def constrain(self, min_x, min_y, max_x, max_y):
         """ Intersect the line with a bounding box, adjusting points as necessary """
         #min and max: [x,y]
@@ -50,20 +56,20 @@ class Line:
             return np.row_stack((self.source, self.destination()))
 
     @staticmethod
-    def newLine(a, b):
+    def newLine(a):
         """ Create a new line from two vertices """
+        assert(isinstance(a, np.ndarray))
+        assert(a.shape == (2,2))
         #Calculate the line parameters:
-        vx = b.loc[0] - a.loc[0]
-        vy = b.loc[1] - a.loc[1]
-        l = sqrt(pow(vx, 2) + pow(vy, 2))
+        vec = a[1] - a[0]
+        l = sqrt(pow(vec, 2).sum())
         scale = 0
         if l != 0:
             scale = 1/l
-        dx = vx * scale
-        dy = vy * scale
+        d = vec * scale
         #cx = a.x + (dx * l)
         #cy = a.y + (dy * l)
-        return Line(a.loc[0], a.loc[1], dx, dy, l)
+        return Line(a[0], d, l)
 
 
     def intersect_with_circle(self, centre, radius):
@@ -79,13 +85,15 @@ class Line:
         
         if np.isclose(det, 0):
             t = -B / (2 * A)
-            return (self.source + (t * self.direction), None)
+            result =  np.array([self.source + (t * self.direction)])
+            return result
 
         #two intersections:
         t = (-B + sqrt(det)) / (2 * A)
         t2 = (-B - sqrt(det)) / (2 * A)
-        return (self.source + (t * self.direction),
-                self.source + (t2 * self.direction))
+
+        result = self.source + (np.array([[t],[t2]]) * self.direction)
+        return result
 
     def __lt__(self, other):
         #TODO
