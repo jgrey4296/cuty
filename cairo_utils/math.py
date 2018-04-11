@@ -1,12 +1,15 @@
 from numpy import cos, sin
 from numpy import pi
 from functools import partial
+import logging as root_logger
 import IPython
 from scipy.interpolate import splprep, splev
 import numpy as np
 import numpy.random
 import random
 from .constants import TWOPI, QUARTERPI, EPSILON, IntersectEnum
+
+logging = root_logger.getLogger(__name__)
 
 #Partial Matrix Mul constructor for use in rotate point
 #for slices of a 2d array:
@@ -145,7 +148,8 @@ def get_distance_raw(p1, p2):
     p1 = p1.reshape(-1, 2)
     p2 = p2.reshape(-1, 2)
     dSquared = pow(p2-p1, 2)
-    summed = dSquared[:, 0] + dSquared[:, 1]
+    #summed = dSquared[:, 0] + dSquared[:, 1]
+    summed = dSquared.sum(axis=1)
     return summed
 
 def get_distance(p1, p2):
@@ -163,6 +167,9 @@ def get_distance_xyxy(x1,y1,x2,y2):
 
 def get_normal(p1, p2):
     """ Get the normalized direction from two points """
+    raise Exception("Misnamed: Use get_unit_vector")
+
+def get_unit_vector(p1, p2):    
     assert(isinstance(p1, np.ndarray))
     assert(isinstance(p2, np.ndarray))
     d = get_distance(p1, p2)
@@ -175,11 +182,10 @@ def get_normal(p1, p2):
 
 def get_bisector(p1, p2, r=False):
     """ With a normalised line,  rotate 90 degrees,
-    r=True : to the... right?
-    r=False : the the ...left?
-    TODO: check directions
+    r=True : to the right
+    r=False : to the left
     """
-    n = get_normal(p1, p2)
+    n = get_unit_vector(p1, p2)
     if r:
         nPrime = n.dot([[0, -1],
                         [1, 0]])
@@ -234,7 +240,7 @@ def get_circle_3p(p1, p2, p3):
 
 def extend_line(p1, p2, m, fromStart=True):
     """ Extend a line by m units """
-    n = get_normal(p1, p2)
+    n = get_unit_vector(p1, p2)
     if fromStart:
         el = p1 + (n * m)
     else:
@@ -365,49 +371,30 @@ def intersect(l1, l2):
     p3 = l2[1]
 
     a1 = p1[1] - p0[1]
-    b1 = p1[0] - p0[0]
-    d1 = p1 - p0
-    c1 = np.dot(d1[::-1], p0)
+    b1 = p0[0] - p1[0]
     c1b = a1 * p0[0] + b1 * p0[1]
-    assert(c1 == c1b)
-
     
     a2 = p3[1] - p2[1]
-    b2 = p3[0] - p2[0]
-    d2 = p3 - p2
-    c2 = np.dot(d2[::-1], p2)
+    b2 = p2[0] - p3[0]
     c2b = a2*p2[0] + b2*p2[1]
-    assert(c2 == c2b)
-    
 
-    det = np.cross(d1[::-1], d2[::-1])
     detb = a1 * b2 - a2 * b1
-    assert(det == detb)
     
-    cd = np.row_stack((d1, d2))
-    cs = np.array([c1, c2])
-    
-    if det == 0:
+    if detb == 0:
         return None
 
-    x = (cd[1,0] * cs[0] - cd[0,0] * cs[1]) / det
-    y = (cd[0,1] * cs[1] - cd[1,1] * cs[0]) /det
-    xy = np.array([x,y])
-    
-    xb = (b2 * c1 - b1 * c2) / det
-    yb = (a1 * c2 - a2 * c1) / det
+    xb = ((c1b * b2) - (b1 * c2b)) / detb
+    yb = ((a1 * c2b) - (c1b * a2)) / detb
     xyb = np.array([xb,yb])
-    assert((xy == xyb).all())
-    
 
     l1mins = np.min((p0, p1), axis=0)
     l2mins = np.min((p2,p3), axis=0)
     l1maxs = np.max((p0, p1), axis=0)
     l2maxs = np.max((p2,p3), axis=0)
 
-    if (l1mins <= xy).all() and (l2mins <= xy).all() and \
-       (xy <= l1maxs).all() and (xy <= l2maxs).all():
-        return xy
+    if (l1mins <= xyb).all() and (l2mins <= xyb).all() and \
+       (xyb <= l1maxs).all() and (xyb <= l2maxs).all():
+        return xyb
 
     return None
     
@@ -433,7 +420,6 @@ def is_point_on_line(p, l):
     slope = (l[0,1] - l[1,1]) / (l[0,0] - l[1,0])
     y_intersect = - slope * l[0,0] + l[0,1]
     line_y = slope * p[0] + y_intersect
-    
     return line_y == p[1] and in_bounds_y and in_bounds_x
         
 
@@ -481,8 +467,8 @@ def sort_coords(arr):
 
 def inCircle(centre, radius, points):
     """ Test a set of points to see if they are within a circle's radius """
-    d = get_distance(centre, points)
-    return d < radius
+    d = get_distance_raw(centre, points)
+    return d < pow(radius, 2)
 
 def isClockwise(*args, cartesian=True):
     """ Test whether a set of points are in clockwise order  """
