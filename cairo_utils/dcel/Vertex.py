@@ -114,6 +114,10 @@ class Vertex:
         loc = loc.astype(np.float64)
         return np.array([loc - e, loc + e]).flatten()
 
+    #------------------------------
+    #def queries
+    #------------------------------
+
         """ Utility method to get nearby vertices through the dcel reference "",
         returns the list of matches *including* self """
         assert(self.dcel is not None)
@@ -155,11 +159,18 @@ class Vertex:
         """ Check the vertex is entirely outside of the bbox [x,y,x2,y2] """
         return not self.within(bbox)
 
+        
+    #------------------------------
+    # def Coordinate access
+    #------------------------------
     def toArray(self):
         """ Convert the Vertex's coords to a simple numpy array """
         return self.loc
 
-
+    #------------------------------
+    # Def Modifiers
+    #------------------------------
+    
     def extend_line_to(self, dir=None, len=None, rad=None, target=None, edge_data=None):
         """ create a line extending out from this vertex  """
         #TODO: calc target from dir, len, rad
