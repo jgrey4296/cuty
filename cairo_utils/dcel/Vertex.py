@@ -33,6 +33,7 @@ class Vertex:
             self.data.update(data)
         #Reference back to the dcel
         self.dcel = dcel
+        self.markedForCleanup = False
         
         self.active = True
         if active is not None:
@@ -50,13 +51,20 @@ class Vertex:
             if self.index >= Vertex.nextIndex:
                 Vertex.nextIndex = self.index + 1
 
+    
     def copy(self):
         """ Create an isolated copy of this vertex. Doesn't copy halfedge connections, 
         but does copy data """
-        newVert = self.dcel.newVertex(self.loc, data=self.data.copy(), force=True)
+        newVert = self.dcel.newVertex(self.loc, data=self.data.copy())
         return newVert
 
-                
+    def markForCleanup(self):
+        self.markedForCleanup = True
+
+    #------------------------------
+    # def exporting
+    #------------------------------
+    
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
         logging.debug("Exporting Vertex: {}".format(self.index))
@@ -69,44 +77,43 @@ class Vertex:
             "active" : self.active
         }
 
+    #------------------------------
+    # def Human Readable Representations
+    #------------------------------
+    
     def __str__(self):
         return "({:.3f},{:.3f})".format(self.loc[0], self.loc[1])
 
     def __repr__(self):
-        if self.incidentEdge is not None:
-            incident = self.incidentEdge.index
-        else:
-            incident = False
-        
-        return "(V: {}, incident:{}, edges: {})".format(self.index, incident, len(self.halfEdges))
-    
-    def isEdgeless(self):
-        return len(self.halfEdges) == 0
+        return "(V: {}, edges: {}, ({:.3f}, {:.3f})".format(self.index, len(self.halfEdges),
+                                                           self.loc[0], self.loc[1])
 
+
+    #------------------------------
+    # def activation
+    #------------------------------
     def activate(self):
         self.active = True
 
     def deactivate(self):
         self.active = False
 
-    def bbox(self, e=EPSILON):
+    #------------------------------
+    # def bboxes
+    #------------------------------
+        
+    def bbox(self, e=D_EPSILON):
         """ Create a minimal bbox for the vertex,
         for dcel to find overlapping vertices using a quadtree  """
-        return np.array([self.loc[0]-e,
-                         self.loc[1]-e,
-                         self.loc[0]+e,
-                         self.loc[1]+e])
+        return Vertex.free_bbox(self.loc, e=e)
 
     @staticmethod
-    def free_bbox(loc, e=EPSILON):
+    def free_bbox(loc, e=D_EPSILON):
         """ Static method utility to create a bbox. used for quad_tree checking without creating the vertex """
         assert(isinstance(loc, np.ndarray))
-        return np.array([loc[0]-e,
-                         loc[1]-e,
-                         loc[0]+e,
-                         loc[1]+e])
-        
-    def get_nearby_vertices(self, e=EPSILON):
+        loc = loc.astype(np.float64)
+        return np.array([loc - e, loc + e]).flatten()
+
         """ Utility method to get nearby vertices through the dcel reference "",
         returns the list of matches *including* self """
         assert(self.dcel is not None)
