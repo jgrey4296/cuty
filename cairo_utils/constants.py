@@ -17,6 +17,7 @@ TWOPI = 2 * pi
 QUARTERPI = 0.5 * pi
 THREEFOURTHSTWOPI = 3/4 * TWOPI
 EPSILON = sys.float_info.epsilon
+D_EPSILON = EPSILON * 20
 
 TEXT = [0, 1, 1, 1]
 EDGE = [1, 0, 0, 1]
