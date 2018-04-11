@@ -5,7 +5,6 @@ from numbers import Number
 from os.path import isfile
 from random import random
 import IPython
-import logging
 import math
 import numpy as np
 import pickle
@@ -13,19 +12,16 @@ import pyqtree
 import sys
 from itertools import cycle, islice
 
-from cairo_utils.math import get_distance
+from ..math import get_distance
 from .Face import Face
 from .HalfEdge import HalfEdge
 from .Vertex import Vertex
 from .Line import Line
 from .constants import EdgeE
 
-EPSILON = sys.float_info.epsilon
-CENTRE = np.array([[0.5, 0.5]])
-PI = math.pi
-TWOPI = 2 * PI
-HALFPI = PI * 0.5
-QPI = PI * 0.5
+import logging as root_logger
+logging = root_logger.getLogger(__name__)
+
 
 #for importing data into the dcel:
 DataPair = namedtuple('DataPair', 'key obj data')
@@ -59,6 +55,10 @@ class DCEL(object):
         newDCEL = DCEL(self.bbox)
         newDCEL.import_data(self.export_data())        
         return newDCEL
+    
+    #------------------------------
+    # def IO
+    #------------------------------
         
     def export_data(self):
         """ Export a simple format to define vertices,  halfedges,  faces,
@@ -140,6 +140,12 @@ class DCEL(object):
         self.faces = [x.obj for x in local_faces.values()]
         self.calculate_quad_tree()
 
+        
+
+    #------------------------------
+    # def quadtree
+    #------------------------------
+    
     def clear_quad_tree(self):
         self.vertex_quad_tree = pyqtree.Index(bbox=self.bbox)
 
@@ -166,6 +172,12 @@ class DCEL(object):
 
         infiniteEdges = [x for x in self.halfEdges if x.isInfinite()]
         infiniteEdgeDescription = "Infinite Edges: num: {}".format(len(infiniteEdges))
+    #------------------------------
+    # def PURGING
+    #------------------------------
+            
+    def purge_edge(self, target):
+        assert(isinstance(target, HalfEdge))
 
         completeEdges = []
         for x in self.halfEdges:
@@ -192,9 +204,10 @@ class DCEL(object):
                           "----\n"])
 
 
-    #--------------------
-    # MAIN VERTEX, HALFEDGE, FACE CREATION:
-    #--------------------
+    #------------------------------
+    # def Vertex, Edge, HalfEdge Creation
+    #------------------------------
+    
     def newVertex(self, loc, data=None, force=False):
         """ Create a new vertex,  or reuse an existing vertex.
         to force a new vertex instead of reusing, set force to True
@@ -268,9 +281,7 @@ class DCEL(object):
         
         return newFace
 
-    #--------------------
-    # UTILITY CREATION METHODS
-    #--------------------
+
     def createEdge(self, origin, end, edata=None, vdata=None, subdivs=0):
         """ Utility to create two vertices, and put them into a pair of halfedges,
         returning a halfedge
@@ -302,9 +313,10 @@ class DCEL(object):
             path.append(self.createEdge(a,b, edata=edata, vdata=vdata))
         return path        
     
-    #--------------------
-    #MISC METHODS:
-    #--------------------
+    #------------------------------
+    # def Coherence Utils
+    #------------------------------
+    
     def linkEdgesTogether(self, edges, loop=False):
         """ Given a list of half edges, set their prev and next fields in order """
         #TODO: check this
@@ -501,6 +513,12 @@ class DCEL(object):
             newEdge_2.addPrev(newEdge_1)
             newEdge_1.addPrev(prior_edge)
 
+        
+    #------------------------------
+    # def Utilities
+    #------------------------------
+    
+    def orderVertices(self, focus, vertices):
 
     def purge_faces(self):
         """ Same as purging halfedges or vertices,  but for faces """
@@ -535,6 +553,12 @@ class DCEL(object):
         #add together to get corner
         v3 = v1 + v2
         return self.newVertex(*v3)
+
+            
+
+    #------------------------------
+    # def deprecated
+    #------------------------------
 
     def fixup_halfedges(self):
         """ Fix all halfedges to ensure they are counter-clockwise ordered """
