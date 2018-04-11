@@ -8,9 +8,12 @@ from math import radians
 from scipy.spatial import ConvexHull
 import IPython
 
+from .constants import EditE
 from .Vertex import Vertex
 from .HalfEdge import HalfEdge
-from cairo_utils.constants import TWOPI
+from ..constants import TWOPI
+from .. import math as cumath
+from ..math import rotatePoint
 
 logging = root_logger.getLogger(__name__)
 
@@ -26,13 +29,9 @@ class Face(object):
         assert(isinstance(site, np.ndarray))
         #Site is the voronoi point that the face is built around
         self.site = site
-        #Starting point for bounding edges, going anti-clockwise
-        #self.outerComponent = None
-        #Clockwise inner loops - check this
-        #Opposing face halfedges
-        self.outerBoundaryEdges = []
         #Primary list of ccw edges for this face
         self.edgeList = []
+        self.coord_list = None
         #mark face for cleanup:
         self.markedForCleanup = False
         #Additional Data:
@@ -65,6 +64,10 @@ class Face(object):
         #return it
         return f
                 
+    #------------------------------
+    # def hulls
+    #------------------------------
+
     @staticmethod
     def hull_from_vertices(verts):
         """ Given a set of vertices, return the convex hull they form,
@@ -80,6 +83,10 @@ class Face(object):
         assert(len(discardVerts) + len(hullVerts) == len(verts))
         return (hullVerts, list(discardVerts))
 
+    #------------------------------
+    # def Human Readable Representations
+    #------------------------------
+    
                 
     def __str__(self):
         return "Face: {}".format(self.getCentroid())
@@ -95,6 +102,10 @@ class Face(object):
                                                                        outer,
                                                                        inner,
                                                                        edgeList)        
+    #------------------------------
+    # def Exporting
+    #------------------------------
+    
     
     def _export(self):
         """ Export identifiers rather than objects, to allow reconstruction """
@@ -122,6 +133,11 @@ class Face(object):
         logging.debug("Bbox for Face {}  : {}".format(self.index, bbox))
         return bbox
 
+    
+    #------------------------------
+    # def centroids
+    #------------------------------
+        
     def getAvgCentroid(self):
         """ Get the averaged centre point of the face from the vertices of the edges """
         k = len(self.edgeList)
@@ -166,6 +182,10 @@ class Face(object):
         #     centroid /= (6*signedArea)
         # return centroid
 
+    #------------------------------
+    # def edge access
+    #------------------------------
+            
     def getEdges(self):
         """ Return a copy of the edgelist for this face """
         return self.edgeList.copy()
@@ -222,6 +242,11 @@ class Face(object):
     def markForCleanup(self):
         self.markedForCleanup = True
 
+    #------------------------------
+    # def modifiers
+    #------------------------------
+    
+        
     def subdivide(self, edge, ratio=None, angle=0):
         """ Bisect / Divide a face in half by creating a new line
         on the ratio point of the edge, at the angle specified, until it intersects
@@ -313,3 +338,14 @@ class Face(object):
         assert(-TWOPI <= rads <= TWOPI)
         raise Exception("Unimplemented")
     
+            
+    #------------------------------
+    # def Vertex access
+    #------------------------------
+        
+    def add_vertex(self, vert):
+    #------------------------------
+    # def verification
+    #------------------------------
+        
+    def fixup(self, bbox=None):
