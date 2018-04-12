@@ -209,3 +209,29 @@ class Vertex:
         return newEdge
 
 
+    def translate(self, dir, d=1, abs=False, candidates=None, force=False):
+        """ Move the vertex by the vector dir, scaled by distance d,
+        if abs is true, just move to the specified point"""
+        assert(isinstance(dir, np.ndarray))
+        assert(dir.shape == (2,))
+        if not abs:
+            target = self.toArray() + (dir * d)
+        else:
+            target = dir
+        if not force and self.has_constraints(candidates):
+            return (self.dcel.newVertex(target), EditE.NEW)
+        else:
+            self.loc = target
+            return (self, EditE.MODIFIED)
+
+    def rotate(self, c=None, r=0, candidates=None, force=False):
+        """ Rotate the point around a target """
+        assert(isinstance(c, np.ndarray))
+        assert(c.shape == (2,))
+        assert(-TWOPI <= r <= TWOPI)
+        newLoc = rotatePoint(self.toArray(), cen=c, rads=r)
+        if not force and self.has_constraints(candidates):
+            return (self.dcel.newVertex(newLoc), EditE.NEW)
+        else:
+            self.loc = newLoc
+            return (self, EditE.MODIFIED)
