@@ -104,16 +104,9 @@ class Face(object):
         return "Face: {}".format(self.getCentroid())
 
     def __repr__(self):
-        if self.outerComponent is not None:
-            outer = self.outerComponent.index
-        else:
-            outer = False
-        inner = len(self.outerBoundaryEdges)
         edgeList = len(self.edgeList)
-        return "(Face: {}, outer: {}, inner: {}, edgeList: {})".format(self.index,
-                                                                       outer,
-                                                                       inner,
-                                                                       edgeList)        
+        return "(Face: {}, edgeList: {})".format(self.index, edgeList)        
+
     #------------------------------
     # def Exporting
     #------------------------------
