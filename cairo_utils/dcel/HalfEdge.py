@@ -435,11 +435,62 @@ class HalfEdge:
         return result
 
 
+    def point_is_on_line(self, point):
+        """ Test to see if a particular x,y coord is on a line """
+        assert(isinstance(point, np.ndarray))
+        assert(point.shape == (2,))
+        coords = self.toArray()
+        return is_point_on_line(point, coords)
+    
+
+    @staticmethod
+    def compareEdges(center, a, b):
+        """ Compare two halfedges against a centre point, returning whether a is CCW, equal, or CW
+        from b 
+        """
+        assert(isinstance(center, np.ndarray))
+        assert(isinstance(a, HalfEdge))
+        assert(isinstance(b, HalfEdge))
+
+        offset_a = a.origin.toArray() - center
+        offset_b = b.origin.toArray() - center
+
+        deg_a = (degrees(atan2(offset_a[1], offset_a[0])) + 360) % 360
+        deg_b = (degrees(atan2(offset_b[1], offset_b[0])) + 360) % 360
+
+        return deg_a <= deg_b
+
+    @staticmethod
+    def ccw(a, b, c):
+        """ Test for left-turn on three points of a triangle """
+        assert(all([isinstance(x, np.ndarray) for x in [a,b,c]]))
+        offset_b = b - a
+        offset_c = c - a
+        crossed = np.cross(offset_b, offset_c)
+        return crossed >= 0
+
+    @staticmethod
+    def ccw_e(a, b, c):
+        """ Test a centre point and two halfedges for ccw ordering """
+        assert(isinstance(a, np.ndarray))
+        assert(isinstance(b, HalfEdge))
+        assert(isinstance(c, HalfEdge))
+        firstOrigin = b.origin.toArray()
+        secondOrigin = c.origin.toArray()
+        offset_b = firstOrigin - a
+        offset_c = secondOrigin - a
+        crossed = np.cross(offset_b, offset_c)
+        return crossed
 
     def __lt__(self, other):
         return HalfEdge.compareEdges(self.face.site, self, other)
 
     
+    def he_ccw(self, centre):
+        """ Verify the halfedge is ccw ordered """
+        assert(isinstance(centre, np.ndarray))
+        return HalfEdge.ccw(centre, self.origin.toArray(), self.twin.origin.toArray())
+
     
 
     #------------------------------
