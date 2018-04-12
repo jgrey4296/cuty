@@ -181,6 +181,23 @@ class DCEL(object):
         self.faces = [x.obj for x in local_faces.values()]
         self.calculate_quad_tree()
 
+    @staticmethod
+    def loadfile(filename):
+        """ Create a DCEL from a saved pickle """
+        if not isfile("{}.dcel".format(filename)):
+            raise Exception("Non-existing filename to load into dcel")
+        with open("{}.dcel".format(filename), 'rb') as f:
+            dcel_data = pickle.load(f)
+        the_dcel = DCEL()
+        the_dcel.import_data(dcel_data)
+        return the_dcel
+
+    def savefile(self, filename):
+        """ Save dcel data to a pickle """
+        theData = self.export_data()
+        with open("{}.dcel".format(filename), 'wb') as f:
+            pickle.dump(theData, f)
+
         
 
     #------------------------------
