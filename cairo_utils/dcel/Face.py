@@ -486,3 +486,85 @@ class Face(object):
     #------------------------------
         
     def fixup(self, bbox=None):
+        """ Verify and enforce correct designations of
+        edge ordering, next/prev settings, and face settings """
+        if not bool(self.edgeList):
+            self.markForCleanup()
+            return []
+        if len(self.edgeList) < 2:
+            return []
+
+        self.sort_edges()
+        
+        inferred_edges = []
+        edges = self.edgeList.copy()
+        prev = edges[-1]
+        for e in edges:
+            #register face to edge
+            e.face = self
+            #enforce next and prev
+            if e.prev is not prev:
+                e.addPrev(prev, force=True)
+            #if the vertices don't align, create an additional edge to connect
+            if not prev.connections_align(e):
+                logging.debug("connections don't align")
+                newEdge = self.dcel.newEdge(e.prev.twin.origin,
+                                            e.origin,
+                                            twinFace=e.twin.face,
+                                            edata=e.data,
+                                            vdata=e.origin.data)
+                newEdge.face = self
+                newEdge.addPrev(e.prev, force=True)
+                newEdge.addNext(e, force=True)
+                #insert that new edge into the edgeList
+                index = self.edgeList.index(e)
+                self.edgeList.insert(index, newEdge)
+                inferred_edges.append(newEdge)
+
+            prev = e
+                
+        return inferred_edges
+
+    def has_constraints(self, candidateSet=None):
+        """ Tests whether the face's component edges and vertices are claimed by
+        anything other than the face's own halfedges and their twins, and any passed in 
+        candidates """
+        if candidateSet is None:
+            candidateSet = set()
+        candidatesPlusSelf = candidateSet.union([self], self.edgeList, [x.twin for x in self.edgeList if x.twin is not None])
+        return any([x.has_constraints(candidatesPlusSelf) for x in self.edgeList])
+        
+        
+            
+        # #if they intersect with different bounding walls,  they need a corner
+        # intersect_1 = current_edge.intersects_edge(bbox)
+        # intersect_2 = prior_edge.intersects_edge(bbox)
+        # logging.debug("Intersect Values: {} {}".format(intersect_1, intersect_2))
+
+        # if intersect_1 is None or intersect_2 is None:
+        #     logging.debug("Non- side intersecting lines")
+
+        # #Simple connection requirement, straight line between end points
+        # if intersect_1 == intersect_2 or any([x is None for x in [intersect_1, intersect_2]]):
+        #     logging.debug("Match, new simple edge between: {}={}".format(current_edge.index,
+        #                                                                  prior_edge.index))
+        #     #connect together with simple edge
+        #     #twin face is not set because theres no face outside of bounds
+        #     newEdge = self.newEdge(prior_edge.twin.origin,
+        #                            current_edge.origin,
+        #                            face=f,
+        #                            prev=prior_edge)
+        #     newEdge.setPrev(prior_edge)
+        #     current_edge.setPrev(newEdge)
+
+        # else:
+        #     logging.debug("Creating a corner edge connection between: {}={}".format(current_edge.index, prior_edge.index))
+        #     #Connect the edges via an intermediate, corner vertex
+        #     newVert = self.create_corner_vertex(intersect_1, intersect_2, bbox)
+        #     logging.debug("Corner Vertex: {}".format(newVert))
+        #     newEdge_1 = self.newEdge(prior_edge.twin.origin, newVert, face=f, prev=prior_edge)
+        #     newEdge_2 = self.newEdge(newVert, current_edge.origin, face=f, prev=newEdge_1)
+            
+        #     current_edge.addPrev(newEdge_2)
+        #     newEdge_2.addPrev(newEdge_1)
+        #     newEdge_1.addPrev(prior_edge)
