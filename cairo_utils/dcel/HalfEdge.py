@@ -203,7 +203,169 @@ class HalfEdge:
         point = sampleAlongLine(*(self.toArray().flatten()), r)
         return self.split(point[0])        
 
+    def translate(self, dir, d=1, abs=False, candidates=None, force=False):
+        """ Move the edge by a vector and distance, or to an absolute location """
+        assert(isinstance(dir, np.ndarray))
+        if not abs:
+            target = self.toArray() + (dir * d)
+        else:
+            assert(dir.shape == (2,2))
+            target = dir
+
+        if not force and  self.has_constraints(candidates):
+            return (self.dcel.newEdge(rotatedCoords[0],
+                                      rotatedCoords[1],
+                                      edata=self.data,
+                                      vdata=self.origin.data), EditE.NEW)
+        else:
+            vert1, edit1 = self.origin.translate(rotatedCoords[0], abs=True, force=True)
+            vert2, edit2 = self.twin.origin(rotatedCoords[1], abs=True, force=True)
+            assert(edit1 == edit2)
+            assert(edit1 == EditE.MODIFIED)
+            return (self, EditE.MODIFIED)
+
         
+    def extend(self, target=None, direction=None, rotate=None, d=1, inSequence=True):
+        """ Extend the line with a new line in the direction of 'target',
+        or in the normalized direction 'direction', by distance d. 
+        if no target or direction is passed in, it extends in the line direction """
+        start = self.origin.toArray()
+        end = self.twin.origin.toArray()
+        newEnd = None
+        if sum([1 for x in [target, direction, rotate] if x is not None]) > 1:
+            raise Exception("HalfEdge.extend: Specify only one of target, direction, rotate")
+        if target is not None:
+            assert(isinstance(target, np.ndarray))
+            assert(len(target) == 2)
+            if d is not None:
+                newEnd = extend_line(end, target, d, fromStart=False)
+            else:
+                newEnd = target
+        elif direction is not None:
+            #use the direction raw
+            assert(hasattr(direction, "__len__"))
+            assert(len(direction) == 2)
+            assert(d is not None)
+            newEnd = extend_line(end, end + direction, d)
+        elif rotate is not None:
+            #rotate the vector of the existing line and extend by that
+            unit_vector = get_unit_vector(start, end)
+            rotated = rotatePoint(unit_vector, np.array([0,0]), rads=rotate)
+            newEnd = extend_line(end, end + rotated, d)
+        else:
+            assert(d is not None)
+            #get the normalized direction of self.origin -> self.twin.origin
+            newEnd = extend_line(start, end, fromStart=False)
+        #Then create a point at (dir * d), create a new edge to it
+        newVert = self.dcel.newVertex(newEnd)
+
+        if inSequence:
+            newEdge = self.dcel.newEdge(self.twin.origin, newVert, prev=self, twinNext=self.twin, edata=self.data, vdata=self.origin.data)
+        else:
+            newEdge = self.dcel.newEdge(self.twin.origin, newVert, edata=self.data,
+                                        vdata=self.origin.data)
+        
+        #todo: apply rules to infer faces
+        left_most = False
+        #self.fix_faces(newEdge, left_most=left_most)
+        
+        return newEdge
+
+    def rotate(self, c=None, r=0, candidates=None, force=False):
+        """ return Rotated coordinates as if the edge was rotated around a point by rads """
+        assert(isinstance(c, np.ndarray))
+        assert(c.shape == (2,))
+        assert(-TWOPI <= r <= TWOPI)
+        asArray = self.toArray()
+        rotatedCoords = rotatePoint(asArray, cen=c, rads=r)
+        if not force and self.has_constraints(candidates):
+            return (self.dcel.createEdge(rotatedCoords[0],
+                                      rotatedCoords[1],
+                                      edata=self.data,
+                                      vdata=self.origin.data), EditE.NEW)
+        else:
+            vert1, edit1 = self.origin.translate(rotatedCoords[0], abs=True, force=True)
+            vert2, edit2 = self.twin.origin.translate(rotatedCoords[1], abs=True, force=True)
+            assert(edit1 == edit2)
+            assert(edit1 == EditE.MODIFIED)
+            return (self, EditE.MODIFIED)
+
+    def constrain_to_circle(self, centre, radius, candidates=None, force=False):
+        """ Modify or create a new edge that is constrained to within a circle,
+        while also marking the original edge for cleanup if necessary """
+        #todo: handle sequences
+        assert(isinstance(centre, np.ndarray))
+        assert(centre.shape == (2,))
+        assert(0 <= radius)
+        results = self.within_circle(centre, radius)
+        logging.debug("HE: within_circle? {}".format(results))
+        if all(results):
+            #nothing needs to be done
+            logging.debug("HE: fine")
+            return (self, EditE.MODIFIED)
+        if not any(results):
+            logging.debug("HE: to remove")
+            self.markForCleanup()
+            return (self, EditE.MODIFIED)
+
+        closer, further = self.getCloserAndFurther(centre)
+        asLine = Line.newLine(np.array([closer.toArray(), further.toArray()]))
+        intersections = asLine.intersect_with_circle(centre, radius)
+
+        distances = get_distance_raw(further.toArray(), intersections)
+        closest = intersections[np.argmin(distances)]
+        vertTarget = None
+        
+        if not force and self.has_constraints(candidates):
+            edit_e = EditE.NEW
+            vertTarget = self.dcel.newVertex(closest)
+            target = self.copy()
+            self.markForCleanup()
+        else:
+            edit_e = EditE.MODIFIED
+            target = self
+
+        if further == self.origin:
+            if vertTarget is not None:
+                target.replaceVertex(newVert)
+            else:
+                target.origin.loc = closest
+        else:
+            if vertTarget is not None:
+                target.twin.replaceVertex(newVert)
+            else:
+                target.twin.origin.loc = closest
+
+                
+        return (target, edit_e)
+
+    def constrain_to_bbox(self, bbox, candidates=None, force=False):
+        if not force and self.has_constraints(candidates):
+            edgePrime, edit_e = self.copy().constrain_to_bbox(bbox, force=True)
+            return (edgePrime, EditE.NEW)
+        
+        #get intersections with bbox
+        intersections = self.intersects_bbox(bbox)
+        verts = self.getVertices()
+        vertCoords = self.toArray()
+        
+        if len(intersections) == 0:
+            logging.debug("No intersections, no op")
+        elif len(intersections) == 1:
+            logging.debug("One intersection, finding nearest outside vertex")
+            intersectE, intersect_coords = intersections[0]
+            vertToMove = verts[np.argmin(get_distance_raw(vertCoords, intersect_coords))]
+            vertToMove.translate(intersect_coords, abs=True, force=True)
+        else:
+            assert(len(intersections) == 2)
+            logging.debug("Two intersections, moving both vertices")
+            for i_e, i_c in intersections:
+                vertToMove = verts[np.argmin(get_distance_raw(vertCoords, i_c))]
+                vertToMove.translate(i_c, abs=True, force=True)
+        
+
+        return (self, EditE.MODIFIED)
+
         
     
     
