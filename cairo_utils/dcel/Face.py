@@ -53,17 +53,18 @@ class Face(object):
             self.index = index
             if self.index >= Face.nextIndex:
                 Face.nextIndex = self.index + 1
-
-    def copy(self):
-        #copy the halfedges
-        es = [x.copy() for x in self.edgeList]
-        #create a new face
-        f = self.dcel.newFace(edges=es)
-        #copy the data
-        f.data.update(self.data)
-        #return it
-        return f
                 
+    def copy(self):
+        with self.dcel:
+            #copy the halfedges
+            es = [x.copy() for x in self.edgeList]
+            #create a new face
+            f = self.dcel.newFace(edges=es)
+            #copy the data
+            f.data.update(self.data)
+            #return it
+            return f
+
     #------------------------------
     # def hulls
     #------------------------------
