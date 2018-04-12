@@ -643,9 +643,31 @@ class DCEL(object):
         """ Fix all halfedges to ensure they are counter-clockwise ordered """
         raise Exception("deprecated: fixup faces instead") 
 
+    def intersect_halfedges(self):
+        """ run a sweep line over the dcel, getting back halfedge intersections """
+        raise Exception("unimplemented")
 
+    def calculate_edge_connections(self, current_edge, prior_edge, bbox, f):
+        """ Connect two edges within a bbox, with a corner if necessary  """
+        raise Exception("Deprecated: use DCEL.integrate_bbox_edges")
+
+    def verify_edges(self):
+        raise Exception("deprecated, use HalfEdge.fixup")
 
     def verify_faces_and_edges(self):
+        raise Exception("Deprecated, use face and halfedge verify methods")
+
+    def purge_faces(self):
+        """ Same as purging halfedges or vertices,  but for faces """
+        raise Exception("deprecated, use dcel.purge")
             
+    def purge_vertices(self):
+        """ Remove all vertices that aren't connected to at least one edge"""
+        raise Exception("deprecated, use dcel.purge")
 
+    def purge_edges(self):
+        """ Remove all edges that have been marked for cleanup """
+        raise Exception("Deprecated: use dcel.purge")
 
+    def integrate_bbox_edges(self, current_edge, prior_edge, bbox, f):
+        raise Exception("Deprecated: Use dcel.constrain_to_bbox")
