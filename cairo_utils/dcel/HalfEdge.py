@@ -526,6 +526,49 @@ class HalfEdge:
     # def Verification
     #------------------------------
 
+    def fix_faces(self, he, left_most=False):
+        """ Infer faces by side on a vertex,
+        leftmost means to fix on the right instead """
+        #get mid point
+        #rotate right and left and translate by a small delta
+        #check the translated points are closer to the face centroid than further away
+        #if they aren't, swap faces
+        #raise error if they still aren't closer
+        
+        #self.face = he.face
+        #he.face = newface
+        #self.twin.face = he.face
+        raise Exception("unimplemented")
+
+
+    
+    def has_constraints(self, candidateSet=None):
+        """ Tests whether the halfedge, and its vertices, are used by things other than the
+        faces, halfedges, and vertices passed in as the candidate set """
+        if candidateSet is None:
+            candidateSet = set()
+        assert(isinstance(candidateSet, set))
+        if self.twin is not None:
+            candidatesPlusSelf = candidateSet.union([self, self.twin])
+        else:
+            candidatesPlusSelf = candidateSet.union([self])
+        isConstrained = self.face is not None and self.face not in candidatesPlusSelf
+        if self.origin is not None:
+            isConstrained = isConstrained \
+                            or self.origin.has_constraints(candidatesPlusSelf)
+        if self.twin is not None:
+            if self.twin.face is not None:
+                isConstrained = isConstrained or self.twin.face not in candidatesPlusSelf
+            if self.twin.origin is not None:
+                isConstrained = isConstrained \
+                                or self.twin.origin.has_constraints(candidatesPlusSelf)
+        return isConstrained
+
+    def isInfinite(self):
+        """ If a halfedge has only one defined point, it stretches
+            off into infinity """
+        return self.origin is None or self.twin is None or self.twin.origin is None
+    
     def connections_align(self, other):
         """ Verify that this and another halfedge's together form a full edge """
         assert(isinstance(other, HalfEdge))
