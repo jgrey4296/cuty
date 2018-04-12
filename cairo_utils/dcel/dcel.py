@@ -46,8 +46,10 @@ class DCEL(object):
         self.bbox = bbox
         #todo: make this a stack of quadtrees
         self.vertex_quad_tree = pyqtree.Index(bbox=self.bbox)
+        self.quad_tree_stack = []
         self.frontier = set()
-
+        self.should_merge_stacks = True
+        
     def reset_frontier(self):
         self.frontier = set()
 
@@ -158,19 +160,37 @@ class DCEL(object):
             verts = subverts
         for vertex in verts:
             self.vertex_quad_tree.insert(item=vertex, bbox=vertex.bbox())
+        
+    def push_quad_tree(self):
+        self.quad_tree_stack.append(self.vertex_quad_tree)
+        self.vertex_quad_tree = pyqtree.Index(bbox=self.bbox)
 
-    def __str__(self):
-        """ Create a text description of the DCEL """
-        verticesDescription = "Vertices: num: {}".format(len(self.vertices))
-        edgesDescription = "HalfEdges: num: {}".format(len(self.halfEdges))
-        facesDescription = "Faces: num: {}".format(len(self.faces))
+    def pop_quad_tree(self):
+        assert(len(self.quad_tree_stack) > 0)
+        sub_layer = self.quad_tree_stack.pop()
+        if self.should_merge_stacks:
+            for x in self.vertex_quad_tree.intersect(self.bbox):
+                if x not in sub_layer.intersect(x.bbox()):                
+                    sub_layer.insert(item=x, bbox=x.bbox())
+        self.vertex_quad_tree = sub_layer
 
-        allVertices = [x.getVertices() for x in self.halfEdges]
-        flattenedVertices = [x for (x, y) in allVertices for x in (x, y)]
-        setOfVertices = set(flattenedVertices)
-        vertexSet = "Vertex Set: num: {}/{}".format(len(setOfVertices), len(flattenedVertices))
+    def add_to_current_quad_tree(self, verts):
+        """ Add the passed in vertices into the current quad tree """
+        assert(all([isinstance(x, Vertex) for x in verts]))
+        assert(len(self.quad_tree_stack) > 0)
+        for x in verts:
+            self.vertex_quad_tree.insert(item=x, bbox=x.bbox())
+        
+        
+    def __enter__(self):
+        """ Makes the Dcel a reusable context manager, that pushes
+        and pops vertex quad trees for collision detection """
+        self.push_quad_tree()
 
-        infiniteEdges = [x for x in self.halfEdges if x.isInfinite()]
+    def __exit__(self, type, value, traceback):
+        self.pop_quad_tree()
+        
+
         infiniteEdgeDescription = "Infinite Edges: num: {}".format(len(infiniteEdges))
     #------------------------------
     # def PURGING
