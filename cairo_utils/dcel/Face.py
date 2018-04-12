@@ -326,46 +326,133 @@ class Face(object):
         #return both
         return (self, newFace)
 
-    def merge_faces(self, *args):
+    @staticmethod
+    def merge_faces(*args):
         """ Calculate a convex hull from all passed in faces,
         creating a new face """
-        all_verts = self.get_all_vertices()
+        assert(all([isinstance(x, Face) for x in args]))
+        dc = args[0].dcel
+        assert(dc is not None)
+        all_verts = set()
         for f in args:
             all_verts.update(f.get_all_vertices())
-        f = self.dcel.newFace()
-        f.free_vertices.update(all_verts)
+        newFace = dc.newFace()
         #then build the convex hull
-        hull, discarded = Face.hull_from_vertices(f.free_vertices)
-        #create the edges
-                
-        #assign to face
-
+        hull, discarded = Face.hull_from_vertices(all_verts)
+        for s,e in zip(hull, islice(cycle(hull),1, None)):
+            #create an edge
+            newEdge = dc.newEdge(s,e, face=newFace)
+        #link the edges
+        dc.linkEdgesTogether(newFace.edgeList, loop=True)
         #return the face
-        raise Exception("unimplemented")
+        return (newFace, discarded)
         
-    def translate_edge(self, e, transform):
+    def translate_edge(self, e, transform, candidates=None, force=False):
         assert(e in self.edgeList)
         assert(isinstance(transform, np.ndarray))
         assert(transform.shape == (2,))
         
         raise Exception("Unimplemented")
+    
+        if not force and self.has_constraints(candidates):
+            copied = self.copy()
+            return (copied, EditE.NEW)
+        else:
+            return (self, EditE.MODIFIED)
+        
 
-    def scale(self, amnt=None, vert_weights=None, edge_weights=None):
+    def scale(self, amnt=None, target=None, vert_weights=None, edge_weights=None,
+              force=False, candidates=None):
         """ Scale an entire face by amnt,
         or scale by vertex/edge normal weights """
-        raise Exception("unimplemented")
+        if not force and self.has_constraints(candidates):
+            facePrime, edit_type = self.copy().scale(amnt=amnt, target=target,
+                                                     vert_weights=vert_weights,
+                                                     edge_weights=edge_weights,
+                                                     force=True)
+            return (facePrime, EditE.NEW)
 
-    def cut_out(self):
+        raise Exception("Unimplemented")
+        if target is None:
+            target = self.getCentroidFromBBox()
+        if amnt is None:
+            amnt = np.ndarray([1,1])
+        assert(isinstance(amnt, np.ndarray))
+        assert(amnt.shape == (2,))
+        if vert_weights is not None:
+            assert(isinstance(vert_weights, np.ndarray))
+        if edge_weights is not None:
+            assert(isinstance(edge_weights, np.ndarray))
+                    
+        return (self, EditE.MODIFIED)
+        
+
+    def cut_out(self, candidates=None, force=False):
         """ Cut the Face out from its verts and halfedges that comprise it,
         creating new verts and edges, so the face can be moved and scaled
         without breaking the already existing structure """
-        return self.copy()
+        if not force and self.has_constraints(candidates):
+            return (self.copy(), EditE.NEW)
+        else:
+            return (self, EditE.MODIFIED)
 
-    def rotate(self, rads):
-        """ copy and rotate the entire face """
+    def rotate(self, rads, target=None, candidates=None, force=False):
+        """ copy and rotate the entire face by rotating each point """
         assert(-TWOPI <= rads <= TWOPI)
-        raise Exception("Unimplemented")
-    
+        if not force and self.has_constraints(candidates):
+            facePrime, edit_e = self.copy().rotate(rads, target=target, force=True)
+            return (facePrime, EditE.NEW)
+            
+        if target is None:
+            target = self.getCentroidFromBBox()
+        assert(isinstance(target, np.ndarray))
+        assert(target.shape == (2,))
+
+        for l in self.edgeList:
+            l.rotate(c=target, r=rads, candidates=candidates, force=True)
+        return (self, EditE.MODIFIED)
+
+
+    def constrain_to_circle(self, centre, radius, candidates=None, force=False):
+        """ Constrain the vertices and edges of a face to be within a circle """
+        if not force and self.has_constraints(candidates):
+            logging.warning("Face: Constraining a copy")
+            facePrime, edit_type = self.copy().constrain_to_circle(centre, radius, force=True)
+            return (facePrime, EditE.NEW)
+
+        logging.debug("Face: Constraining edges")
+        #constrain each edge            
+        edges = self.edgeList.copy()        
+        for e in edges:
+            logging.debug("HE: {}".format(e))
+            eprime, edit_e = e.constrain_to_circle(centre, radius, force=True)
+            logging.debug("Result: {}".format(eprime))
+            assert(edit_e == EditE.MODIFIED)
+            assert(eprime in self.edgeList)
+            if eprime.markedForCleanup:
+                self.edgeList.remove(eprime)
+
+        return (self, EditE.MODIFIED)
+
+    #todo: possibly add a shrink/expand to circle method
+
+    def constrain_to_bbox(self, bbox, cadidates=None, force=False):
+        if not force and self.has_constraints(candidates):
+            facePrime, edit_type = self.copy().constrain_to_bbox(bbox, force=True)
+            return (facePrime, EditE.NEW)
+            
+        edges = self.edgeList.copy()
+
+        for edge in edges:
+            if not edge.within(bbox):
+                self.remove_edge(edge)
+                continue
+
+            eprime, edit_e = edge.constrain_to_bbox(bbox, candidates=candidates, force=True)
+
+        return (self, EditE.MODIFIED)
+
+
             
     #------------------------------
     # def Vertex access
