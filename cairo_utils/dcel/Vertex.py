@@ -118,6 +118,17 @@ class Vertex:
     #def queries
     #------------------------------
 
+    def isEdgeless(self):
+        return len(self.halfEdges) == 0
+    
+    def has_constraints(self, candidateSet=None):
+        """ if a vertex is used by more than  """
+        if candidateSet is None:
+            candidateSet = set()
+        assert(isinstance(candidateSet, set))
+        return bool(self.halfEdges.difference(candidateSet))
+    
+    def get_nearby_vertices(self, e=D_EPSILON):
         """ Utility method to get nearby vertices through the dcel reference "",
         returns the list of matches *including* self """
         assert(self.dcel is not None)
