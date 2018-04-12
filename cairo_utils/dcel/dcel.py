@@ -57,6 +57,45 @@ class DCEL(object):
         newDCEL = DCEL(self.bbox)
         newDCEL.import_data(self.export_data())        
         return newDCEL
+
+    def __str__(self):
+        """ Create a text description of the DCEL """
+        verticesDescription = "Vertices: num: {}".format(len(self.vertices))
+        edgesDescription = "HalfEdges: num: {}".format(len(self.halfEdges))
+        facesDescription = "Faces: num: {}".format(len(self.faces))
+
+        allVertices = [x.getVertices() for x in self.halfEdges]
+        flattenedVertices = [x for (x, y) in allVertices for x in (x, y)]
+        setOfVertices = set(flattenedVertices)
+        vertexSet = "Vertex Set: num: {}/{}".format(len(setOfVertices), len(flattenedVertices))
+
+        infiniteEdges = [x for x in self.halfEdges if x.isInfinite()]
+        infiniteEdgeDescription = "Infinite Edges: num: {}".format(len(infiniteEdges))
+
+        completeEdges = []
+        for x in self.halfEdges:
+            if not x in completeEdges and x.twin not in completeEdges:
+                completeEdges.append(x)
+
+        completeEdgeDescription = "Complete Edges: num: {}".format(len(completeEdges))
+
+        edgelessVertices = [x for x in self.vertices if x.isEdgeless()]
+        edgelessVerticesDescription = "Edgeless vertices: num: {}".format(len(edgelessVertices))
+
+        edgeCountForFaces = [str(len(f.outerBoundaryEdges)) for f in self.faces]
+        edgeCountForFacesDescription = "Edge Counts for Faces: {}".format("-".join(edgeCountForFaces))
+
+        return "\n".join(["---- DCEL Description: ",
+                          verticesDescription,
+                          edgesDescription,
+                          facesDescription,
+                          vertexSet,
+                          infiniteEdgeDescription,
+                          completeEdgeDescription,
+                          edgelessVerticesDescription,
+                          edgeCountForFacesDescription,
+                          "----\n"])
+
     
     #------------------------------
     # def IO
