@@ -191,7 +191,6 @@ class DCEL(object):
         self.pop_quad_tree()
         
 
-        infiniteEdgeDescription = "Infinite Edges: num: {}".format(len(infiniteEdges))
     #------------------------------
     # def PURGING
     #------------------------------
@@ -199,29 +198,11 @@ class DCEL(object):
     def purge_edge(self, target):
         assert(isinstance(target, HalfEdge))
 
-        completeEdges = []
-        for x in self.halfEdges:
-            if not x in completeEdges and x.twin not in completeEdges:
-                completeEdges.append(x)
 
-        completeEdgeDescription = "Complete Edges: num: {}".format(len(completeEdges))
+    def purge_vertex(self, target):
 
-        edgelessVertices = [x for x in self.vertices if x.isEdgeless()]
-        edgelessVerticesDescription = "Edgeless vertices: num: {}".format(len(edgelessVertices))
 
-        edgeCountForFaces = [str(len(f.outerBoundaryEdges)) for f in self.faces]
-        edgeCountForFacesDescription = "Edge Counts for Faces: {}".format("-".join(edgeCountForFaces))
 
-        return "\n".join(["---- DCEL Description: ",
-                          verticesDescription,
-                          edgesDescription,
-                          facesDescription,
-                          vertexSet,
-                          infiniteEdgeDescription,
-                          completeEdgeDescription,
-                          edgelessVerticesDescription,
-                          edgeCountForFacesDescription,
-                          "----\n"])
 
 
     #------------------------------
@@ -357,18 +338,8 @@ class DCEL(object):
         raise Exception("incomplete")
 
 
-    def orderVertices(self, focus, vertices):
-        """ Given a focus point and a list of vertices,  sort them
-            by the counter-clockwise angle position they take relative """
-        assert(all([isinstance(x, Vertex) for x in vertices]))
-        assert(isinstance(focus, np.ndarray))
-        relativePositions = [[v.loc - focus] for v in vertices]
-        zipped = zip(relativePositions, vertices)
-        angled = [((degrees(atan2(loc[1], loc[0])) + 360) % 360, vert) for loc,vert in zipped]
-        sortedAngled = sorted(angled)
-        return [vert for loc,vert in sortedAngled]
+        #assign face to all edges
         
-
     def constrain_half_edges(self, bbox):
         """ For each halfedge,  shorten it to be within the bounding box  """
         assert(isinstance(bbox, np.ndarray))
@@ -413,125 +384,12 @@ class DCEL(object):
             logging.debug("Result: {}".format(e))
 
 
-    def purge_infinite_edges(self):
-        """ Remove all edges that don't have a start or end """
-        logging.debug("Purging infinite edges")
-        edges_to_purge = [x for x in self.halfEdges if x.isInfinite()]
-        logging.info("Purging {} infinite edges".format(len(edges_to_purge)))
-        for e in edges_to_purge:
-            logging.debug("Purging infinite: e{}".format(e.index))
-            e.clearVertices()
-            self.halfEdges.remove(e)
-            e.face.removeEdge(e)
-            e.connectNextToPrev()
-
-    def purge_edges(self):
-        """ Remove all edges that have been marked for cleanup """
-        logging.debug("Purging edges marked for cleanup")
-        edges_to_purge = [x for x in self.halfEdges if x.markedForCleanup]
-        twin_edges_to_purge = []
-        for e in edges_to_purge:
-            twin_edges_to_purge.append(e.twin)
-            logging.debug("Purging: e{}".format(e.index))
-            e.clearVertices()
-            self.halfEdges.remove(e)
-            if e.face is not None:
-                e.face.removeEdge(e)
-            if e.twin.face is not None:
-                e.twin.face.removeEdge(e)
-            e.connectNextToPrev()
-        #don't remove twins, they may be used separately on boundaries
-            
-    def purge_vertices(self):
-        """ Remove all vertices that aren't connected to at least one edge"""
-        used_vertices = [x for x in self.vertices if not x.isEdgeless()]
-        self.vertices = used_vertices
-
-
-    def complete_faces(self, bbox=None):
-        """ Verify each face,  connecting non-connected edges,  taking into account
-            corners of the bounding box passed in,  which connects using a pair of edges
-        """
-        #TODO: Check this
-        logging.debug("---------- Completing faces")
-        if bbox is None:
-            bbox = np.array([0, 0, 1, 1])
-
         for f in self.faces:
-            logging.debug("Completing face: {}".format(f.index))
-            #sort edges going anti-clockwise
-            f.sort_edges()
-            edgeList = f.getEdges()
-            if not bool(edgeList):
-                #cleanup if the face is empty
-                f.markForCleanup()
                 continue
-            #reverse to allow popping off
-            #edgeList.reverse() ? unneeded? 
-            first_edge = edgeList[-1]
-            while len(edgeList) > 1:
-                #pop off in anti-clockwise order
-                current_edge = edgeList.pop()
-                prior_edge = edgeList[-1]
-                logging.debug("---- Edge Pair: {} - {}".format(current_edge.index, prior_edge.index))
-                self.calculate_edge_connections(current_edge, prior_edge, bbox, f)
+
                 
-            #after everything, connect the ends of the loop
-            self.calculate_edge_connections(edgeList.pop(), first_edge, bbox, f)
-            logging.debug("Final sort of face: {}".format(f.index))
-            f.sort_edges()
-            logging.debug("Result: {}".format([x.index for x in f.getEdges()]))
-            logging.debug("----")
+                
 
-            #Get the opposites
-            f.outerBoundaryEdges = [x.twin for x in f.edgeList]
-            
-
-    def calculate_edge_connections(self, current_edge, prior_edge, bbox, f):
-        """ Connect two edges within a bbox, with a corner if necessary  """
-        assert(isinstance(f, Face))
-        if prior_edge.connections_align(current_edge):
-            current_edge.setPrev(prior_edge)
-            return
-
-        logging.debug("Edges do not align:\n\t e1: {} \n\t e2: {}".format(current_edge.twin.origin,
-                                                                          prior_edge.origin))
-        #if they intersect with different bounding walls,  they need a corner
-        intersect_1 = current_edge.intersects_edge(bbox)
-        intersect_2 = prior_edge.intersects_edge(bbox)
-        logging.debug("Intersect Values: {} {}".format(intersect_1, intersect_2))
-
-        if intersect_1 is None or intersect_2 is None:
-            logging.debug("Non- side intersecting lines")
-
-            #Simple connection requirement, straight line between end points
-        if intersect_1 == intersect_2 or any([x is None for x in [intersect_1, intersect_2]]):
-            logging.debug("Match, new simple edge between: {}={}".format(current_edge.index,
-                                                                         prior_edge.index))
-            #connect together with simple edge
-            #twin face is not set because theres no face outside of bounds
-            newEdge = self.newEdge(prior_edge.twin.origin,
-                                   current_edge.origin,
-                                   face=f,
-                                   prev=prior_edge)
-            newEdge.data[EdgeE.COLOUR] = [1, 0, 0, 1]
-            newEdge.setPrev(prior_edge)
-            current_edge.setPrev(newEdge)
-
-        else:
-            logging.debug("Creating a corner edge connection between: {}={}".format(current_edge.index, prior_edge.index))
-            #Connect the edges via an intermediate, corner vertex
-            newVert = self.create_corner_vertex(intersect_1, intersect_2, bbox)
-            logging.debug("Corner Vertex: {}".format(newVert))
-            newEdge_1 = self.newEdge(prior_edge.twin.origin, newVert, face=f, prev=prior_edge)
-            newEdge_2 = self.newEdge(newVert, current_edge.origin, face=f, prev=newEdge_1)
-
-            newEdge_1.data[EdgeE.COLOUR] = [0, 1, 0, 1]
-            newEdge_2.data[EdgeE.COLOUR] = [0, 0, 1, 0]
-            
-            current_edge.addPrev(newEdge_2)
-            newEdge_2.addPrev(newEdge_1)
-            newEdge_1.addPrev(prior_edge)
 
         
     #------------------------------
@@ -540,17 +398,6 @@ class DCEL(object):
     
     def orderVertices(self, focus, vertices):
 
-    def purge_faces(self):
-        """ Same as purging halfedges or vertices,  but for faces """
-        to_clean = [x for x in self.faces if x.markedForCleanup or not x.has_edges()]
-        self.faces = [x for x in self.faces if not x.markedForCleanup or x.has_edges()]
-        for face in to_clean:
-            edges = face.getEdges()
-            for edge in edges:
-                face.removeEdge(edge)
-            for edge in face.outerBoundaryEdges.copy():
-                face.removeEdge(edge)
-                
 
     def create_corner_vertex(self, e1, e2, bbox):
         """ Given two intersections (0-3) describing the corner,  
@@ -583,143 +430,10 @@ class DCEL(object):
     def fixup_halfedges(self):
         """ Fix all halfedges to ensure they are counter-clockwise ordered """
         raise Exception("deprecated: fixup faces instead") 
-        
-    def verify_edges(self):
-        """ check all edges... are well formed?  """
-        #TODO: Fix
-        raise Exception("Broken")
-        #make sure every halfedge is only used once
-        logging.debug("Verifying edges")
-        troublesomeEdges = [] #for debugging
-        usedEdges = {}
-        for f in self.faces:
-            for e in f.edgeList:
-                if e.isInfinite():
-                    raise Exception("Edge {} is infinite when it shouldn't be".format(e.index))
-                if e < e.twin:
-                    #for e's face, e -> e twin should be a left turn
-                    raise Exception("Edge {} is not anti-clockwise".format(e.index))
-                    #raise Exception("Edge {} is not anti clockwise".format(e.index))
-                if e.index not in usedEdges:
-                    usedEdges[e.index] = f.index
-                else:
-                    raise Exception("Edge {} in {} already used in {}".format(e.index, f.index, usedEdges[e.index]))
-        logging.debug("Edges verified")
-        return troublesomeEdges
 
-    def force_all_edge_lengths(self, l):
-        """ Force all edges to be of length <= l. If over, split into multiple lines
-        of length l. """
-        assert(l > 0)
-        processed = set()
-        allEdges = self.halfEdges.copy()
-        while len(allEdges) > 0:
-            current = allEdges.pop(0)
-            assert(current.index not in processed)
-            if current.getLength_sq() > l:
-                newPoint, newEdge = current.split_by_ratio(r=0.5)
-                if newEdge.getLength_sq() > l:
-                    allEdges.append(newEdge)
-                else:
-                    processed.add(newEdge.index)
-                    
-            if current.getLength_sq() > l:
-                allEdges.append(current)
-            else:
-                processed.add(current.index)
-    
-    @staticmethod
-    def loadfile(filename):
-        """ Create a DCEL from a saved pickle """
-        if not isfile("{}.dcel".format(filename)):
-            raise Exception("Non-existing filename to load into dcel")
-        with open("{}.dcel".format(filename), 'rb') as f:
-            dcel_data = pickle.load(f)
-        the_dcel = DCEL()
-        the_dcel.import_data(dcel_data)
-        return the_dcel
 
-    def savefile(self, filename):
-        """ Save dcel data to a pickle """
-        theData = self.export_data()
-        with open("{}.dcel".format(filename), 'wb') as f:
-            pickle.dump(theData, f)
-        
 
     def verify_faces_and_edges(self):
-        """ Verify all faces and edges are well formed """
-        all_face_edges = set()
-        all_face_edge_twins = set()
-        all_face_edgelist = set()
-        all_face_edgelist_twins = set()
-        all_edges = set([x for x in self.halfEdges])
-        all_edge_twins = set([x.twin for x in self.halfEdges])
-        for face in self.faces:
-            all_face_edges.update([x for x in face.outerBoundaryEdges])
-            all_face_edge_twins.update([x.twin for x in face.outerBoundaryEdges])
-            all_face_edgelist.update([x for x in face.edgeList])
-            all_face_edgelist_twins.update([x.twin for x in face.edgeList])
-
-        if (all_face_edges == all_edges):
-            IPython.embed(simple_prompt=True)
             
 
-    def constrain_to_circle(self, centre, radius):
-        """ Limit all faces, edges, and vertices to be within a circle,
-        adding boundary verts and edges as necessary """
-        assert(isinstance(centre, np.ndarray))
-        assert(isinstance(radius, float))
-        assert(centre.shape == (2,))
-        removed_edges = []
-        modified_edges = []
-        
-        for he in self.halfEdges:
-            results = he.within_circle(centre, radius)
-            arr = he.origin.toArray()
-            if all(results): #if both within circle: leave
-                continue
-            elif not any(results): #if both without: remove
-                he.markForCleanup()
-                removed_edges.append(he)
-            else: #one within, one without, modify
-                #Get the further point
-                closer, further, isOrigin = he.getCloserAndFurther(centre, radius)
-                #create a line
-                if isOrigin:
-                    asLine = Line.newLine(he.origin, he.twin.origin, np.array([0,0,1,1]))
-                else:
-                    asLine = Line.newLine(he.twin.origin, he.origin, np.array([0,0,1,1]))
-                #solve in relation to the circle
-                intersection = asLine.intersect_with_circle(centre, radius)
-                #get the appropriate intersection
-                if intersection[0] is None:
-                    closest = intersection[1]
-                elif intersection[1] is None:
-                    closest = intersection[0]
-                else:
-                    closest = intersection[np.argmin(get_distance(np.array(intersection), further))]
-                #Create a new vertex to replace the old out of bounds vertex
-                newVert = self.newVertex(*closest)
-                orig1, orig2 = he.getVertices()
-                he.clearVertices()
-                #re-add the old vertex and new vertex to the half edge
-                if isOrigin:
-                    #origin is closer, replace the twin
-                    he.addVertex(orig1)
-                    he.addVertex(newVert)
-                else:
-                    #twin is closer, replace the origin
-                    he.addVertex(newVert)
-                    he.addVertex(orig2)
-                    modified_edges.append(he)
 
-        #todo: fixup faces
-        
-        self.purge_edges()
-        self.purge_vertices()
-        self.purge_faces()
-        self.purge_infinite_edges()
-        self.complete_faces()
-
-        
-            
