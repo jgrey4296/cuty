@@ -84,6 +84,17 @@ class Face(object):
         assert(len(discardVerts) + len(hullVerts) == len(verts))
         return (hullVerts, list(discardVerts))
 
+    @staticmethod
+    def hull_from_coords(coords):
+        """ Given a set of coordinates, return the hull they would form 
+        DOESN NOT RETURN DISCARDED, as the coords are not vertices yet
+        """
+        assert(isinstance(coords, np.ndarray))
+        assert(coords.shape[1] == 2)
+        hull = ConvexHull(coords)
+        hullCoords = np.array([coords[x] for x in hull.vertices])
+        return hullCoords
+
     #------------------------------
     # def Human Readable Representations
     #------------------------------
