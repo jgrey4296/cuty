@@ -496,12 +496,33 @@ class DCEL(object):
         assert(isinstance(face, Face))
         assert(isinstance(edge, list))
         assert(all([isinstance(x, HalfEdge) for x in edges]))
-        #run a cycle finding algorithm?
-        raise Exception("incomplete")
+        #check the edge list is a cycle by next/prev or by vertices
 
+        #if by vertices, set next/prev
 
         #assign face to all edges
         
+    def force_all_edge_lengths(self, l):
+        """ Force all edges to be of length <= l. If over, split into multiple lines
+        of length l. """
+        assert(l > 0)
+        processed = set()
+        allEdges = self.halfEdges.copy()
+        while len(allEdges) > 0:
+            current = allEdges.pop(0)
+            assert(current.index not in processed)
+            if current.getLength_sq() > l:
+                newPoint, newEdge = current.split_by_ratio(r=0.5)
+                if newEdge.getLength_sq() > l:
+                    allEdges.append(newEdge)
+                else:
+                    processed.add(newEdge.index)
+                    
+            if current.getLength_sq() > l:
+                allEdges.append(current)
+            else:
+                processed.add(current.index)
+    
     def constrain_half_edges(self, bbox):
         """ For each halfedge,  shorten it to be within the bounding box  """
         assert(isinstance(bbox, np.ndarray))
