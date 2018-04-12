@@ -600,6 +600,15 @@ class DCEL(object):
     #------------------------------
     
     def orderVertices(self, focus, vertices):
+        """ Given a focus point and a list of vertices,  sort them
+            by the counter-clockwise angle position they take relative """
+        assert(all([isinstance(x, Vertex) for x in vertices]))
+        assert(isinstance(focus, np.ndarray))
+        relativePositions = [[v.loc - focus] for v in vertices]
+        zipped = zip(relativePositions, vertices)
+        angled = [((degrees(atan2(loc[1], loc[0])) + 360) % 360, vert) for loc,vert in zipped]
+        sortedAngled = sorted(angled)
+        return [vert for loc,vert in sortedAngled]
 
 
     def create_corner_vertex(self, e1, e2, bbox):
