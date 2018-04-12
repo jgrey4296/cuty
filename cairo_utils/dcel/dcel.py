@@ -351,7 +351,9 @@ class DCEL(object):
         assert(isinstance(loc, np.ndarray))
         newVert = None
         matchingVertices = self.vertex_quad_tree.intersect(Vertex.free_bbox(loc))
-        if matchingVertices and not force:
+        logging.debug("Quad Tree Size: {}".format(self.vertex_quad_tree.countmembers()))
+        logging.debug("Query result: {}".format(matchingVertices))
+        if bool(matchingVertices) and not force:
             #a good enough vertex exists
             newVert = matchingVertices.pop()
             if data is not None:
@@ -360,14 +362,15 @@ class DCEL(object):
         else:
             #no matching vertex,  add this new one
             newVert = Vertex(loc, data=data, dcel=self)
-            logging.debug("No matching vertex,  storing: {}".format(newVert))
+            logging.debug("No matching vertex,  storing: {}, {}".format(newVert, newVert.bbox()))
             self.vertices.append(newVert)
             self.vertex_quad_tree.insert(item=newVert, bbox=newVert.bbox())
         assert(newVert is not None)
         return newVert
 
     def newEdge(self, originVertex, twinVertex, face=None, twinFace=None,
-                prev=None, twinPrev=None, next=None, twinNext=None):
+                prev=None, twinPrev=None, next=None, twinNext=None,
+                edata=None, vdata=None):
         """ Create a new half edge pair,  after specifying its start and end.
             Can set the faces,  and previous edges of the new edge pair.
             Returns the outer edge
@@ -377,7 +380,7 @@ class DCEL(object):
         assert(twinVertex is None or isinstance(twinVertex, Vertex))
         e1 = HalfEdge(originVertex, None, dcel=self)
         e2 = HalfEdge(twinVertex, e1, dcel=self)
-        e1.twin = e2 #fixup
+        e1.twin = e2
         #Connect with passed in details
         if face is not None:
             assert(isinstance(face, Face))
@@ -399,22 +402,46 @@ class DCEL(object):
         if twinNext is not None:
             assert(isinstance(twinNext, HalfEdge))
             e2.addNext(next)
+        if edata is not None:
+            e1.data.update(edata)
+            e2.data.update(edata)
+        if vdata is not None:
+            e1.origin.data.update(vdata)
+            e2.origin.data.update(vdata)            
         self.halfEdges.extend([e1, e2])
         logging.debug("Created Edge Pair: {}".format(e1.index))
         logging.debug("Created Edge Pair: {}".format(e2.index))
         return e1
 
-    def newFace(self, site=None, edges=None):
+    def newFace(self, site=None, edges=None, verts=None, coords=None):
         """ Creates a new face to link edges """
+        usedList = [edges is not None, verts is not None, coords is not None]
+        assert(len([x for x in usedList if x]) < 2)
         if site is None:
             site = np.array([0,0])
         assert(isinstance(site, np.ndarray))
         newFace = Face(site=site, dcel=self)
         self.faces.append(newFace)
+        #populate the face if applicable:
+        coordHullGen = False
+        if coords is not None:
+            assert(isinstance(coords, np.ndarray))
+            assert(coords.shape[1] == 2)
+            hullCoords = Face.hull_from_coords(coords)
+            verts = [self.newVertex(x) for x in hullCoords]
+            coordHullGen = True
+            
+        if verts is not None:
+            if not coordHullGen:
+                verts, discarded = Face.hull_from_verts(verts)
+            edges = []
+            for s,e in zip(verts, islice(cycle(verts), 1, None)):
+                edges.append(self.newEdge(s,e))
+                    
         if edges is not None:
             newFace.add_edges(edges)
-                
-        
+            self.linkEdgesTogether(edges, loop=True)
+            
         return newFace
 
 
