@@ -566,9 +566,29 @@ class DCEL(object):
             e.setConstrained()
             logging.debug("Result: {}".format(e))
 
+    def constrain_to_circle(self, centre, radius, candidates=None, force=False):
+        """ Limit all faces, edges, and vertices to be within a circle,
+        adding boundary verts and edges as necessary """
+        assert(isinstance(centre, np.ndarray))
+        assert(isinstance(radius, float))
+        assert(centre.shape == (2,))
 
+        #constrain faces
         for f in self.faces:
+            f.constrain_to_circle(centre, radius, candidates=candidates, force=force)
+        
+        #constrain free edges
+        for he in self.halfEdges:
+            if he.face is not None or he.markedForCleanup:
                 continue
+            he.constrain_to_circle(centre, radius, candidates=candidates, force=force)
+        
+        #constrain free vertices
+        for v in self.vertices:
+            if not v.isEdgeless():
+                continue
+            if not v.within_circle(centre, radius):
+                v.markForCleanup()
 
                 
                 
