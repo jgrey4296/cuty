@@ -253,13 +253,92 @@ class DCEL(object):
             
     def purge_edge(self, target):
         assert(isinstance(target, HalfEdge))
+        
+        target_update = set()
+
+        vert = target.origin
+        target.origin = None
+        if vert is not None:
+            vert.unregisterHalfEdge(target)
+            if vert.isEdgeless():
+                vert.markForCleanup()
+                target_update.add(vert)
+        
+        if target.face is not None:
+            face = target.face
+            face.remove_edge(target)
+            if not face.has_edges():
+                face.markForCleanup()
+                target_update.add(face)
+                
+        if target.twin is not None:
+            target.twin.markForCleanup()
+            target_update.add(target.twin)
+            target.twin.twin = None
+            target.twin = None
+            
+        target.connectNextToPrev()
+        self.halfEdges.remove(target)
+        
+        return target_update
+        
 
 
     def purge_vertex(self, target):
+        assert(isinstance(target, Vertex))
+        target_update = set()
+
+        halfEdges = target.halfEdges.copy()
+        for edge in halfEdges:
+            assert(edge.origin == target)
+            edge.origin = None
+            target.unregisterHalfEdge(edge)
+            edge.markForCleanup()
+            target_update.add(edge)
+            
+        self.vertices.remove(target)
+        
+        return target_update
 
 
+    def purge_face(self, target):
+        assert(isinstance(target, Face))
+        target_update = set()
+        edges = target.getEdges()
+        for edge in edges:
+            target.remove_edge(edge)
+            edge.markForCleanup()
+            target_update.add(edge)
+        self.faces.remove(target)
+        return target_update
 
+    
+    def purge(self, targets=None):
+        """ Run all purge methods in correct order """
+        if targets is None:
+            #populate the targets:
+            targets = set([])
+            targets = targets.union([x for x in self.vertices if x.markedForCleanup])
+            targets = targets.union([x for x in self.halfEdges if x.markedForCleanup or x.isInfinite()])
+            targets = targets.union([x for x in self.faces if x.markedForCleanup or not x.has_edges()])
+            
+        else:
+            targets = set(targets)
 
+        purged = set()
+        while bool(targets):
+            current = targets.pop()
+            if current in purged:
+                continue
+            if type(current) is Vertex:
+                targets = targets.union(self.purge_vertex(current))
+            elif type(current) is HalfEdge:
+                targets = targets.union(self.purge_edge(current))
+            elif type(current) is Face:
+                targets = targets.union(self.purge_face(current))
+            purged.add(current)
+
+        self.calculate_quad_tree()
 
     #------------------------------
     # def Vertex, Edge, HalfEdge Creation
