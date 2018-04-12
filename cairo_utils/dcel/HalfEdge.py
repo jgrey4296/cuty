@@ -141,15 +141,6 @@ class HalfEdge:
         data = (self.index, f, origin, twin, p, n, coords)
         return "(HE: {}, f: {}, O: {}, T: {}, P: {}, N: {}, XY: {})".format(*data)
 
-    def __lt__(self, other):
-        """ Compare to another half edge,
-        returns true if self is anticlockwise in comparison to other,
-        relative to a face
-        todo: Verify this
-        """
-        #TODO: use ccw
-        #todo: self.origin -> (self.twin | other.twin)
-        raise Exception("Deprecated: HalfEdge.__lt__")
     #------------------------------
     # def Math
     #------------------------------
@@ -265,6 +256,11 @@ class HalfEdge:
         return result
 
 
+
+    def __lt__(self, other):
+        return HalfEdge.compareEdges(self.face.site, self, other)
+
+    
     
 
     #------------------------------
