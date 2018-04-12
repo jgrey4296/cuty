@@ -459,6 +459,28 @@ class Face(object):
     #------------------------------
         
     def add_vertex(self, vert):
+        """ Add a vertex, then recalculate the convex hull """
+        assert(isinstance(vert, Vertex))
+        self.free_vertices.add(vert)
+        self.coord_list = None
+
+    def get_all_vertices(self):
+        """ Get all vertices of the face. both free and in halfedges """
+        all_verts = set()
+        all_verts.update(self.free_vertices)
+        for e in self.edgeList:
+            all_verts.update(e.getVertices())
+        return all_verts
+
+    def get_all_coords(self):
+        """ Get the sequence of coordinates for the edges """
+        if self.coord_list is not None:
+            return self.coord_list
+        all_coords = np.array([x.toArray() for x in self.get_all_vertices()])
+        self.coord_list = Face.hull_from_coords(all_coords)
+        return self.coord_list
+
+
     #------------------------------
     # def verification
     #------------------------------
