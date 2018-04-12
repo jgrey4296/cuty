@@ -133,11 +133,13 @@ class Face(object):
         if not bool(vertexArrays):
             return np.array([[0, 0], [0, 0]])
         allVertices = np.array([x for x in vertexArrays])
-        bbox = np.array([[allVertices[:, 0].min(), allVertices[:, 1].min()],
-                         [allVertices[:, 0].max(), allVertices[:, 1].max()]])
+        bbox = np.array([np.min(allVertices, axis=0),
+                         np.max(allVertices, axis=0)])
         logging.debug("Bbox for Face {}  : {}".format(self.index, bbox))
         return bbox
 
+    def markForCleanup(self):
+        self.markedForCleanup = True
     
     #------------------------------
     # def centroids
@@ -156,14 +158,14 @@ class Face(object):
 
     def getCentroid(self):
         """ Get the user defined 'centre' of the face """
-        return self.site.copy()
+        #return self.site.copy()
+        raise Exception("deprecated: use getAvgCentroid or getCentroidFromBBox")
 
     def getCentroidFromBBox(self):
         """ Alternate Centroid, the centre point of the bbox for the face"""
         bbox = self.get_bbox()
-        #max - min /2
-        norm = bbox[1, :] + bbox[0, :]
-        centre = norm * 0.5
+        difference = bbox[1,:] - bbox[0,:]
+        centre = bbox[0,:] + (difference * 0.5)
         return centre
 
 
@@ -203,9 +205,9 @@ class Face(object):
     def add_edge(self, edge):
         """ Add a constructed edge to the face """
         assert(isinstance(edge, HalfEdge))
+        self.coord_list = None
         if edge.face is None:
             edge.face = self
-        self.outerBoundaryEdges.append(edge)
         self.edgeList.append(edge)
 
     def remove_edge(self, edge):
@@ -213,14 +215,15 @@ class Face(object):
         registered, remove that too """
         assert(isinstance(edge, HalfEdge))
         #todo: should the edge be connecting next to prev here?
-        if not bool(self.outerBoundaryEdges) and not bool(self.edgeList):
+        if not bool(self.edgeList):
             return
-        if edge in self.outerBoundaryEdges:
-            self.outerBoundaryEdges.remove(edge)
+        # if edge in self.outerBoundaryEdges:
+        #     self.outerBoundaryEdges.remove(edge)
         if edge in self.edgeList:
             self.edgeList.remove(edge)
         if edge.face is self:
             edge.face = None
+        edge.markForCleanup()
         
     def sort_edges(self):
         """ Order the edges clockwise, by starting point, ie: graham scan """
@@ -228,24 +231,12 @@ class Face(object):
         centre = self.getAvgCentroid()
         #verify all edges are ccw
         assert(all([x.he_ccw(centre) for x in self.edgeList]))
-        
         self.edgeList.sort()
-        #ensure all edges line up
-        paired = zip(self.edgeList, islice(cycle(self.edgeList), 1, None))
-        try:
-            for a,b in paired:
-                assert(a.twin.origin == b.origin)
-        except AssertionError as e:
-            IPython.embed(simple_prompt=True)
 
     def has_edges(self):
         """ Check if its a null face or has actual edges """
-        innerEdges = bool(self.outerBoundaryEdges)
-        outerEdges = bool(self.edgeList)
-        return bool(innerEdges and outerEdges)
+        return bool(self.edgeList)
 
-    def markForCleanup(self):
-        self.markedForCleanup = True
 
     #------------------------------
     # def modifiers
@@ -259,6 +250,7 @@ class Face(object):
         Angle is +- from 90 degrees.
         returns the new face
         """
+        self.sort_edges()
         if ratio is None:
             ratio = 0.5
         assert(isinstance(edge, HalfEdge))
