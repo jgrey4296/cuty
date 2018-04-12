@@ -120,25 +120,24 @@ class HalfEdge:
         return "HalfEdge: {} - {}".format(self.origin, self.twin.origin)
 
     def __repr__(self):
-        origin = self.origin is not None
+        origin = "n/a"
+        twin = "n/a"
+        if self.origin is not None:
+            origin = self.origin.index
         if self.twin is not None:
             twin = self.twin.index
-            twinOrigin = self.twin.origin is not None
-        else:
-            twin = False
-            twinOrigin = False
         n = "n/a"
         p = "n/a"
         if self.next is not None:
             n = self.next.index
         if self.prev is not None:
             p = self.prev.index
-                        
+        f = "n/a"
+        if self.face is not None:
+            f = self.face.index
+            
         coords = [str(x) for x in self.getVertices()]
 
-        data = (self.index, origin, twin, twinOrigin, p, n, coords)
-        return "(HE: {}, O: {}, T: {}, TO: {}, P: {}, N: {}, XY: {})".format(*data)
-    
     def atan(self, centre=None):
         """ Get the radian to the half edge origin, from the centroid
         of the face it is part of, used to ensure clockwise ordering """
