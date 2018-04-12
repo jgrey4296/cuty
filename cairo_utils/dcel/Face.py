@@ -259,28 +259,56 @@ class Face(object):
         assert(-90 <= angle <= 90)
         #split the edge
         newPoint, newEdge = edge.split_by_ratio(ratio)
-                
-        #extend a line from the new vertex, long enough to intersect the other side
-        bisecting_edge = newEdge.extend(rotate=radians(angle), d=10000)
-        
-        #intersect with all lines of the face until the intersection is found
-        intersections = [a for a in [bisecting_edge.intersect(x) for x in self.edgeList if x is not newEdge and x is not edge] if a is not None]
-        assert(len(intersections) == 1)
 
+        #get the bisecting vector
+        asCoords = edge.toArray()
+        bisector = cumath.get_bisector(asCoords[0], asCoords[1])
+        #get the coords of an extended line
+        extended_end = cumath.extend_line(newPoint.toArray(), bisector, 1000)
+        el_coords = np.row_stack((newPoint.toArray(), extended_end))
+
+        #intersect with coords of edges
+        intersection = None
+        oppEdge = None
+        for he in self.edgeList:
+            if he in [edge, newEdge]:
+                continue
+            he_coords = he.toArray()
+            intersection = cumath.intersect(el_coords, he_coords)
+            if intersection is not None:
+                oppEdge = he
+                break
+        assert(intersection is not None)
+        assert(oppEdge is not None)
         #split that line at the intersection
+        newOppPoint, newOppEdge = oppEdge.split(intersection)
+
+        #create the other face
+        newFace = self.dcel.newFace()
         
-        #add the line in
+        #create the subdividing edge:
+        dividingEdge = self.dcel.newEdge(newPoint, newOppPoint,
+                                         face=self,
+                                         twinFace=newFace,
+                                         edata=edge.data,
+                                         vdata=edge.origin.data)
+        dividingEdge.addPrev(edge, force=True)
+        dividingEdge.addNext(newOppEdge, force=True)
+        dividingEdge.twin.addPrev(oppEdge, force=True)
+        dividingEdge.twin.addNext(newEdge, force=True)
 
-        #sort the vertices
+        #divide the edges into newOppEdge -> edge,  newEdge -> oppEdge
+        newFace_Edge_Group = []
+        originalFace_Edge_Update = []
 
-        #pick the new vertex, follow it around until hitting its twin
-        #get the disjoint set of those vertices, those are the two faces
+        current = newOppEdge
+        while current != edge:
+            assert(current.next is not None)
+            originalFace_Edge_Update.append(current)
+            current = current.next
+        originalFace_Edge_Update.append(current)
+        originalFace_Edge_Update.append(dividingEdge)
         
-
-        #clean up the massive line?
-        
-        raise Exception("Unimplemented")
-
     def add_vertex(self, vert):
         """ Add a vertex, then recalculate the convex hull """
         assert(isinstance(vert, Vertex))
