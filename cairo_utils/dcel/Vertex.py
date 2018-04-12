@@ -123,7 +123,22 @@ class Vertex:
         assert(self.dcel is not None)
         return self.dcel.vertex_quad_tree.intersect(self.bbox(e=e))
 
+    def within(self, bbox):
+        """ Check the vertex is within [x,y,x2,y2] """
+        assert(isinstance(bbox, np.ndarray))
+        assert(len(bbox) == 4)
+        inXBounds = bbox[0] <= self.loc[0] and self.loc[0] <= bbox[2]
+        inYBounds = bbox[1] <= self.loc[1] and self.loc[1] <= bbox[3]
+        return inXBounds and inYBounds
+
+    def within_circle(self, centre, radius):
+        """ Check the vertex is within the radius boundary of a point """
+        return inCircle(centre, radius, self.toArray())[0]
     
+    def outside(self, bbox):
+        """ Check the vertex is entirely outside of the bbox [x,y,x2,y2] """
+        return not self.within(bbox)
+
     #------------------------------
     # def HalfEdge Access and Registration
     #------------------------------
@@ -146,23 +161,7 @@ class Vertex:
             self.halfEdges.remove(he)
         logging.debug("Remaining edges: {}".format(len(self.halfEdges)))
 
-
-    def within(self, bbox):
-        """ Check the vertex is within [x,y,x2,y2] """
-        assert(isinstance(bbox, np.ndarray))
-        assert(len(bbox) == 4)
-        inXBounds = bbox[0] <= self.loc[0] and self.loc[0] <= bbox[2]
-        inYBounds = bbox[1] <= self.loc[1] and self.loc[1] <= bbox[3]
-        return inXBounds and inYBounds
-
-    def within_circle(self, centre, radius):
-        """ Check the vertex is within the radius boundary of a point """
-        return inCircle(centre, radius, self.toArray())[0]
-    
-    def outside(self, bbox):
-        """ Check the vertex is entirely outside of the bbox [x,y,x2,y2] """
-        return not self.within(bbox)
-
+    def get_sorted_edges(self):
         
     #------------------------------
     # def Coordinate access
