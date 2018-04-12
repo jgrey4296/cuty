@@ -138,24 +138,8 @@ class HalfEdge:
             
         coords = [str(x) for x in self.getVertices()]
 
-    def atan(self, centre=None):
-        """ Get the radian to the half edge origin, from the centroid
-        of the face it is part of, used to ensure clockwise ordering """
-        assert(self.face is not None)
-        assert(self.origin is not None)
-        if centre is None:
-            assert(hasattr(self.face, 'getCentroid'))
-            centre = self.face.getCentroid()
-        a = self.origin.toArray()
-        #multiplying to... deal with inversion of cairo? TODO: check this
-        centre *= [1, -1]
-        a *= [1, -1]
-        centre += [0, 1]
-        a += [0, 1]
-        o_a = a - centre
-        a1 = atan2(o_a[1], o_a[0])
-        return a1
-
+        data = (self.index, f, origin, twin, p, n, coords)
+        return "(HE: {}, f: {}, O: {}, T: {}, P: {}, N: {}, XY: {})".format(*data)
 
     def __lt__(self, other):
         """ Compare to another half edge,
@@ -570,13 +554,24 @@ class HalfEdge:
     
     def cross(self):
         """ Cross product of the halfedge """
+    def atan(self, centre=None):
+        """ Get the radian to the half edge origin, from the centroid
+        of the face it is part of, used to ensure clockwise ordering """
+        assert(self.face is not None)
         assert(self.origin is not None)
-        assert(self.twin is not None)
-        assert(self.twin.origin is not None)
+        raise Exception("deprecated")
+        if centre is None:
+            assert(hasattr(self.face, 'getCentroid'))
+            centre = self.face.getCentroid()
         a = self.origin.toArray()
-        b = self.twin.origin.toArray()
-        return np.cross(a,b)
-    
+        #multiplying to... deal with inversion of cairo? TODO: check this
+        centre *= [1, -1]
+        a *= [1, -1]
+        centre += [0, 1]
+        a += [0, 1]
+        o_a = a - centre
+        a1 = atan2(o_a[1], o_a[0])
+        return a1
 
     def fix_faces(self, he, left_most=False):
         """ Infer faces by side on a vertex,
