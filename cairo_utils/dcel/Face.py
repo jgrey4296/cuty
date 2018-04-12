@@ -309,20 +309,23 @@ class Face(object):
         originalFace_Edge_Update.append(current)
         originalFace_Edge_Update.append(dividingEdge)
         
-    def add_vertex(self, vert):
-        """ Add a vertex, then recalculate the convex hull """
-        assert(isinstance(vert, Vertex))
-        self.free_vertices.add(vert)
-
-    def get_all_vertices(self):
-        """ Get all vertices of the face. both free and in halfedges """
-        all_verts = set()
-        all_verts.update(self.free_vertices)
-        for e in self.edgeList:
-            all_verts.update(e.getVertices())
-        return all_verts
-
+        current = newEdge
+        while current != oppEdge:
+            assert(current.next is not None)
+            newFace_Edge_Group.append(current)
+            current.face = newFace
+            current = current.next
+        newFace_Edge_Group.append(current)
+        current.face = newFace
+        newFace_Edge_Group.append(dividingEdge.twin)        
         
+        #update the two faces edgelists
+        self.edgeList = originalFace_Edge_Update
+        newFace.edgeList = newFace_Edge_Group
+
+        #return both
+        return (self, newFace)
+
     def merge_faces(self, *args):
         """ Calculate a convex hull from all passed in faces,
         creating a new face """
