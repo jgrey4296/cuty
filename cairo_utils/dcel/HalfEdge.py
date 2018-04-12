@@ -145,6 +145,23 @@ class HalfEdge:
     # def Math
     #------------------------------
 
+    def cross(self):
+        """ Cross product of the halfedge """
+        assert(self.origin is not None)
+        assert(self.twin is not None)
+        assert(self.twin.origin is not None)
+        a = self.origin.toArray()
+        b = self.twin.origin.toArray()
+        return np.cross(a,b)
+    
+    def getLength_sq(self, force=False):
+        """ Gets the calculated length, or calculate it. returns as a np.ndarray"""
+        if not force and self.length_sq is not -1:
+            return self.length_sq
+        #otherwise calculate
+        asArray = self.toArray()
+        self.length_sq = get_distance_raw(asArray[0], asArray[1])
+        return self.length_sq
 
     #------------------------------
     # def Modifiers
