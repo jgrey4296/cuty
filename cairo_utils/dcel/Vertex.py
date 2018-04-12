@@ -124,6 +124,10 @@ class Vertex:
         return self.dcel.vertex_quad_tree.intersect(self.bbox(e=e))
 
     
+    #------------------------------
+    # def HalfEdge Access and Registration
+    #------------------------------
+
     def registerHalfEdge(self, he):
         """ register a halfedge as using this vertex
         will add the vertex into the first open slot of the halfedge
