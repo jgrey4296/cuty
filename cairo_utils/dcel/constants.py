@@ -9,5 +9,5 @@ VertE = Enum("Vertex Data Enum", "STROKE RADIUS NULL TEXT")
 
 EditE = Enum("Edit return type enum", "MODIFIED NEW")
 
-
+EDGE_FOLLOW_GUARD = 200
 
