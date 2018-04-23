@@ -522,6 +522,24 @@ class HalfEdge:
         dcel quadtree """
         raise Exception("Unimplemented")
 
+    def follow_sequence(self, backwards=False, guard=EDGE_FOLLOW_GUARD):
+        """ Follow the .next or .prev chain to completion or loop """
+        count = 1
+        edges = [self]
+        getter = lambda x: x.next
+        if backwards:
+            getter = lambda x: x.prev
+        current = getter(self)
+        #todo: possibly use a set and stop on any loop
+        while count < guard and current is not None and current is not self:
+            edges.append(current)
+            current = getter(current)
+            count += 1
+
+        return edges
+
+        
+
     
     #------------------------------
     # def Verification
