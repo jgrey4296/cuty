@@ -13,7 +13,7 @@ from .Vertex import Vertex
 from .HalfEdge import HalfEdge
 from ..constants import TWOPI
 from .. import math as cumath
-from ..math import rotatePoint
+from ..math import rotatePoint, calc_bbox_corner, within_bbox
 
 logging = root_logger.getLogger(__name__)
 
