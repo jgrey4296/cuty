@@ -31,6 +31,7 @@ class Quadratic(object):
         
         xs = q3.solve()
         xs_existing = np.array([x for x in xs if x is not None])
+        xs_existing.sort()
         return xs_existing
 
     def discriminant(self):
