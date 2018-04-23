@@ -662,11 +662,16 @@ class HalfEdge:
         as the external boundary of the face, and ordered ccw  """
         assert(self.face is not None)
         assert(self.twin is not None)
-        assert(self.twin.face is not None)
-        oldFace = self.face
-        self.face = self.twin.face
-        self.twin.face = oldFace
-    
+        #assert(self.twin.face is not None)
+        originFace = self.face
+        twinFace = self.twin.face
+        originFace.remove_edge(self)
+        if twinFace is not None:
+            twinFace.remove_edge(self.twin)
+            twinFace.add_edge(self)
+        originFace.add_edge(self.twin)
+
+
     #------------------------------
     # def Vertex Access
     #------------------------------
