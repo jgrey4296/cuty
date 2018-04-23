@@ -4,9 +4,10 @@ import logging as root_logger
 from math import pi, atan2, copysign, degrees
 import numpy as np
 import IPython
+from itertools import islice, cycle
 from ..math import inCircle, get_distance, intersect, sampleAlongLine, get_unit_vector, extend_line, rotatePoint, is_point_on_line, get_distance_raw, bbox_to_lines
-from ..constants import TWOPI, IntersectEnum, EPSILON
-from .constants import EditE
+from ..constants import TWOPI, IntersectEnum, EPSILON, TOLERANCE
+from .constants import EditE, EDGE_FOLLOW_GUARD
 from .Vertex import Vertex
 from .Line import Line
 
