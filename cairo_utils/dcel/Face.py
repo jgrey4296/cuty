@@ -350,18 +350,21 @@ class Face(object):
         #return the face
         return (newFace, discarded)
         
-    def translate_edge(self, e, transform, candidates=None, force=False):
-        assert(e in self.edgeList)
+    def translate_edge(self, transform, e=None, i=None, candidates=None, force=False):
+        assert(e is None or e in self.edgeList)
+        assert(i is None or 0 <= i < len(self.edgeList))
+        assert(not (e is None and i is None))
         assert(isinstance(transform, np.ndarray))
         assert(transform.shape == (2,))
-        
-        raise Exception("Unimplemented")
-    
+        if i is None:
+            i = self.edgeList.index(e)    
+
         if not force and self.has_constraints(candidates):
-            copied = self.copy()
+            copied, edit_e = self.copy().translate_edge(transform, i=i, force=True)
             return (copied, EditE.NEW)
-        else:
-            return (self, EditE.MODIFIED)
+
+        self.edgeList[i].translate(transform, force=True)
+        return (self, EditE.MODIFIED)
         
 
     def scale(self, amnt=None, target=None, vert_weights=None, edge_weights=None,
