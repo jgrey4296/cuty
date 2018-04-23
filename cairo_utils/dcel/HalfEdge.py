@@ -223,14 +223,14 @@ class HalfEdge:
             assert(dir.shape == (2,2))
             target = dir
 
-        if not force and  self.has_constraints(candidates):
-            return (self.dcel.newEdge(rotatedCoords[0],
-                                      rotatedCoords[1],
+        if not force and self.has_constraints(candidates):
+            return (self.dcel.createEdge(target[0],
+                                      target[1],
                                       edata=self.data,
                                       vdata=self.origin.data), EditE.NEW)
         else:
-            vert1, edit1 = self.origin.translate(rotatedCoords[0], abs=True, force=True)
-            vert2, edit2 = self.twin.origin(rotatedCoords[1], abs=True, force=True)
+            vert1, edit1 = self.origin.translate(target[0], abs=True, force=True)
+            vert2, edit2 = self.twin.origin.translate(target[1], abs=True, force=True)
             assert(edit1 == edit2)
             assert(edit1 == EditE.MODIFIED)
             return (self, EditE.MODIFIED)
