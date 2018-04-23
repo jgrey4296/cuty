@@ -498,17 +498,6 @@ class DCEL(object):
         for (a,b) in zip(edges, other):
             a.addNext(b)
 
-    def setFaceForEdgeLoop(self, face, edges):
-        """ For a face and a list of edges,  link them together """
-        assert(isinstance(face, Face))
-        assert(isinstance(edge, list))
-        assert(all([isinstance(x, HalfEdge) for x in edges]))
-        #check the edge list is a cycle by next/prev or by vertices
-
-        #if by vertices, set next/prev
-
-        #assign face to all edges
-        
     def force_all_edge_lengths(self, l):
         """ Force all edges to be of length <= l. If over, split into multiple lines
         of length l. """
@@ -530,49 +519,8 @@ class DCEL(object):
             else:
                 processed.add(current.index)
     
-    def constrain_half_edges(self, bbox):
-        """ For each halfedge,  shorten it to be within the bounding box  """
-        assert(isinstance(bbox, np.ndarray))
-        assert(len(bbox) == 4)
 
-        logging.debug("\n---------- Constraint Checking")
-        numEdges = len(self.halfEdges)
-        for e in self.halfEdges:
-
-            logging.debug("\n---- Checking constraint for: {}/{} {}".format(e.index, numEdges, e))
-            #If its going to be removed, ignore it
-            if e.markedForCleanup:
-                continue
-            #if both vertices are within the bounding box,  don't touch
-            if e.isConstrained():
-                continue
-            if e.within(bbox):
-                continue
-            #if both vertices are out of the bounding box,  clean away entirely
-            if e.outside(bbox):
-                logging.debug("marking for cleanup: e{}".format(e.index))
-                e.markForCleanup()
-                continue
-
-            #constrain the point outside the bounding box:
-            logging.debug("Constraining")
-            newBounds = e.constrain(bbox)
-            orig_1, orig_2 = e.getVertices()
-            e.clearVertices()
-            v1 = self.newVertex(*newBounds[0])
-            v2 = self.newVertex(*newBounds[1])
-            #This doesn't account for an edge that crosses the entire bbox
-            if not (v1 == orig_1 or v1 == orig_2 or v2 == orig_1 or v2 == orig_2):
-                logging.debug("Vertex Changes upon constraint:")
-                logging.debug(" Originally: {},  {}".format(orig_1, orig_2))
-                logging.debug(" New: {},  {}".format(v1, v2))
-                raise Exception("One vertex shouldn't change")
-
-            e.addVertex(v1)
-            e.addVertex(v2)
-            e.setConstrained()
-            logging.debug("Result: {}".format(e))
-
+        
     def constrain_to_circle(self, centre, radius, candidates=None, force=False):
         """ Limit all faces, edges, and vertices to be within a circle,
         adding boundary verts and edges as necessary """
