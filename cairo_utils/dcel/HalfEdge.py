@@ -334,12 +334,12 @@ class HalfEdge:
 
         if further == self.origin:
             if vertTarget is not None:
-                target.replaceVertex(newVert)
+                target.replaceVertex(vertTarget)
             else:
                 target.origin.loc = closest
         else:
             if vertTarget is not None:
-                target.twin.replaceVertex(newVert)
+                target.twin.replaceVertex(vertTarget)
             else:
                 target.twin.origin.loc = closest
 
