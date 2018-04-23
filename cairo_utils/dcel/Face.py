@@ -209,20 +209,31 @@ class Face(object):
         #todo: should the edge be connecting next to prev here?
         if not bool(self.edgeList):
             return
-        # if edge in self.outerBoundaryEdges:
-        #     self.outerBoundaryEdges.remove(edge)
         if edge in self.edgeList:
             self.edgeList.remove(edge)
         if edge.face is self:
             edge.face = None
-        edge.markForCleanup()
+        if edge.twin is None or edge.twin.face is None:
+            edge.markForCleanup()
         
     def sort_edges(self):
         """ Order the edges clockwise, by starting point, ie: graham scan """
         logging.debug("Sorting edges")
-        centre = self.getAvgCentroid()
+        centre = self.getCentroid()
         #verify all edges are ccw
-        assert(all([x.he_ccw(centre) for x in self.edgeList]))
+        edges = self.edgeList.copy()
+        for x in edges:
+            if not x.he_ccw(centre):
+                x.swapFaces()
+
+        try:
+            assert(all([x.he_ccw(centre) for x in self.edgeList]))
+        except AssertionError as e:
+            IPython.embed(simple_prompt=True)
+
+        # withDegrees = [(x.degrees(centre), x) for x in self.edgeList]
+        # withDegrees.sort()
+        # self.edgeList = [hedge for (deg,hedge) in withDegrees]
         self.edgeList.sort()
 
     def has_edges(self):
