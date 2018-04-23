@@ -529,9 +529,12 @@ def clamp(n,minn=0,maxn=1):
     return max(min(maxn,n),minn)
 
 def bbox_to_lines(bbox, epsilon=EPSILON):
+    """ take in the min and max values of a bbox,
+    return back a list of 4 lines with the enum designating their position """
     assert(isinstance(bbox, np.ndarray))
     assert(bbox.shape == (4,))
     bbox_e = bbox + np.array([-epsilon, -epsilon, epsilon, epsilon])
+    # [[minx, miny],[maxx, maxy]] -> [[minx,maxx], [miny, maxy]]
     bbox_t = bbox.reshape((2,2)).transpose()
     #convert the bbox to bounding lines
     selX = np.array([1,0])
