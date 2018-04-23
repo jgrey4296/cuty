@@ -173,7 +173,7 @@ class HalfEdge:
     # def Modifiers
     #------------------------------
     
-    def split(self, loc, copy_data=True):
+    def split(self, loc, copy_data=True, face_update=True):
         """ Take an s -> e, and make it now two edges s -> (x,y) -> e 
         returns (firstHalf, newPoint, secondHalf)"""
         assert(isinstance(loc, np.ndarray))
@@ -202,8 +202,10 @@ class HalfEdge:
         self.addNext(newEdge, force=True)
         newEdge.twin.addNext(self.twin, force=True)
         #update faces
-        newEdge.face = self.face
-        newEdge.twin.face = self.twin.face        
+        if face_update and self.face is not None:
+            self.face.add_edge(newEdge)
+        if face_update and self.twin.face is not None:
+            self.twin.face.add_edge(newEdge.twin)
         return (newPoint, newEdge)
 
     def split_by_ratio(self, r=0.5):
