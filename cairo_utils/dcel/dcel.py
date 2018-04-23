@@ -503,7 +503,7 @@ class DCEL(object):
         of length l. """
         assert(l > 0)
         processed = set()
-        allEdges = self.halfEdges.copy()
+        allEdges = list(self.halfEdges)
         while len(allEdges) > 0:
             current = allEdges.pop(0)
             assert(current.index not in processed)
@@ -590,10 +590,12 @@ class DCEL(object):
             by the counter-clockwise angle position they take relative """
         assert(all([isinstance(x, Vertex) for x in vertices]))
         assert(isinstance(focus, np.ndarray))
-        relativePositions = [[v.loc - focus] for v in vertices]
+        relativePositions = [v.loc - focus for v in vertices]
         zipped = zip(relativePositions, vertices)
         angled = [((degrees(atan2(loc[1], loc[0])) + 360) % 360, vert) for loc,vert in zipped]
         sortedAngled = sorted(angled)
+        # rads = (np.arctan2(verts[:,1], verts[:,0]) + TWOPI) % TWOPI
+        # ordered = sorted(zip(rads, opp_hedges))
         return [vert for loc,vert in sortedAngled]
 
 
@@ -701,3 +703,6 @@ class DCEL(object):
 
     def integrate_bbox_edges(self, current_edge, prior_edge, bbox, f):
         raise Exception("Deprecated: Use dcel.constrain_to_bbox")
+
+    def constrain_half_edges(self, bbox):
+        raise Exception("Deprecated: use dcel.constrain_to_bbox")
