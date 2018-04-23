@@ -152,9 +152,8 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
 
         sorted_edges = v1.get_sorted_edges()
         self.assertEqual(len(sorted_edges), len(coords))
+        #todo: verify the sorting
         
-        
-        self.assertTrue(True)
 
     def test_has_constraints_false(self):
         """ A Vertex doesn't have constraints by default """

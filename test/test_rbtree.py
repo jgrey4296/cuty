@@ -1,7 +1,7 @@
 import unittest
 import logging
 from test_context import cairo_utils as utils
-from utils import rbtree
+from cairo_utils import rbtree
 
 
 class RBTree_Tests(unittest.TestCase):

@@ -2,8 +2,11 @@ import unittest
 import logging
 import IPython
 import numpy as np
+from random import shuffle
+from math import radians
 from test_context import cairo_utils as utils
 from cairo_utils import dcel
+from cairo_utils.math import get_distance_raw
 
 
 class DCEL_ACTUAL_Tests(unittest.TestCase):
@@ -164,30 +167,45 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         with self.assertRaises(Exception):
             self.dc.linkEdgesTogether([e1, e2, e3], loop=True)
 
-    def test_face_edge_loop(self):
-        #create edges
-        #create a face
-        #combine
-        raise Exception("Untested")
-
     def test_vertex_ordering(self):
         #create a number of vertices
-        #order them
-        raise Exception("Untested")
-        
-    def test_constraints(self):
-        #create edges, that go outside the bounding box
-        #run
-        #verify they are constrained
-        raise Exception("Untested")
+        increment = int(300 / 20)
+        verts = []
+        for x in range(0,300, increment):
+            rads = radians(x)
+            coords = np.array([np.cos(rads), np.sin(rads)])
+            verts.append(self.dc.newVertex(coords))
+        verts_shuffled = verts.copy()
+        shuffle(verts_shuffled)
+        #order the shuffled verts:
+        reordered_verts = self.dc.orderVertices(np.array([0,0]), verts_shuffled)
+        for a,b in zip(verts, reordered_verts):
+            self.assertTrue(a==b)
 
+        
     def test_circle_constrain_vertices(self):
-        raise Exception("untested")
+        v1 = self.dc.newVertex(np.array([0,0]))
+        v2 = self.dc.newVertex(np.array([2,0]))
+        v3 = self.dc.newVertex(np.array([3,3]))
+        v4 = self.dc.newVertex(np.array([-2,-2]))
+        self.dc.constrain_to_circle(np.array([0,0]), 1.0)
+        self.assertFalse(v1.markedForCleanup)
+        self.assertTrue(all([x.markedForCleanup for x in [v2, v3, v4]]))
+        
 
     def test_circle_constrain_faces(self):
-        raise Exception("untested")
+        central_loc = np.array([10,0])
+        f = self.dc.newFace(coords=np.array([[10,0],[12,0],[10,2]]))
+        original_verts = f.get_all_vertices()
+        asArray = np.array([x.toArray() for x in original_verts])
+        self.assertFalse((get_distance_raw(asArray, central_loc) <= 2).all())
+        self.dc.constrain_to_circle(central_loc, 1.0)
+        self.assertEqual(len(original_verts.symmetric_difference(f.get_all_vertices())), 0)
+        self.assertEqual(len(f.edgeList), 2)
+        new_verts = f.get_all_vertices()
+        new_asArray = np.array([x.toArray() for x in new_verts])
+        self.assertTrue((get_distance_raw(new_asArray, central_loc) <= 2).all())
 
-    
     def test_circle_constrain(self):
         e1 = self.dc.createEdge(np.array([0,0]), np.array([1,0]))
         originalVertex_indices = set([x.index for x in e1.getVertices()])
@@ -293,21 +311,6 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertEqual(len(self.dc.faces), 1)
                                 
         
-    def test_edge_connections(self):
-        #add corners to edges
-        raise Exception("Untested")
-        
-    def test_corner_vertices(self):
-        #create vertices at the corners of the bbox
-        raise Exception("Untested")
-        
-    def test_halfedge_fixup(self):
-        raise Exception("Untested")
-
-    def test_verification(self):
-        #verify vertexs, halfedges, faces appropriately
-        raise Exception("Untested")
-
     def test_export_vertices(self):
         self.dc.newVertex(np.array([0,0]))
         self.dc.newVertex(np.array([1,1]))

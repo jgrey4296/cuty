@@ -1,7 +1,7 @@
 import unittest
 import logging
 from test_context import cairo_utils as utils
-from utils import Tree
+from cairo_utils import Tree
 
 
 class Tree_Tests(unittest.TestCase):

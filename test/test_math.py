@@ -5,6 +5,7 @@ import IPython
 from test_context import cairo_utils as utils
 from cairo_utils import math as cumath
 from cairo_utils.constants import IntersectEnum as IE
+from cairo_utils.constants import TWOPI
 import math
 
 
@@ -77,11 +78,23 @@ class CUMath_Tests(unittest.TestCase):
 
     #get_bisector
     def test_get_bisector(self):
-        return
+        a = np.array([0,0])
+        b = np.array([1,0])
+        bisec = cumath.get_bisector(a,b)
+        self.assertTrue(np.allclose(bisec, np.array([0,1])))
     
     #get_circle_3p
     def test_get_circle_3p(self):
-        return
+        for i in range(100):
+            rand = np.random.random((3,1)) * TWOPI
+            xs = np.cos(rand)
+            ys = np.sin(rand)
+            xys = np.column_stack((xs,ys))
+            centre, radius = cumath.get_circle_3p(*xys)
+            self.assertTrue(np.allclose(radius, np.array([1])))
+            self.assertTrue(np.allclose(centre, np.array([0,0])))
+
+        
     
     #extend_line
     def test_extend_line(self):
@@ -147,6 +160,17 @@ class CUMath_Tests(unittest.TestCase):
 
         self.assertIsNotNone(intersection)
 
+    def test_intersect_specific_line_2(self):
+        l1 = np.array([[1776.554,3368.513], [1671.544,4096.000]])
+        l2 = np.array([[100, 3900], [3900, 3900]])
+        intersections = cumath.intersect(l1, l2, tolerance=0.5)
+        self.assertIsNotNone(intersections)
+
+    def test_intersect_specific_line_3(self):
+        l1 = np.array([[0,0],[1,0]])
+        l2 = np.array([[-0.5,-0.5],[-0.5,0.5]])
+        intersections = cumath.intersect(l1, l2, tolerance=0)
+        self.assertIsNone(intersections)
         
     #is_point_on_line
     def test_is_point_on_line(self):

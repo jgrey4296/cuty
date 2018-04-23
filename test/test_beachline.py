@@ -20,7 +20,7 @@ class BeachLine_Tests(unittest.TestCase):
         self.assertIsNotNone(beachline.NilNode)
         self.assertIsNotNone(beachline.Node)
 
-        node = beachline.Node(5, act=False)
+        node = beachline.Node(5, arc=False)
 
         self.assertIsNotNone(node)
         self.assertTrue(hasattr(node, "id"))

@@ -36,31 +36,29 @@ class DCEL_FACE_Tests(unittest.TestCase):
         rawCoords = np.array([[1,0],[0,1],[-1,0],[0,-1]])
         verts = [self.dc.newVertex(x) for x in rawCoords]
         hull, discard = dcel.Face.hull_from_vertices(verts)
-        assert(len(hull) == len(verts))
+        self.assertTrue(len(hull) == len(verts))
 
     def test_export(self):
         """ Test the export of a face """
-        #create some vertices
-        #create some halfedges
-        #create the face
-
-        #export it
-
-        #verify
-        raise Exception("Untested")
+        data = self.f._export()
+        self.assertTrue(all([x in data for x in ['i','edges','sitex','sitey','data']]))
+        self.assertEqual(len(data['edges']), 4)
+        self.assertEqual(data['i'], self.f.index)
 
     def test_centroids(self):
         """ Test the calculation of a face's centroids """
-        #create
+        f = self.dc.newFace(coords=np.array([[1,0],[0,1],[-1,0],[0,-1]]))
+        self.assertTrue(np.all(f.getAvgCentroid() == np.array([0,0])))
 
-        #avg centroid
+    def test_centroids_2(self):
+        f = self.dc.newFace(coords=np.array([[2,0],[0,1],[-1,0],[0,-1]]))
+        self.assertTrue(np.all(f.getAvgCentroid() == np.array([0.25,0])))
 
-        #centroid
+    def test_centroids_3(self):
+        f = self.dc.newFace(coords=np.array([[10,10],[9,11],[8,10],[9,9]]))
+        self.assertTrue(np.all(f.getAvgCentroid() == np.array([9,10])))
 
-        #bbox centroid
         
-        raise Exception("Untested")
-
     def test_has_edges(self):
         """ Test whether a face has edges or not """
         self.assertTrue(self.f.has_edges())
@@ -120,24 +118,57 @@ class DCEL_FACE_Tests(unittest.TestCase):
         """ Test adding a free vertex to a face """
         v1 = self.dc.newVertex(np.array([0,0]))
         emptyFace = self.dc.newFace()
+        self.assertFalse(bool(emptyFace.free_vertices))
         emptyFace.add_vertex(v1)
-
+        self.assertTrue(bool(emptyFace.free_vertices))
+        
     def test_translate_edge_modified(self):
         """ Test modifying a face by moving an edge """
-        self.f.translate_edge(self.f.edgeList[0], np.array([1,0]))
-
+        original_coords = self.f.edgeList[0].toArray()
+        f2, edit_e = self.f.translate_edge(np.array([1,0]), self.f.edgeList[0])
+        self.assertEqual(edit_e, EditE.MODIFIED)
+        self.assertEqual(self.f, f2)
+        for e in f2.edgeList:
+            self.assertTrue(np.allclose(e.twin.origin.loc, e.next.origin.loc))
+        self.assertTrue(np.allclose(f2.edgeList[0].toArray(), original_coords + np.array([1,0])))
+        
+        
     def test_translate_edge_new(self):
         """ Test creating a new face from an existing one, by moving an edge """
-        self.f.translate_edge(self.f.edgeList[0], np.array([1,0]))
+        e = self.dc.createEdge(np.array([1,0]), np.array([4,0]))
+        original_coords = self.f.edgeList[0].toArray()
+        f2, edit_e = self.f.translate_edge(np.array([1,0]), self.f.edgeList[0])
+        self.assertEqual(edit_e, EditE.NEW)
+        self.assertNotEqual(self.f, f2)
+        for edge in f2.edgeList:
+            self.assertTrue(np.allclose(edge.twin.origin.loc, edge.next.origin.loc))
+        self.assertTrue(np.allclose(f2.edgeList[0].toArray(), original_coords + np.array([1,0])))
 
+    
     def test_translate_edge_force(self):
         """ Test forcing modification of a face by moving an edge """
-        self.f.translate_edge(self.f.edgeList[0], np.array([1,0]), force=True)
+        e = self.dc.createEdge(np.array([1,0]), np.array([4,0]))
+        original_coords = self.f.edgeList[0].toArray()
+        f2, edit_e = self.f.translate_edge(np.array([1,0]), self.f.edgeList[0], force=True)
+        self.assertEqual(edit_e, EditE.MODIFIED)
+        self.assertEqual(self.f, f2)
+        for edge in f2.edgeList:
+            self.assertTrue(np.allclose(edge.twin.origin.loc, edge.next.origin.loc))
+        self.assertTrue(np.allclose(f2.edgeList[0].toArray(), original_coords + np.array([1,0])))
 
+    
     def test_translate_edge_modified_by_candidates(self):
         """ Test modification of a face by designating non-constraining links """
-        self.f.translate_edge(self.f.edgeList[0], np.array([1,0]), candidates=set([]))
-    
+        e = self.dc.createEdge(np.array([1,0]), np.array([4,0]))
+        original_coords = self.f.edgeList[0].toArray()
+        f2, edit_e = self.f.translate_edge(np.array([1,0]), self.f.edgeList[0], candidates=set([e]))
+        self.assertEqual(edit_e, EditE.MODIFIED)
+        self.assertEqual(self.f, f2)
+        for edge in f2.edgeList:
+            self.assertTrue(np.allclose(edge.twin.origin.loc, edge.next.origin.loc))
+        self.assertTrue(np.allclose(f2.edgeList[0].toArray(), original_coords + np.array([1,0])))
+
+        
         
     def test_merge_faces_initial(self):
         """ Test merging two faces into one, of the simplest case """
@@ -223,11 +254,13 @@ class DCEL_FACE_Tests(unittest.TestCase):
         e = f1.edgeList[0].extend(direction=np.array([1,1]), inSequence=False)
         original_coords = np.array([x.toArray() for x in f1.get_all_vertices()])
         original_indices = set([x.index for x in f1.get_all_vertices()])
+        candidate_set = set([f1, e.face, e.twin.face]).union(f1.edgeList).union([e, e.twin])
         with self.dc:
-            f2, edit_e = f1.cut_out(candidates=set([f1]).union(f1.edgeList).union([e]))
+            f2, edit_e = f1.cut_out(candidates=candidate_set)
 
-        self.assertEqual(f1, f2)
         self.assertEqual(edit_e, EditE.MODIFIED)
+        self.assertEqual(f1, f2)
+
         f2_coords = np.array([x.toArray() for x in f2.get_all_vertices()])
         original_coords.sort(axis=0)
         f2_coords.sort(axis=0)
@@ -240,24 +273,61 @@ class DCEL_FACE_Tests(unittest.TestCase):
         
     def test_scale_modified(self):
         """ Test scaling a face """
-        f2, edit_e = self.f.scale(amnt=np.array([2,2]))
+        f2, edit_e = self.f.copy().scale(amnt=np.array([2,2]))
         self.assertEqual(edit_e, EditE.MODIFIED)
-
+        for a,b in zip(self.f.edgeList, f2.edgeList):
+            a_origin = a.origin.loc
+            a_twin = a.twin.origin.loc
+            b_origin = b.origin.loc
+            b_twin = b.twin.origin.loc
+            self.assertTrue(np.allclose(a_origin * 2, b_origin))
+            self.assertTrue(np.allclose(a_twin * 2, b_twin))
+        
+    
     def test_scale_new(self):
         """ Test cloning a face then scaling it """
+        e2 = self.dc.createEdge(np.array([1,0]), np.array([2,4]))
         f2, edit_e = self.f.scale(amnt=np.array([2,2]))
         self.assertEqual(edit_e, EditE.NEW)
+        for a,b in zip(self.f.edgeList, f2.edgeList):
+            a_origin = a.origin.loc
+            a_twin = a.twin.origin.loc
+            b_origin = b.origin.loc
+            b_twin = b.twin.origin.loc
+            self.assertTrue(np.allclose(a_origin * 2, b_origin))
+            self.assertTrue(np.allclose(a_twin * 2, b_twin))
+
 
     def test_scale_force(self):
         """ Test forcing modification by scaling """
+        original_locs = [x.toArray() for x in self.f.edgeList]
+        e2 = self.dc.createEdge(np.array([1,0]), np.array([2,4]))
         f2, edit_e = self.f.scale(amnt=np.array([2,2]), force=True)
         self.assertEqual(edit_e, EditE.MODIFIED)
+        for a,b in zip(original_locs, f2.edgeList):
+            a_origin = a[0]
+            a_twin = a[1]
+            b_origin = b.origin.loc
+            b_twin = b.twin.origin.loc
+            self.assertTrue(np.allclose(a_origin * 2, b_origin))
+            self.assertTrue(np.allclose(a_twin * 2, b_twin))
+        self.assertTrue(np.allclose(e2.origin.loc, np.array([2,0])))
 
     def test_scale_modified_by_candidates(self):
         """ Test scaling as modification by specifying non-constraining connections """
-        f2, edit_e = self.f.scale(amnt=np.array([2,2]), candidates=set([]))
+        original_locs = [x.toArray() for x in self.f.edgeList]
+        e2 = self.dc.createEdge(np.array([1,0]), np.array([2,4]))
+        f2, edit_e = self.f.scale(amnt=np.array([2,2]), candidates=set([e2]))
         self.assertEqual(edit_e, EditE.MODIFIED)
-
+        for a,b in zip(original_locs, f2.edgeList):
+            a_origin = a[0]
+            a_twin = a[1]
+            b_origin = b.origin.loc
+            b_twin = b.twin.origin.loc
+            self.assertTrue(np.allclose(a_origin * 2, b_origin))
+            self.assertTrue(np.allclose(a_twin * 2, b_twin))
+        self.assertTrue(np.allclose(e2.origin.loc, np.array([2,0])))
+    
     def test_rotate(self):
         """ Test rotating by modification """
         f1 = self.dc.newFace(coords=np.array([[2,0],[3,0],[2,-1]]))
@@ -333,9 +403,9 @@ class DCEL_FACE_Tests(unittest.TestCase):
         e1 = self.dc.createEdge(np.array([0,0]), np.array([1,0]))
         e2 = self.dc.createEdge(np.array([1,0]), np.array([0,1]))
         f = self.dc.newFace(edges=[e1,e2])
-        self.assertTrue(len(f.edgeList), 2)
-        newEdges = f.fixup()
-        self.assertTrue(len(f.edgeList), 3)
+        self.assertEqual(len(f.edgeList), 2)
+        newEdges = f.fixup(self.dc.bbox)
+        self.assertEqual(len(f.edgeList), 3)
         self.assertEqual(len(newEdges), 1)
         self.assertTrue((newEdges[0].toArray() == np.array([[0,1],[0,0]])).all())
         for a,b in zip(f.edgeList, islice(cycle(f.edgeList), 1, None)):
