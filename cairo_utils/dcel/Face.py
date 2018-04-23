@@ -148,28 +148,31 @@ class Face(object):
     #------------------------------
     # def centroids
     #------------------------------
-        
-    def getAvgCentroid(self):
-        """ Get the averaged centre point of the face from the vertices of the edges """
-        k = len(self.edgeList)
-        xs = [x.origin.loc[0] for x in self.edgeList]
-        ys = [x.origin.loc[1] for x in self.edgeList]
-        norm_x = sum(xs) / k
-        norm_y = sum(ys) / k
-        self.site = np.array([norm_x, norm_y])
-        return self.site
-
 
     def getCentroid(self):
         """ Get the user defined 'centre' of the face """
-        #return self.site.copy()
-        raise Exception("deprecated: use getAvgCentroid or getCentroidFromBBox")
+        if self.site is not None:
+            return self.site.copy()
+        else:
+            return self.getAvgCentroid()
+
+    
+    def getAvgCentroid(self):
+        """ Get the averaged centre point of the face from the vertices of the edges """
+        k = len(self.edgeList)
+        coords = np.array([x.origin.loc for x in self.edgeList])
+        norm_coord = np.sum(coords, axis=0) / k
+        if self.site is None:
+            self.site = norm_coord
+        return norm_coord
 
     def getCentroidFromBBox(self):
         """ Alternate Centroid, the centre point of the bbox for the face"""
         bbox = self.get_bbox()
         difference = bbox[1,:] - bbox[0,:]
         centre = bbox[0,:] + (difference * 0.5)
+        if self.site is None:
+            self.site = centre
         return centre
 
 
