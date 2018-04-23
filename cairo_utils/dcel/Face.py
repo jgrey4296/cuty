@@ -429,7 +429,7 @@ class Face(object):
     def constrain_to_circle(self, centre, radius, candidates=None, force=False):
         """ Constrain the vertices and edges of a face to be within a circle """
         if not force and self.has_constraints(candidates):
-            logging.warning("Face: Constraining a copy")
+            logging.debug("Face: Constraining a copy")
             facePrime, edit_type = self.copy().constrain_to_circle(centre, radius, force=True)
             return (facePrime, EditE.NEW)
 
