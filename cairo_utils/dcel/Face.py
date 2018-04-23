@@ -501,29 +501,38 @@ class Face(object):
     def fixup(self, bbox=None):
         """ Verify and enforce correct designations of
         edge ordering, next/prev settings, and face settings """
+        assert(bbox is not None)
         if not bool(self.edgeList):
             self.markForCleanup()
             return []
         if len(self.edgeList) < 2:
             return []
 
+        for e in self.edgeList:
+            self.add_edge(e)
+
+        altered = False
+        centre = self.getCentroid()
+        avgCentre = self.getAvgCentroid()
+        if not within_bbox(centre, bbox) and within_bbox(avgCentre, bbox):
+            altered = True
+            self.site = avgCentre
+            
         self.sort_edges()
         
         inferred_edges = []
         edges = self.edgeList.copy()
         prev = edges[-1]
         for e in edges:
-            #register face to edge
-            e.face = self
             #enforce next and prev
             if e.prev is not prev:
                 e.addPrev(prev, force=True)
-            #if the vertices don't align, create an additional edge to connect
-            if not prev.connections_align(e):
+            #if verts don't align AND they intersect the border of the bbox on separate edges:
+            dontAlign = not prev.connections_align(e)
+            if dontAlign:
                 logging.debug("connections don't align")
                 newEdge = self.dcel.newEdge(e.prev.twin.origin,
                                             e.origin,
-                                            twinFace=e.twin.face,
                                             edata=e.data,
                                             vdata=e.origin.data)
                 newEdge.face = self
@@ -534,8 +543,27 @@ class Face(object):
                 self.edgeList.insert(index, newEdge)
                 inferred_edges.append(newEdge)
 
+                #if the newEdge connects two different sides, split it and
+                #force the middle vertex to the corner
+                nib = newEdge.intersects_bbox(bbox)
+                edgeEs = set([ev for (coord, ev) in nib])
+                if len(nib) == 2 and len(edgeEs) > 1:
+                    newPoint, newEdge2 = newEdge.split_by_ratio(0.5, face_update=False)
+                    newEdge2.face = self
+                    self.edgeList.insert(index+1, newEdge2)
+                    # if newEdge.twin.face is not None:
+                    #     newEdge.twin.face.add_edge(newEdge2.twin)
+                    
+                    moveToCoord = calc_bbox_corner(bbox, edgeEs)
+                    newPoint.translate(moveToCoord, abs=True, force=True)
+
             prev = e
-                
+
+        self.sort_edges()
+
+        if altered:
+            self.site = centre
+        
         return inferred_edges
 
     def has_constraints(self, candidateSet=None):
