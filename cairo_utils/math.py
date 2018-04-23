@@ -195,38 +195,43 @@ def get_bisector(p1, p2, r=False):
                         [-1, 0]])
     return nPrime
 
-def get_circle_3p(p1, p2, p3):
+def get_circle_3p(p1, p2, p3, arb_intersect=20000):
     """
     Given 3 points,  treat them as defining two chords on a circle,
     intersect them to find the centre,  then calculate the radius
     Thus: circumcircle
     """
+    sortedPoints = sort_coords(np.array([p1,p2,p3]))
+    p1 = sortedPoints[0]
+    p2 = sortedPoints[1]
+    p3 = sortedPoints[2]
+    
     #TODO: assert that p1,2 and 3 are arrays
-    arb_height = 200
+    arb_height = arb_intersect
     #mid points and norms:
-    m1 = get_midpoint(p2, p1)
-    n1 = get_bisector(m1, p1, r=True)
+    m1 = get_midpoint(p1, p2)
+    n1 = get_bisector(m1, p2)
     m2 = get_midpoint(p2, p3)
-    n2 = get_bisector(m2, p3, r=True)
+    n2 = get_bisector(m2, p3)
     #extended norms:
     v1 = m1 + (1 * arb_height * n1)
     v2 = m2 + (1 * arb_height * n2)
     v1I = m1 + (-1 * arb_height * n1)
     v2I = m2 + (-1 * arb_height * n2)
     #resulting lines:
-    l1 = np.column_stack((m1, v1))
-    l2 = np.column_stack((m2, v2))
-    l1i = np.column_stack((m1, v1I))
-    l2i = np.column_stack((m2, v2I))
+    l1 = np.row_stack((m1, v1))
+    l2 = np.row_stack((m2, v2))
+    l1i = np.row_stack((m1, v1I))
+    l2i = np.row_stack((m2, v2I))
     #intersect extended norms:
     #in the four combinations of directions
-    i_1 = intersect(l1[0], l2[0])
-    i_2 = intersect(l1i[0], l2i[0])
-    i_3 = intersect(l1[0], l2i[0])
-    i_4 = intersect(l1i[0], l2[0])
+    i_1 = intersect(l1, l2)
+    i_2 = intersect(l1i, l2i)
+    i_3 = intersect(l1, l2i)
+    i_4 = intersect(l1i, l2)
     #get the intersection:
     the_intersect = [x for x in [i_1, i_2, i_3, i_4] if x is not None]
-    if len(the_intersect) != 1:
+    if the_intersect is None or len(the_intersect) == 0:
         return None
     r1 = get_distance(p1, the_intersect[0])
     r2 = get_distance(p2, the_intersect[0])
@@ -234,7 +239,7 @@ def get_circle_3p(p1, p2, p3):
 
     #a circle only if they are have the same radius
     if np.isclose(r1, r2) and np.isclose(r2, r3):
-        return [the_intersect[0], r1]
+        return (the_intersect[0], r1)
     else:
         return None
 
