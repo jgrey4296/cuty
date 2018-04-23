@@ -260,9 +260,10 @@ class DCEL(object):
             
     def purge_edge(self, target):
         assert(isinstance(target, HalfEdge))
-        
+        logging.debug("Purging Edge: {}".format(target.index))
         target_update = set()
 
+        target.connectNextToPrev()        
         vert = target.origin
         target.origin = None
         if vert is not None:
@@ -277,24 +278,24 @@ class DCEL(object):
             if not face.has_edges():
                 face.markForCleanup()
                 target_update.add(face)
-                
+
         if target.twin is not None:
             target.twin.markForCleanup()
             target_update.add(target.twin)
             target.twin.twin = None
             target.twin = None
             
-        target.connectNextToPrev()
+
         self.halfEdges.remove(target)
         
         return target_update
         
 
-
     def purge_vertex(self, target):
         assert(isinstance(target, Vertex))
+        logging.debug("Purging Vertex: {}".format(target.index))
         target_update = set()
-
+        
         halfEdges = target.halfEdges.copy()
         for edge in halfEdges:
             assert(edge.origin == target)
@@ -310,6 +311,7 @@ class DCEL(object):
 
     def purge_face(self, target):
         assert(isinstance(target, Face))
+        logging.debug("Purging Face: {}".format(target.index))
         target_update = set()
         edges = target.getEdges()
         for edge in edges:
