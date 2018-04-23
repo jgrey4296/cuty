@@ -18,7 +18,7 @@ class Quadratic(object):
         if x is None:
             return None
         result = (self.a * pow(x,2)) + (self.b * x) + self.c
-        return -result
+        return result
 
     def intersect(self,q2):
         """ Get the x coordinates of the intersections of the two quadratics """
