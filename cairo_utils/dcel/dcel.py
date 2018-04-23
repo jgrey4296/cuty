@@ -619,8 +619,52 @@ class DCEL(object):
         v3 = v1 + v2
         return self.newVertex(*v3)
 
-            
+    def verify_all(self):
+        reg_verts = set([x.index for x in self.vertices])
+        reg_hedges = set([x.index for x in self.halfEdges])
+        reg_faces = set([x.index for x in self.faces])
 
+        vert_hedges = set()
+        for v in self.vertices:
+            vert_hedges.update([x.index for x in v.halfEdges])
+
+        hedge_verts = set()
+        hedge_nexts = set()
+        hedge_prevs = set()
+        hedge_faces = set()
+        for h in self.halfEdges:
+            hedge_verts.add(h.origin.index) 
+            if h.next is not None:
+                hedge_nexts.add(h.next.index)
+            if h.prev is not None:
+                hedge_prevs.add(h.prev.index)
+            if h.face is not None:
+                hedge_faces.add(h.face.index)
+
+        face_edges = set()
+        for f in self.faces:
+            face_edges.update([x.index for x in f.edgeList])
+
+        #differences:
+        vert_hedge_diff = vert_hedges.difference(reg_hedges)
+        hedge_vert_diff = hedge_verts.difference(reg_verts)
+        hedge_nexts_diff = hedge_nexts.difference(reg_hedges)
+        hedge_prevs_diff = hedge_prevs.difference(reg_hedges)
+        hedge_faces_diff = hedge_faces.difference(reg_faces)
+        face_edges_diff = face_edges.difference(reg_hedges)
+
+        try:
+            assert(all([len(x) == 0 for x in [vert_hedge_diff,
+                                              hedge_vert_diff,
+                                              hedge_nexts_diff,
+                                              hedge_prevs_diff,
+                                              hedge_faces_diff,
+                                              face_edges_diff]]))
+        except AssertionError as e:
+            IPython.embed(simple_prompt=True)
+        
+
+    
     #------------------------------
     # def deprecated
     #------------------------------
