@@ -54,6 +54,10 @@ class Face(object):
             if self.index >= Face.nextIndex:
                 Face.nextIndex = self.index + 1
                 
+        if self.dcel is not None and self not in self.dcel.faces:
+            self.dcel.faces.add(self)
+
+                
     def copy(self):
         with self.dcel:
             #copy the halfedges
