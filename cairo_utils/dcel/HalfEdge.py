@@ -492,7 +492,7 @@ class HalfEdge:
         return crossed
 
     def __lt__(self, other):
-        return HalfEdge.compareEdges(self.face.site, self, other)
+        return HalfEdge.compareEdges(self.face.getCentroid(), self, other)
 
     
     def he_ccw(self, centre):
