@@ -446,7 +446,7 @@ def isClockwise(*args, cartesian=True):
     p2s.append(args[0])
     pairs = zip(p1s, p2s)
     for p1, p2 in pairs:
-        a = (p2[0, 0]-p1[0, 0]) * (p2[0, 1]+p1[0, 1])
+        a = (p2[0]-p1[0]) * (p2[1]+p1[1])
         sum += a
     if cartesian:
         return sum >= 0
