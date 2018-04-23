@@ -178,7 +178,6 @@ class DCEL(object):
             #connect faces to their edges
             for face in local_faces.values():
                 face.obj.edgeList = [local_edges[x].obj for x in face.data['edges']]
-                face.obj.outerBoundaryEdges = [x.twin for x in face.obj.edgeList if x.twin.face is not None]
         except Exception as e:
             logging.info("Error for face")
             IPython.embed(simple_prompt=True)
