@@ -618,12 +618,7 @@ class HalfEdge:
         if self.twin.origin is None or other.origin is None:
             raise Exception("Invalid connection test")
         
-        if self.origin == other.origin \
-           or self.twin.origin == other.twin.origin:
-            raise Exception("Unexpected Connection Alignment")
-        
         return self.twin.origin == other.origin
-
     def isConstrained(self):
         """ Check whether the edge has been forced within a bbox or circle"""
         return self.constrained or self.twin.constrained
