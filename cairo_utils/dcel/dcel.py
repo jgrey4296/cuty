@@ -40,9 +40,9 @@ class DCEL(object):
             bbox = np.array([-200, -200, 200, 200])
         assert(isinstance(bbox, np.ndarray))
         assert(len(bbox) == 4)
-        self.vertices = []
-        self.faces = []
-        self.halfEdges = []
+        self.vertices = set([])
+        self.faces = set()
+        self.halfEdges = set([])
         self.bbox = bbox
         #todo: make this a stack of quadtrees
         self.vertex_quad_tree = pyqtree.Index(bbox=self.bbox)
