@@ -372,7 +372,7 @@ class DCEL(object):
             #no matching vertex,  add this new one
             newVert = Vertex(loc, data=data, dcel=self)
             logging.debug("No matching vertex,  storing: {}, {}".format(newVert, newVert.bbox()))
-            self.vertices.append(newVert)
+            self.vertices.add(newVert)
             self.vertex_quad_tree.insert(item=newVert, bbox=newVert.bbox())
         assert(newVert is not None)
         return newVert
@@ -393,11 +393,9 @@ class DCEL(object):
         #Connect with passed in details
         if face is not None:
             assert(isinstance(face, Face))
-            e1.face = face
             face.add_edge(e1)
         if twinFace is not None:
             assert(isinstance(twinFace, Face))
-            e2.face = twinFace
             twinFace.add_edge(e2)
         if prev is not None:
             assert(isinstance(prev, HalfEdge))
@@ -417,7 +415,7 @@ class DCEL(object):
         if vdata is not None:
             e1.origin.data.update(vdata)
             e2.origin.data.update(vdata)            
-        self.halfEdges.extend([e1, e2])
+        self.halfEdges.update([e1, e2])
         logging.debug("Created Edge Pair: {}".format(e1.index))
         logging.debug("Created Edge Pair: {}".format(e2.index))
         return e1
@@ -430,7 +428,7 @@ class DCEL(object):
             site = np.array([0,0])
         assert(isinstance(site, np.ndarray))
         newFace = Face(site=site, dcel=self)
-        self.faces.append(newFace)
+        self.faces.add(newFace)
         #populate the face if applicable:
         coordHullGen = False
         if coords is not None:
