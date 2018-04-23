@@ -67,24 +67,28 @@ class DCEL(object):
         allVertices = [x.getVertices() for x in self.halfEdges]
         flattenedVertices = [x for (x, y) in allVertices for x in (x, y)]
         setOfVertices = set(flattenedVertices)
-        vertexSet = "Vertex Set: num: {}/{}".format(len(setOfVertices), len(flattenedVertices))
+        vertexSet = "Vertex Set: num: {}/{}/{}".format(len(setOfVertices), len(flattenedVertices),len(self.vertices))
 
         infiniteEdges = [x for x in self.halfEdges if x.isInfinite()]
         infiniteEdgeDescription = "Infinite Edges: num: {}".format(len(infiniteEdges))
 
-        completeEdges = []
+        completeEdges = set()
         for x in self.halfEdges:
             if not x in completeEdges and x.twin not in completeEdges:
-                completeEdges.append(x)
+                completeEdges.add(x)
 
         completeEdgeDescription = "Complete Edges: num: {}".format(len(completeEdges))
 
         edgelessVertices = [x for x in self.vertices if x.isEdgeless()]
         edgelessVerticesDescription = "Edgeless vertices: num: {}".format(len(edgelessVertices))
 
-        edgeCountForFaces = [str(len(f.outerBoundaryEdges)) for f in self.faces]
+        edgeCountForFaces = [str(len(f.edgeList)) for f in self.faces]
         edgeCountForFacesDescription = "Edge Counts for Faces: {}".format("-".join(edgeCountForFaces))
 
+        purgeVerts = "Verts to Purge: {}".format(len([x for x in self.vertices if x.markedForCleanup]))
+        purgeEdges = "Hedges to Purge: {}".format(len([x for x in self.halfEdges if x.markedForCleanup]))
+        purgeFaces = "Faces to Purge: {}".format(len([x for x in self.faces if x.markedForCleanup]))
+        
         return "\n".join(["---- DCEL Description: ",
                           verticesDescription,
                           edgesDescription,
@@ -94,6 +98,10 @@ class DCEL(object):
                           completeEdgeDescription,
                           edgelessVerticesDescription,
                           edgeCountForFacesDescription,
+                          "-- Purging:",
+                          purgeVerts,
+                          purgeEdges,
+                          purgeFaces,
                           "----\n"])
 
     
