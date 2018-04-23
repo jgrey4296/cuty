@@ -2,7 +2,13 @@ import logging as root_logger
 logging = root_logger.getLogger(__name__)
 
 
-class NilNode:
+class NilNodeMeta(type):
+
+    def __repr__(self):
+        return "NilNode"
+
+
+class NilNode(metaclass=NilNodeMeta):
     """ A Nil Node for use with the rb algorithms,
     Everything is static because the same NilNode is 
     shared for all nodes """
@@ -13,6 +19,7 @@ class NilNode:
     left = None
     arc = False
     value = None
+    
     @staticmethod
     def __str__(self):
         return "Nil Node"
@@ -52,3 +59,5 @@ class NilNode:
     @staticmethod
     def get_successor():
         return NilNode.canonical
+
+
