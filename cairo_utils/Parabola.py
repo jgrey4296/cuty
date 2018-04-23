@@ -4,6 +4,8 @@ import IPython
 
 from .Quadratic import Quadratic as Q
 
+MAX = 5000
+
 class Parabola(object):
     """ A class to represent and calculate a parabola. holds both forms of definition,
     focus/directrix AND standard form.
@@ -76,7 +78,7 @@ class Parabola(object):
         q1 = Q(self.sa,self.sb,self.sc)
         q2 = Q(p2.sa,p2.sb,p2.sc)
         xs = q1.intersect(q2)
-        logging.debug("Resulting intersects: {}".format(xs))
+        #logging.debug("Resulting intersects: {}".format(xs))
         xys = self(xs)
         return xys
     
@@ -96,11 +98,11 @@ class Parabola(object):
         """ For given xs, return an (n,2) array of xy pairs of the parabola """
         return np.column_stack((x,self.calcVertexForm(x)))
     
-    def __call__(self,x):
+    def __call__(self,x, max=MAX):
         """ Shorthand for calculating an the entire parabola """
         if self.vertical_line:
-            ys = np.linspace(0,self.fy,1000)
-            xs = np.repeat(self.fx,1000)
+            ys = np.linspace(self.fy, max)
+            xs = np.repeat(self.fx, len(ys))
             return np.column_stack((xs,ys))            
         else:
             return np.column_stack((x,self.calcStandardForm(x)))
