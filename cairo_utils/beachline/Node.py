@@ -1,5 +1,7 @@
 import logging as root_logger
 import math
+import IPython
+import numpy as np
 from string import ascii_uppercase
 from cairo_utils import Parabola
 from .NilNode import NilNode
@@ -36,7 +38,7 @@ class Node(object):
         #Parent:
         self.parent = parent
 
-    def __str__(self):
+    def __repr__(self):
         if self.arc:
             try:
                 value = ascii_uppercase[self.value.id]
@@ -70,63 +72,66 @@ class Node(object):
         the_range = [-math.inf,math.inf]
         if pred == NilNode and succ == NilNode: #Base case: single arc
             logging.debug("Single Arc: {}".format(self))
-            return Directions.CENTRE
+            if x < self.value.fx:
+                return Directions.LEFT
+            else:
+                return Directions.RIGHT
 
-        if pred != NilNode and succ != NilNode:
-            logging.debug("Trio of arcs is clockwise: {}".format(isClockwise(pred.value.get_focus(),\
-                                                                           self.value.get_focus(),\
-                                                                           succ.value.get_focus(),\
-                                                                           cartesian=True)))
-        #pred and successor are the same arc
-        if pred != NilNode and succ != NilNode and pred.value == succ.value:
-            intersect = pred.value.intersect(self.value)
-            logging.debug("Predecessor and Successor are the same: {}".format(pred))
-            logging.debug("Intersection result: {}".format(intersect))
-            if len(intersect) != 2:
-                raise Exception("Two parabolas arent intersecting correctly")
-            if the_range[0] < intersect[:,0].min():
-                the_range[0] = intersect[:,0].min()
-            if the_range[1] > intersect[:,0].max():
-                the_range[1] = intersect[:,0].max()
+        pred_self = Directions.CENTRE
+        self_succ = Directions.CENTRE
             
-
-        else: #different arcs bookend
-            if pred != NilNode:
-                pred_intersect = self.value.intersect(pred.value)
-                logging.debug("Pred intersect result: {}".format(pred_intersect))
-                if len(pred_intersect.shape) == 2:
-                    if pred_intersect.shape[0] == 1:
-                        the_range[0] = pred_intersect[0,0]
-                    else:
-                        the_range[0] = pred_intersect[1,0]
+        if pred != NilNode:
+            pred_intersect = self.value.intersect(pred.value)
+            pred_int = pred_intersect.astype(dtype=np.int)
+            pred_above_self = self.value.fy < pred.value.fy
+            logging.debug("Comparing x:{:.1f} to pred_intersect: {}".format(x, pred_int))
+            logging.debug("Pred above self: {}".format(pred_above_self))
+            if pred_intersect is None:
+                #pass through, no intersection
+                pred_self = Directions.CENTRE
+            elif len(pred_intersect) == 1:
+                if x < pred_intersect[0,0]:
+                    pred_self = Directions.LEFT
+            elif len(pred_intersect) == 2:
+                if pred_above_self:
+                    if x < pred_intersect[0,0]:
+                        pred_self = Directions.LEFT
                 else:
-                    the_range[0] = pred_intersect[0]
-                    
+                    if x < pred_intersect[1,0]:
+                        pred_self = Directions.LEFT
+                
+        if succ != NilNode:
+            succ_intersect = succ.value.intersect(self.value)
+            succ_int = succ_intersect.astype(dtype=np.int)
+            succ_above_self = self.value.fy < succ.value.fy
+            logging.debug("Comparing x:{:.1f} to succ_intersect: {}".format(x, succ_int))
+            logging.debug("Succ above self: {}".format(succ_above_self))
+            if succ_intersect is None:
+                #pass through
+                self_succ = Directions.CENTRE
+            elif len(succ_intersect) == 1:
+                if x > succ_intersect[0,0]:
+                    self_succ = Directions.RIGHT
+            elif len(succ_intersect) == 2:
+                if succ_above_self:
+                    if succ_intersect[1,0] < x:
+                        self_succ = Directions.RIGHT
+                else:
+                    if succ_intersect[0,0] < x:
+                        self_succ = Directions.RIGHT
+
+        logging.debug("pred_self: {}".format(pred_self))
+        logging.debug("self_succ: {}".format(self_succ))
+                        
+        if pred_self is Directions.CENTRE and self_succ is Directions.CENTRE:
+            return pred_self
+        if pred_self is Directions.LEFT:
+            return pred_self
+        if self_succ is Directions.RIGHT:
+            return self_succ
+
+        return Directions.CENTRE
             
-            if succ != NilNode:
-                succ_intersect = succ.value.intersect(self.value)
-                logging.debug("Succ intersect result: {}".format(succ_intersect))
-                if len(succ_intersect.shape) == 2:
-                    if succ_intersect.shape[0] == 1:
-                        the_range[1] = succ_intersect[0,0]
-                    else:
-                        the_range[1] = succ_intersect[1,0]
-                else:
-                    the_range[0] = succ_intersect[0]
-
-        logging.debug("Testing: {} < {} < {}".format(the_range[0],x,the_range[1]))
-        if the_range[0] < x and x <= the_range[1]:
-            return Directions.CENTRE
-        elif x < the_range[0]:
-            return Directions.LEFT
-        elif the_range[1] < x:
-            return Directions.RIGHT
-        else:
-            logging.info("Comparison failure: {} < {} < {}".format(the_range[0],x,the_range[1]))
-            IPython.embed()
-            raise Exception("Comparison failure")
-
-        
     def isLeaf(self):
         return self.left == NilNode and self.right == NilNode
     
@@ -365,7 +370,7 @@ def isClockwise(*args,cartesian=True):
     p2s.append(args[0])
     pairs = zip(p1s,p2s)
     for p1,p2 in pairs:
-        a = (p2[0,0]-p1[0,0]) * (p2[0,1]+p1[0,1])
+        a = (p2[0]-p1[0]) * (p2[1]+p1[1])
         sum += a
     if cartesian:
         return sum >= 0
