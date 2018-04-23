@@ -149,7 +149,7 @@ def rbTreeDelete_textbook(tree,z):
     #collapse when two nodes are the same
     if orig_pred != NilNode and orig_succ != NilNode and orig_pred.value == orig_succ.value:
         logging.debug("Collapsing with successor {}".format(orig_succ))
-        tree.delete(orig_succ)
+        tree.delete_node(orig_succ)
     logging.debug("Finished deletion")
     
 def rbDeleteFixup_textbook(tree,x):
