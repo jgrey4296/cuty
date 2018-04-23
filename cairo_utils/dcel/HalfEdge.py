@@ -407,7 +407,7 @@ class HalfEdge:
         lineSegment2 = otherEdge.toArray()
         return intersect(lineSegment1, lineSegment2)
 
-    def intersects_bbox(self, bbox):
+    def intersects_bbox(self, bbox, tolerance=TOLERANCE):
         """ Return an enum of the edges of a bbox the line intersects
         returns a cairo_utils.constants.IntersectEnum
         returns a list. empty list is no intersections
@@ -429,15 +429,14 @@ class HalfEdge:
         logging.debug("Checking edge intersection:\n {}\n {}\n->{}\n----".format(start,
                                                                                  end,
                                                                                  bbox))
-
         result = []
         #run the 4 intersections
         for (curr_line, enumValue) in bbox_lines:
-            intersected = intersect(selfLineSegment, curr_line)
+            intersected = intersect(selfLineSegment, curr_line, tolerance=tolerance)
             if intersected is not None:
                 result.append((intersected, enumValue))
 
-
+        assert(len(result) < 3)
         return result
 
 
