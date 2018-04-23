@@ -529,24 +529,55 @@ class DCEL(object):
         assert(centre.shape == (2,))
 
         #constrain faces
-        for f in self.faces:
+        faces = self.faces.copy()
+        for f in faces:
+            logging.debug("Constraining Face: {}".format(f))
             f.constrain_to_circle(centre, radius, candidates=candidates, force=force)
         
         #constrain free edges
-        for he in self.halfEdges:
+        hedges = self.halfEdges.copy()
+        for he in hedges:
+            logging.debug("Constraining Hedge: {}".format(he))
             if he.face is not None or he.markedForCleanup:
                 continue
             he.constrain_to_circle(centre, radius, candidates=candidates, force=force)
         
         #constrain free vertices
-        for v in self.vertices:
+        vertices = self.vertices.copy()
+        for v in vertices:
+            logging.debug("Constraining Vertex: {}".format(v))
             if not v.isEdgeless():
                 continue
             if not v.within_circle(centre, radius):
                 v.markForCleanup()
 
-                
-                
+
+    def constrain_to_bbox(self, bbox, candidates=None, force=False):
+        assert(isinstance(bbox, np.ndarray))
+        assert(bbox.shape == (4,))
+
+        faces = self.faces.copy()
+        for f in faces:
+            logging.debug("Constraining Face: {}".format(f))
+            f.constrain_to_bbox(bbox, candidates=candidates, force=force)
+        
+        #constrain free edges
+        hedges = self.halfEdges.copy()
+        for he in hedges:
+            logging.debug("Constraining Hedge: {}".format(he))
+            if he.face is not None or he.markedForCleanup:
+                continue
+            he.constrain_to_bbox(bbox, candidates=candidates, force=force)
+        
+        #constrain free vertices
+        vertices = self.vertices.copy()
+        for v in vertices:
+            logging.debug("Constraining Vertex: {}".format(v))
+            if not v.isEdgeless():
+                continue
+            if not v.within(bbox):
+                v.markForCleanup()
+
 
 
         
