@@ -176,26 +176,6 @@ class Face(object):
         return centre
 
 
-    def __getCentroid(self):
-        """ An iterative construction of the centroid """
-        raise Exception("Deprecated")
-        # vertices = [x.origin for x in self.edgeList if x.origin is not None]
-        # centroid = np.array([0.0, 0.0])
-        # signedArea = 0.0
-        # for i, v in enumerate(vertices):
-        #     if i+1 < len(vertices):
-        #         n_v = vertices[i+1]
-        #     else:
-        #         n_v = vertices[0]
-        #     a = v.loc[0]*n_v.loc[1] - n_v.loc[0]*v.loc[1]
-        #     signedArea += a
-        #     centroid += [(v.loc[0]+n_v.loc[0])*a, (v.loc[1]+n_v.loc[1])*a]
-
-        # signedArea *= 0.5
-        # if signedArea != 0:
-        #     centroid /= (6*signedArea)
-        # return centroid
-
     #------------------------------
     # def edge access
     #------------------------------
