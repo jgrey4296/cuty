@@ -423,7 +423,7 @@ def get_lowest_point_on_circle(centre, radius):
     """ given the centre of a circle and a radius, get the lowest y point on that circle """
     #return centre + np.array([np.cos(THREEFOURTHSTWOPI) * radius,
     #                          np.sin(THREEFOURTHSTWOPI) * radius])
-    return centre + np.array([0, radius])
+    return centre - np.array([0, radius])
 
 def sort_coords(arr):
     """ Sort a list of points by x then y value  """
