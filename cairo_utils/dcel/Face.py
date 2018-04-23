@@ -24,9 +24,9 @@ class Face(object):
     nextIndex = 0
 
     def __init__(self, site=None, index=None, data=None, dcel=None):
-        if site is None:
-            site = np.array([0,0])
-        assert(isinstance(site, np.ndarray))
+        if site is not None:
+            #site = np.array([0,0])
+            assert(isinstance(site, np.ndarray))
         #Site is the voronoi point that the face is built around
         self.site = site
         #Primary list of ccw edges for this face
@@ -609,3 +609,29 @@ class Face(object):
         #     current_edge.addPrev(newEdge_2)
         #     newEdge_2.addPrev(newEdge_1)
         #     newEdge_1.addPrev(prior_edge)
+
+
+    #------------------------------
+    # def deprecated
+    #------------------------------
+    
+    
+    def __getCentroid(self):
+        """ An iterative construction of the centroid """
+        raise Exception("Deprecated: use getavgcentroid or getcentroidfrombbox")
+        # vertices = [x.origin for x in self.edgeList if x.origin is not None]
+        # centroid = np.array([0.0, 0.0])
+        # signedArea = 0.0
+        # for i, v in enumerate(vertices):
+        #     if i+1 < len(vertices):
+        #         n_v = vertices[i+1]
+        #     else:
+        #         n_v = vertices[0]
+        #     a = v.loc[0]*n_v.loc[1] - n_v.loc[0]*v.loc[1]
+        #     signedArea += a
+        #     centroid += [(v.loc[0]+n_v.loc[0])*a, (v.loc[1]+n_v.loc[1])*a]
+
+        # signedArea *= 0.5
+        # if signedArea != 0:
+        #     centroid /= (6*signedArea)
+        # return centroid
