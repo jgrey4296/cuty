@@ -7,7 +7,7 @@ import numpy as np
 
 from .constants import EditE
 from ..math import inCircle, rotatePoint
-from ..constants import TWOPI, D_EPSILON
+from ..constants import TWOPI, D_EPSILON, TOLERANCE
 
 logging = root_logger.getLogger(__name__)
 
@@ -51,6 +51,10 @@ class Vertex:
             if self.index >= Vertex.nextIndex:
                 Vertex.nextIndex = self.index + 1
 
+        if self.dcel is not None and self not in self.dcel.vertices:
+            self.dcel.vertices.add(self)
+
+                
     
     def copy(self):
         """ Create an isolated copy of this vertex. Doesn't copy halfedge connections, 
