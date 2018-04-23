@@ -449,7 +449,7 @@ class Face(object):
 
     #todo: possibly add a shrink/expand to circle method
 
-    def constrain_to_bbox(self, bbox, cadidates=None, force=False):
+    def constrain_to_bbox(self, bbox, candidates=None, force=False):
         if not force and self.has_constraints(candidates):
             facePrime, edit_type = self.copy().constrain_to_bbox(bbox, force=True)
             return (facePrime, EditE.NEW)
@@ -457,7 +457,7 @@ class Face(object):
         edges = self.edgeList.copy()
 
         for edge in edges:
-            if not edge.within(bbox):
+            if edge.outside(bbox):
                 self.remove_edge(edge)
                 continue
 
