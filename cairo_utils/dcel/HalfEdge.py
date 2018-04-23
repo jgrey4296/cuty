@@ -63,6 +63,9 @@ class HalfEdge:
         self.data = {}
         if data is not None:
             self.data.update(data)
+        if self.dcel is not None and self not in self.dcel.halfEdges:
+            self.dcel.halfEdges.add(self)
+            
 
     def copy(self):
         """ Copy the halfedge pair. sub-copies the vertexs too """
@@ -73,6 +76,8 @@ class HalfEdge:
         v2 = self.twin.origin.copy()
         #create the halfedge
         e = self.dcel.newEdge(v1, v2)
+        #update next/prev?
+        
         #copy data
         e.data.update(self.data)
         return e
