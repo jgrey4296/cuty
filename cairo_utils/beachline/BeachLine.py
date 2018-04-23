@@ -1,4 +1,5 @@
 import logging as root_logger
+import numpy as np
 from .operations import Directions, rbTreeDelete_textbook, rbtreeFixup
 from .NilNode import NilNode
 from .Node import Node
@@ -129,30 +130,34 @@ class BeachLine:
         """ Search the tree for a value, getting closest node to it, 
             returns (node,insertion_function)
         """
+        logging.debug("Searching for: {}".format(x))
+        self.debug_chain(x)
         current = self.root
         if current == NilNode:
             return None #not found
         parent = NilNode
+        on_side_of_parent = Directions.CENTRE
         found = False
-        while not found:
+        while current != NilNode:
             comp = current.compare(x,d=d)
             logging.debug("Moving: {}".format(comp))
             if comp is Directions.LEFT:
                 parent = current
                 current = current.left
+                on_side_of_parent = comp
             elif comp is Directions.RIGHT:
                 parent = current
                 current = current.right
+                on_side_of_parent = comp
             elif comp is Directions.CENTRE:
                 #ie: spot on
                 parent = current
-                found = True
+                current = NilNode
             else: #type is none
                 raise Exception("Comparison returned None")
-            if current == NilNode:
-                found = True
-                
-        return (parent, comp) #the existing parent and the side to add it
+
+            
+        return (parent, on_side_of_parent) #the existing parent and the side to add it
         
     def min(self):
         """ Get the min value of the tree """
@@ -225,3 +230,28 @@ class BeachLine:
                         
         allHeights = [x.getBlackHeight(node) for x in leaves]
         return allHeights
+
+    def debug_chain(self, x):
+        chain = self.get_chain()
+        logging.debug("------------------------------")
+        logging.debug("Full Chain: {}".format([str(n) for n in chain]))
+        for n in chain:
+            pred = n.get_predecessor()
+            succ = n.get_successor()
+            p_i = None
+            s_i = None
+            i_p_i = None
+            i_s_i = None
+            if pred != NilNode:
+                p_i = n.value.intersect(pred.value)
+                i_p_i = p_i.astype(np.int)[:,0]
+                
+            if succ != NilNode:
+                s_i = n.value.intersect(succ.value)
+                i_s_i = s_i.astype(np.int)[:,0]
+
+            logging.debug("Chain: {}-{}-{}".format(pred, n, succ))
+            logging.debug("Intersects: {} < {} < {}".format(i_p_i, x,  i_s_i))
+            logging.debug("---------------")
+
+        logging.debug("------------------------------")
