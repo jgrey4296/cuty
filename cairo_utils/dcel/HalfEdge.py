@@ -208,11 +208,11 @@ class HalfEdge:
             self.twin.face.add_edge(newEdge.twin)
         return (newPoint, newEdge)
 
-    def split_by_ratio(self, r=0.5):
+    def split_by_ratio(self, r=0.5, face_update=True):
         """ Split an edge by a ratio of 0.0 - 1.0 : start - end.
         defaults to 0.5, the middle """
         point = sampleAlongLine(*(self.toArray().flatten()), r)
-        return self.split(point[0])        
+        return self.split(point[0], face_update=face_update)        
 
     def translate(self, dir, d=1, abs=False, candidates=None, force=False):
         """ Move the edge by a vector and distance, or to an absolute location """
