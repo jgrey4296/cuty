@@ -507,20 +507,6 @@ class HalfEdge:
     #------------------------------
 
     @staticmethod
-    def calculate_bbox_coords(self, bbox):
-        """ Assuming a bbox is defined as in constants: mix, miy, max, may,
-        returns [ p1, p2, p3, p4] form the ccw set of vert coords for 4 lines
-        """
-        assert(isinstance(bbox,np.ndarray))
-        assert(len(bbox) == 4)
-        bl = bbox[:2]
-        br = bbox[:2] + np.array([bbox[2], 0])
-        tr = bbox[:2] + bbox[2:]
-        tl = bbox[:2] + np.array([0, bbox[3]])
-
-        return np.row_stack((bl, br, tr, tl))
-
-    def avg_direction_of_subsegments(self):
         """ Get the average normalised direction vector of each component of the 
         total line segment """
         raise Exception("Unimplemented")
