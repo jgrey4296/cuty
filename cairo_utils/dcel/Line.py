@@ -14,6 +14,23 @@ class Line:
     """ A line as a start x and y, a direction, and a length, useful for
     algebraic manipulation """
 
+    @staticmethod
+    def newLine(a):
+        """ Create a new line from two vertices """
+        assert(isinstance(a, np.ndarray))
+        assert(a.shape == (2,2))
+        #Calculate the line parameters:
+        vec = a[1] - a[0]
+        l = sqrt(pow(vec, 2).sum())
+        scale = 0
+        if l != 0:
+            scale = 1/l
+        d = vec * scale
+        #cx = a.x + (dx * l)
+        #cy = a.y + (dy * l)
+        return Line(a[0], d, l)
+
+    
     def __init__(self, s, d, l, swapped=False):
         assert(all([isinstance(x, np.ndarray) for x in [s,d]]))
         self.source = s
@@ -55,21 +72,6 @@ class Line:
         else:
             return np.row_stack((self.source, self.destination()))
 
-    @staticmethod
-    def newLine(a):
-        """ Create a new line from two vertices """
-        assert(isinstance(a, np.ndarray))
-        assert(a.shape == (2,2))
-        #Calculate the line parameters:
-        vec = a[1] - a[0]
-        l = sqrt(pow(vec, 2).sum())
-        scale = 0
-        if l != 0:
-            scale = 1/l
-        d = vec * scale
-        #cx = a.x + (dx * l)
-        #cy = a.y + (dy * l)
-        return Line(a[0], d, l)
 
 
     def intersect_with_circle(self, centre, radius):
