@@ -284,11 +284,12 @@ class HalfEdge:
         assert(-TWOPI <= r <= TWOPI)
         asArray = self.toArray()
         rotatedCoords = rotatePoint(asArray, cen=c, rads=r)
+        
         if not force and self.has_constraints(candidates):
             return (self.dcel.createEdge(rotatedCoords[0],
-                                      rotatedCoords[1],
-                                      edata=self.data,
-                                      vdata=self.origin.data), EditE.NEW)
+                                         rotatedCoords[1],
+                                         edata=self.data,
+                                         vdata=self.origin.data), EditE.NEW)
         else:
             vert1, edit1 = self.origin.translate(rotatedCoords[0], abs=True, force=True)
             vert2, edit2 = self.twin.origin.translate(rotatedCoords[1], abs=True, force=True)
