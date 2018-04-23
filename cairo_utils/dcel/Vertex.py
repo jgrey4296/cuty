@@ -180,11 +180,10 @@ class Vertex:
     def get_sorted_edges(self):
         """ return all half-edges that this vertex starts,
         sorted by angle. always relative to unit vector (right) """
-        opp_hedges = [x.twin for x in self.halfEdges]
-        verts = np.array([x.origin.toArray() for x in opp_hedges])
-        rads = (np.arctan2(verts[:,1], verts[:,0]) + TWOPI) % TWOPI
-        ordered = sorted(zip(rads, opp_hedges))
-        return [y.twin for x,y in ordered]
+        opp_hedges = {x.twin.origin : x for x in self.halfEdges}
+        verts = opp_hedges.keys()
+        sorted_verts = self.dcel.orderVertices(self.loc, verts)
+        return [opp_hedges[x] for x in sorted_verts]
         
     #------------------------------
     # def Coordinate access
