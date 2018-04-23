@@ -86,7 +86,7 @@ class Parabola(object):
         """ Get the y value of the parabola at an x position using the standard
             form equation. Should equal calcVertexForm(x)
         """
-        return self.sa * pow(x,2) + self.sb * x + self.sc
+        return (self.sa * pow(x,2)) + (self.sb * x) + self.sc
 
     def calcVertexForm(self,x):
         """ Get the y value of the parabola at an x position using 
@@ -124,7 +124,7 @@ class Parabola(object):
         return np.allclose(a,b)
 
     def get_focus(self):
-        return np.array([[self.fx,self.fy]])
+        return np.array([self.fx,self.fy])
 
     @staticmethod
     def toStandardForm(a,h,k):
