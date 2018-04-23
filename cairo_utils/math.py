@@ -453,6 +453,15 @@ def isClockwise(*args, cartesian=True):
     else:
         return sum < 0
 
+def isCounterClockwise(a, b, c):
+    assert(all([isinstance(x, np.ndarray) for x in [a,b,c]]))
+    offset_b = b - a
+    offset_c = c - a
+    crossed = np.cross(offset_b, offset_c)
+    return crossed >= 0
+
+
+    
 def getMinRangePair(p1, p2):
     """ TODO: Can't remember, test this """
     d1 = get_distance(p1, p2)
