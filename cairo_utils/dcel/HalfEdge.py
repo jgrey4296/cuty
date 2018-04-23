@@ -270,16 +270,11 @@ class HalfEdge:
         #Then create a point at (dir * d), create a new edge to it
         newVert = self.dcel.newVertex(newEnd)
 
-        if inSequence:
-            newEdge = self.dcel.newEdge(self.twin.origin, newVert, prev=self, twinNext=self.twin, edata=self.data, vdata=self.origin.data)
-        else:
-            newEdge = self.dcel.newEdge(self.twin.origin, newVert, edata=self.data,
-                                        vdata=self.origin.data)
-        
-        #todo: apply rules to infer faces
-        left_most = False
-        #self.fix_faces(newEdge, left_most=left_most)
-        
+            #todo: twinNext is the next ccw edge for the correct face
+            
+        newEdge = self.dcel.newEdge(self.twin.origin, newVert, edata=self.data, vdata=self.origin.data)
+        newEdge.fix_faces(self)
+
         return newEdge
 
     def rotate(self, c=None, r=0, candidates=None, force=False):
