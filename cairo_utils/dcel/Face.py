@@ -192,10 +192,15 @@ class Face(object):
     def add_edge(self, edge):
         """ Add a constructed edge to the face """
         assert(isinstance(edge, HalfEdge))
+        if edge.face is self:
+            return
+        if edge.face is not self and edge.face is not None:
+            edge.face.remove_edge(edge)
         self.coord_list = None
-        if edge.face is None:
-            edge.face = self
-        self.edgeList.append(edge)
+        edge.face = self
+        if edge not in self.edgeList:
+            self.edgeList.append(edge)
+        edge.markedForCleanup = False
 
     def remove_edge(self, edge):
         """ Remove an edge from this face, if the edge has this face
