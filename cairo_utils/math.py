@@ -549,3 +549,35 @@ def bbox_to_lines(bbox, epsilon=EPSILON):
               (np.row_stack((maxXminY, maxs)), IntersectEnum.VRIGHT) ]
 
     return lines
+
+def calc_bbox_corner(bbox, ies, epsilon=EPSILON):
+    assert(isinstance(bbox, np.ndarray))
+    assert(bbox.shape == (4,))
+    assert(isinstance(ies, set))
+    hb = IntersectEnum.HBOTTOM
+    ht = IntersectEnum.HTOP
+    vl = IntersectEnum.VLEFT
+    vr = IntersectEnum.VRIGHT
+    bbox_e = bbox + np.array([-epsilon, -epsilon, epsilon, epsilon])
+    # [[minx, miny],[maxx, maxy]] -> [[minx,maxx], [miny, maxy]]
+    bbox_t = bbox.reshape((2,2)).transpose()
+    #convert the bbox to bounding lines
+    selX = np.array([1,0])
+    selY = np.array([0,1])
+    mins = bbox_t[:,0]
+    maxs = bbox_t[:,1]
+    minXmaxY = mins * selX + maxs * selY
+    maxXminY =  maxs * selX + mins * selY
+    
+    if ies.issubset([hb, vl]):
+        return mins
+    elif ies.issubset([hb, vr]):
+        return maxXminY
+    elif ies.issubset([ht, vl]):
+        return minXmaxY
+    elif ies.issubset([ht, vr]):
+        return maxs
+    else:
+        raise Exception("Calculating box corner failed for: {}".format(ies))
+
+    
