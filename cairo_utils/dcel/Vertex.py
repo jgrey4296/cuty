@@ -138,12 +138,13 @@ class Vertex:
         assert(self.dcel is not None)
         return self.dcel.vertex_quad_tree.intersect(self.bbox(e=e))
 
-    def within(self, bbox):
+    def within(self, bbox, tolerance=TOLERANCE):
         """ Check the vertex is within [x,y,x2,y2] """
         assert(isinstance(bbox, np.ndarray))
         assert(len(bbox) == 4)
-        inXBounds = bbox[0] <= self.loc[0] and self.loc[0] <= bbox[2]
-        inYBounds = bbox[1] <= self.loc[1] and self.loc[1] <= bbox[3]
+        modBbox = bbox + np.array([-tolerance, -tolerance, tolerance, tolerance])
+        inXBounds = bbox[0] < self.loc[0] and self.loc[0] < bbox[2]
+        inYBounds = bbox[1] < self.loc[1] and self.loc[1] < bbox[3]
         return inXBounds and inYBounds
 
     def within_circle(self, centre, radius):
