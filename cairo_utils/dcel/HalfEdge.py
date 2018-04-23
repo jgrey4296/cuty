@@ -545,21 +545,45 @@ class HalfEdge:
     # def Verification
     #------------------------------
 
-    def fix_faces(self, he, left_most=False):
+    def fix_faces(self, originator):
         """ Infer faces by side on a vertex,
         leftmost means to fix on the right instead """
-        #get mid point
-        #rotate right and left and translate by a small delta
-        #check the translated points are closer to the face centroid than further away
-        #if they aren't, swap faces
-        #raise error if they still aren't closer
+        extended_from = originator
+        allTwins = [x.twin.origin for x in self.origin.halfEdges]
+        edgeLookup = {x.twin.origin : x.twin for x in self.origin.halfEdges}
+        assert(extended_from.origin in allTwins)
+        ordered = self.dcel.orderVertices(self.origin.loc, allTwins)
+        extended_index = ordered.index(extended_from.origin)
+        zipped = zip(islice(cycle(ordered), extended_index, len(ordered) + extended_index),
+                     islice(cycle(ordered), extended_index+1, len(ordered) + extended_index + 1))
+                       
+
+        for a,b in zipped:
+            a_edge = edgeLookup[a]
+            b_edge = edgeLookup[b]
+            a_edge.twin.addPrev(b_edge, force=True)
+
+        if self.prev.face is None:
+            new_face = self.dcel.newFace()
+            new_face.add_edge(self.prev)
+        if originator.twin.face is None:
+            orig_twin_face = self.dcel.newFace()
+            orig_twin_face.add_edge(originator.twin)
+
+            
+        self.prev.face.add_edge(self)
+        f2_sequence = self.twin.follow_sequence()
+        if originator.twin in f2_sequence:
+            originator.twin.face.add_edge(self.twin)
+        else:
+            twin_face = self.dcel.newFace()
+            for e in f2_sequence:
+                self.prev.face.remove_edge(e)
+                twin_face.add_edge(e)
+
+            
+
         
-        #self.face = he.face
-        #he.face = newface
-        #self.twin.face = he.face
-        raise Exception("unimplemented")
-
-
     
     def has_constraints(self, candidateSet=None):
         """ Tests whether the halfedge, and its vertices, are used by things other than the
