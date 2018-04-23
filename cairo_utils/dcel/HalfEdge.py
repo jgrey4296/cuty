@@ -743,6 +743,8 @@ class HalfEdge:
         if not force:
             assert(self.next is None)
             assert(nextEdge is None or nextEdge.prev is None)
+        if self.next is not None:
+            self.next.prev = None
         self.next = nextEdge
         if self.next is not None:
             self.next.prev = self
@@ -753,16 +755,20 @@ class HalfEdge:
         if not force:
             assert(self.prev is None)
             assert(prevEdge is None or prevEdge.next is None)
+        if self.prev is not None:
+            self.prev.next = None
         self.prev = prevEdge
         if self.prev is not None:
             self.prev.next = self
 
     def connectNextToPrev(self):
         """ Removes this Halfedge from the ordering """
-        if self.prev is not None:
-            self.prev.next = self.next
-        if self.next is not None:
-            self.next.prev = self.prev
+        hprev = self.prev
+        hnext = self.next
+        if hprev is not None:
+            hprev.next = hnext
+        if hnext is not None:
+            hnext.prev = hprev
 
     #------------------------------
     # def Cleanup
