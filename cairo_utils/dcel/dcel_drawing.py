@@ -1,7 +1,9 @@
 import logging as root_logger
 import numpy as np
-from ..constants import START, END, SMALL_RADIUS, FACE, EDGE, VERTEX
+from ..constants import START, END, SMALL_RADIUS, FACE, EDGE, VERTEX, WIDTH
 from ..drawing import drawRect, drawCircle, clear_canvas, drawText
+from .Face import Face
+from .dcel import DCEL
 from ..math import get_midpoint
 from .constants import FaceE, EdgeE, VertE
 
