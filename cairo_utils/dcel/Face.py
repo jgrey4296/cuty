@@ -378,7 +378,6 @@ class Face(object):
                                                      force=True)
             return (facePrime, EditE.NEW)
 
-        raise Exception("Unimplemented")
         if target is None:
             target = self.getCentroidFromBBox()
         if amnt is None:
@@ -389,7 +388,15 @@ class Face(object):
             assert(isinstance(vert_weights, np.ndarray))
         if edge_weights is not None:
             assert(isinstance(edge_weights, np.ndarray))
-                    
+
+        verts = self.get_all_vertices()
+        for vert in verts:
+            loc = vert.loc.copy()
+            loc -= target
+            loc *= amnt
+            loc += target
+            vert.translate(loc, abs=True, force=True)
+            
         return (self, EditE.MODIFIED)
         
 
