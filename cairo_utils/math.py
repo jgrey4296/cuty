@@ -392,8 +392,11 @@ def random_points(n):
 def bound_line_in_bbox(line, bbox):
     #todo: take in line,  intersect with lines of bbox,
     #replace original line endpoint with intersection point
-    raise Exception("Unimplemented")
-
+    bbl = bbox_to_lines(bbox)
+    intersections = [x for x in [intersect(line, x) for x,y in bbl] if x is not None]
+    if len(intersections) == 0:
+        return [line]
+    return [np.array([line[0], x]) for x in intersections]
 
 def makeHorizontalLine():
     """ Utility to Describe a horizontal line as a vector of start and end points  """
