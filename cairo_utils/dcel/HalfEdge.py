@@ -619,6 +619,7 @@ class HalfEdge:
             raise Exception("Invalid connection test")
         
         return self.twin.origin == other.origin
+        
     def isConstrained(self):
         """ Check whether the edge has been forced within a bbox or circle"""
         return self.constrained or self.twin.constrained
@@ -639,7 +640,8 @@ class HalfEdge:
         return inCircle(centre, radius, points)
     
     def outside(self, bbox):
-        return self.origin.outside(bbox) and self.twin.origin.outside(bbox)
+        verts = [x for x in self.getVertices() if x is not None]
+        return all([x.outside(bbox) for x in verts])
 
     
     def to_constrained(self, bbox):
