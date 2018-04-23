@@ -507,9 +507,15 @@ class HalfEdge:
     #------------------------------
 
     @staticmethod
+    def avg_direction(edges):
         """ Get the average normalised direction vector of each component of the 
         total line segment """
-        raise Exception("Unimplemented")
+        assert(isinstance(edges, list))
+        assert(all([isinstance(x, HalfEdge) for x in edges]))
+        allLines = [Line.newLine(x.toArray()) for x in edges]
+        allDirections = np.array([x.direction for x in allLines])
+        direction = allDirections.sum(axis=0) / len(edges)
+        return direction
 
     def vertex_intersections(self, e=EPSILON):
         """ Create a bbox for the total line segment, and intersect check that with the
