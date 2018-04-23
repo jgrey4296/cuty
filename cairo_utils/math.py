@@ -550,6 +550,7 @@ def bbox_to_lines(bbox, epsilon=EPSILON):
 
     return lines
 
+
 def calc_bbox_corner(bbox, ies, epsilon=EPSILON):
     assert(isinstance(bbox, np.ndarray))
     assert(bbox.shape == (4,))
@@ -581,3 +582,13 @@ def calc_bbox_corner(bbox, ies, epsilon=EPSILON):
         raise Exception("Calculating box corner failed for: {}".format(ies))
 
     
+def within_bbox(point, bbox, tolerance=TOLERANCE):
+    assert(isinstance(bbox, np.ndarray))
+    assert(bbox.shape == (4,))
+    assert(isinstance(point, np.ndarray))
+    assert(point.shape == (2,))
+    modBbox = bbox + np.array([-tolerance, -tolerance, tolerance, tolerance])
+    inXBounds = bbox[0] < point[0] and point[0] < bbox[2]
+    inYBounds = bbox[1] < point[1] and point[1] < bbox[3]
+    return inXBounds and inYBounds
+
