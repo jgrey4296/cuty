@@ -7,7 +7,7 @@ from scipy.interpolate import splprep, splev
 import numpy as np
 import numpy.random
 import random
-from .constants import TWOPI, QUARTERPI, EPSILON, IntersectEnum
+from .constants import TWOPI, QUARTERPI, EPSILON, TOLERANCE, IntersectEnum
 
 logging = root_logger.getLogger(__name__)
 
@@ -156,6 +156,7 @@ def get_distance(p1, p2):
     """ Get the square-root distance of pairs of points """
     assert(isinstance(p1, np.ndarray))
     assert(isinstance(p2, np.ndarray))
+   
     summed = get_distance_raw(p1, p2)
     sqrtd = np.sqrt(summed)
     return sqrtd
@@ -308,53 +309,7 @@ def checksign(a, b):
     """ Test whether two numbers have the same sign """
     return math.copysign(a, b) == a
 
-def intersect_broken(l1, l2):
-    """ Get the intersection points of two line segments
-    so l1:(start, end), l2:(start, end)
-    returns np.array([x,y]) of intersection or None
-    """
-    raise Exception("BROKEN: Needs fixing")
-    assert(isinstance(l1, np.ndarray))
-    assert(isinstance(l2, np.ndarray))
-    assert(l1.shape == (2,2))
-    assert(l2.shape == (2,2))
-    #possibly from pgkelley4's line-segments-intersect on github
-    #and From the line intersection stack overflow post
-    #see: http://ericleong.me/research/circle-line/
-    #The points
-    p0 = l1[0]
-    p1 = l1[1]
-    p2 = l2[0]
-    p3 = l2[1]
-    #The vectors of the lines
-    s1 = p1 - p0
-    s2 = p3 - p2
-    #origins vectors
-    s3 = p2 - p0
-    
-    numerator_1 = np.cross(s3, s1)
-    numerator_2 = np.cross(s3, s2)
-    denominator = np.cross(s1, s2)
-    IPython.embed(simple_prompt=True)
-    if denominator == 0:
-        return None
-
-    #minMaxs
-    minX = np.min((l1[:,0], l2[:,0]))
-    minY = np.min((l1[:,1], l2[:,1]))
-    maxX = np.max((l1[:,0], l2[:,0]))
-    maxY = np.max((l1[:,1], l2[:,1]))
-
-    
-    s = numerator_1 / denominator
-    t = numerator_2 / denominator
-    IPython.embed(simple_prompt=True)
-    if minX <= s and s <= maxX and minY <= t and t <= maxY:
-        return np.array([p0[0] + (t * s1[0]), p0[1] + t * s1[1]])
-
-    return None
-
-def intersect(l1, l2):
+def intersect(l1, l2, tolerance=TOLERANCE):
     """ Get the intersection points of two line segments
     so l1:(start, end), l2:(start, end)
     returns np.array([x,y]) of intersection or None
@@ -387,11 +342,13 @@ def intersect(l1, l2):
     yb = ((a1 * c2b) - (c1b * a2)) / detb
     xyb = np.array([xb,yb])
 
-    l1mins = np.min((p0, p1), axis=0)
-    l2mins = np.min((p2,p3), axis=0)
-    l1maxs = np.max((p0, p1), axis=0)
-    l2maxs = np.max((p2,p3), axis=0)
+    l1mins = np.min((p0, p1), axis=0) - tolerance
+    l2mins = np.min((p2,p3), axis=0) - tolerance
+    l1maxs = np.max((p0, p1), axis=0) + tolerance
+    l2maxs = np.max((p2,p3), axis=0) + tolerance
 
+
+    
     if (l1mins <= xyb).all() and (l2mins <= xyb).all() and \
        (xyb <= l1maxs).all() and (xyb <= l2maxs).all():
         return xyb
