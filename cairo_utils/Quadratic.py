@@ -49,9 +49,9 @@ class Quadratic(object):
             logging.debug('Only one intersection')
             #using mullers method:
             twoc = -2 * self.c
-            sqrtb4ac = sqrt(pow(self.b,2) - (4 * self.a * self.c))
-            pos = self.b + sqrtb4ac
-            neg = self.b - sqrtb4ac
+            sqrtD = sqrt(D)
+            pos = (-self.b) + sqrtD
+            neg = (-self.b) - sqrtD
             if pos != 0:
                 x = twoc / pos
             elif neg != 0:
@@ -67,4 +67,11 @@ class Quadratic(object):
                 (numerator_a - z) / denominator,
             ]
         return returnVal
-        
+
+    # def solve(self):
+    #     twoA = 2 * self.a
+    #     sqrtb4ac = sqrt(pow(self.b,2) - (4 * self.a * self.c))
+    #     pos = -self.b + sqrtb4ac
+    #     neg = -self.b - sqrtb4ac
+    #     return [neg, pos]
+
