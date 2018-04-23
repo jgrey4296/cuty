@@ -355,20 +355,39 @@ class HalfEdge:
         intersections = self.intersects_bbox(bbox)
         verts = self.getVertices()
         vertCoords = self.toArray()
-        
-        if len(intersections) == 0:
-            logging.debug("No intersections, no op")
+
+        if self.within(bbox):
+            logging.debug("Ignoring halfedge: is within bbox")
+        elif self.outside(bbox):
+            self.markForCleanup()        
+        elif len(intersections) == 0:
+            raise Exception("Edge Constraining: Part in and out, with no intersection")
         elif len(intersections) == 1:
-            logging.debug("One intersection, finding nearest outside vertex")
-            intersectE, intersect_coords = intersections[0]
-            vertToMove = verts[np.argmin(get_distance_raw(vertCoords, intersect_coords))]
-            vertToMove.translate(intersect_coords, abs=True, force=True)
-        else:
-            assert(len(intersections) == 2)
+            logging.debug("One intersection, moving outside vertex")
+            intersect_coords, intersectE = intersections[0]
+            outsideVerts = [x for x in verts if not x.within(bbox)]
+            assert(len(outsideVerts) == 1)
+            if outsideVerts[0] == self.origin:
+                d = self.origin.data
+                target = self
+            else:
+                d = self.twin.origin.data
+                target = self.twin
+            newVert = self.dcel.newVertex(intersect_coords, data=d)
+            target.replaceVertex(newVert)
+
+        elif len(intersections) == 2:
             logging.debug("Two intersections, moving both vertices")
-            for i_e, i_c in intersections:
+            for i_c, i_e in intersections:
                 vertToMove = verts[np.argmin(get_distance_raw(vertCoords, i_c))]
-                vertToMove.translate(i_c, abs=True, force=True)
+                if vertToMove == self.origin:
+                    d = self.origin.data
+                    target = self
+                else:
+                    d = self.twin.origin.data
+                    target = self.twin
+                newVert = self.dcel.newVertex(intersect_coords, data=d)
+                target.replaceVertex(newVert)
         
 
         return (self, EditE.MODIFIED)
