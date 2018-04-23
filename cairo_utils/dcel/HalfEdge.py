@@ -450,8 +450,7 @@ class HalfEdge:
 
     @staticmethod
     def compareEdges(center, a, b):
-        """ Compare two halfedges against a centre point, returning whether a is CCW, equal, or CW
-        from b 
+        """ Compare two halfedges against a centre point, returning whether a is CCW, equal, or CW from b 
         """
         assert(isinstance(center, np.ndarray))
         assert(isinstance(a, HalfEdge))
@@ -465,6 +464,11 @@ class HalfEdge:
 
         return deg_a <= deg_b
 
+    def degrees(self, centre):
+        offset = self.origin.toArray() - centre
+        deg = (degrees(atan2(offset[1], offset[0])) + 360) % 360
+        return deg
+    
     @staticmethod
     def ccw(a, b, c):
         """ Test for left-turn on three points of a triangle """
