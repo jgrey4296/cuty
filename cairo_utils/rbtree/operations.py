@@ -1,10 +1,12 @@
 # Helper functions
-from enum import Enum
 
-COLOUR = Enum('RBTree Colour', 'RED BLACK')
+from .Node import Node
+
+from .constants import COLOUR
 
 def rotateLeft(tree,node):
     """ Rotate the given node left, making the new head be node.right """
+    assert(isinstance(node, Node))
     if node.right is None:
         return
     newHead = node.right #Get the right subtree
@@ -24,6 +26,7 @@ def rotateLeft(tree,node):
 
 def rotateRight(tree,node):
     """ Rotate the given node right, making the new head be node.left """
+    assert(isinstance(node, Node))
     if node.left is None:
         return
     newHead = node.left
@@ -41,6 +44,7 @@ def rotateRight(tree,node):
     node.parent = newHead
 
 def rbtreeFixup(tree,node):
+    assert(isinstance(node, Node))
     while node.parent is not None and node.parent.colour == COLOUR.RED:
         parent = node.parent
         parentParent = parent.parent
@@ -79,17 +83,22 @@ def rbtreeFixup(tree,node):
 
 def transplant(tree,u,v):
     """ Transplant the node v, and its subtree, in place of node u """
+    assert(isinstance(u, Node) or u is None)
+    assert(isinstance(v, Node) or v is None)
+    
     if u.parent is None:
         tree.root = v
     elif u == u.parent.left:
         u.parent.left = v
     else:
         u.parent.right = v
-    v.parent = u.parent
+    if v is not None:
+        v.parent = u.parent
     
 
 def rbTreeDelete(tree,z):
     """ Delete the node z from the tree """
+    assert(isinstance(z, Node))
     y = z
     origColour = y.colour
     x = None
@@ -120,6 +129,7 @@ def rbTreeDelete(tree,z):
 
 
 def rbDeleteFixup(tree,x):
+    assert(isinstance(x, Node))
     while x != tree.root and x.colour == COLOUR.BLACK: #keep going till you hit the root
         if x == x.parent.left: #Operate on the left subtree
             w = x.parent.right 

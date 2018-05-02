@@ -3,12 +3,20 @@ from .Node import Node
 
 class RBTree:
 
-    def __init__(self):
+    def __init__(self, cmp=None):
         """ Initialise the rb tree container, ie: the node list """
+        if cmp is None:
+            cmp = lambda a,b: a < b
+        
         self.nodes = []
+        self.values = set()
         self.root = None
         self.nextId = 0
+        self.cmp = cmp
 
+    def __len__(self):
+        return len(self.nodes)
+        
     def insert(self,*args):
         for x in args:
             self.rb_insert(x)
@@ -17,6 +25,7 @@ class RBTree:
         """ Insert a value into the tree """
         newNode = Node(self.nextId,value,data=data)
         self.nodes.append(newNode)
+        self.values.add(value)
         self.nextId += 1
         
         y = None
@@ -24,14 +33,14 @@ class RBTree:
         
         while x is not None:
             y = x
-            if newNode.value < x.value:
+            if self.cmp(newNode.value,x.value):
                 x = x.left
             else:
                 x = x.right
         newNode.parent = y
         if y is None:
             self.root = newNode
-        elif newNode.value < y.value:
+        elif self.cmp(newNode.value, y.value):
             y.left = newNode
         else:
             y.right = newNode
@@ -41,16 +50,20 @@ class RBTree:
 
     def delete(self,node):
         """ Delete a value from the tree """
+        assert(isinstance(node, Node))
+        assert(node.value in self.values)
         rbTreeDelete(self,node)
+        self.values.remove(node.value)
+        self.nodes.remove(node)
 
     def search(self,value):
         """ Search the tree for a value """
         current = self.root
         while current is not None and current.value != value:
-            if value > current.value:
-                current = current.right
-            else:
+            if self.cmp(current.value, value):
                 current = current.left
+            else:
+                current = current.right
         return current
                 
     def min(self):

@@ -7,3 +7,4 @@
 # 5) All paths from a node to its leaves contain the same number of black nodes
 
 from .RBTree import RBTree
+from .Node import Node
