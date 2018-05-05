@@ -587,6 +587,12 @@ class DCEL(object):
     #------------------------------
     # def Utilities
     #------------------------------
+
+    def intersect_halfedges(self, edgeSet=None):
+        """ run a sweep line over the dcel, 
+        getting back halfedge intersections """
+        return LineIntersector(edgeSet=edgeSet, dcel=self)
+
     
     def orderVertices(self, focus, vertices):
         """ Given a focus point and a list of vertices,  sort them
@@ -678,9 +684,6 @@ class DCEL(object):
         """ Fix all halfedges to ensure they are counter-clockwise ordered """
         raise Exception("deprecated: fixup faces instead") 
 
-    def intersect_halfedges(self):
-        """ run a sweep line over the dcel, getting back halfedge intersections """
-        raise Exception("unimplemented")
 
     def calculate_edge_connections(self, current_edge, prior_edge, bbox, f):
         """ Connect two edges within a bbox, with a corner if necessary  """
