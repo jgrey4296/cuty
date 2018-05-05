@@ -1,176 +1,201 @@
-# Helper functions
-
+from enum import Enum
+import logging as root_logger
 from .Node import Node
 
-from .constants import COLOUR
+logging = root_logger.getLogger(__name__)
 
+Directions = Enum('Directions', 'LEFT RIGHT CENTRE')
+
+""" Below are the functional implementations of Red-Black Tree operations """
+#todo: integrate these into the beachline class 
 def rotateLeft(tree,node):
     """ Rotate the given node left, making the new head be node.right """
-    assert(isinstance(node, Node))
+    logging.debug("Rotating Left: {}".format(node))
+    assert(isinstance(node,Node))
     if node.right is None:
-        return
+        return #early exit if rotating is unnecessary
     newHead = node.right #Get the right subtree
-    node.right = newHead.left        #left subtree becomes the right subtree 
-    if newHead.left is not None:     #update the parent of the left subtree
-        newHead.left.parent = node
-    newHead.parent = node.parent     #update the parent of the new head
-    if node.parent is None:          #update the root of the tree
-        tree.root = newHead
-    elif node == node.parent.left:  #update the parent's left subtree
-        node.parent.left = newHead
+    originalParent = node.parent
+    #left subtree becomes the right subtree:
+    node.right = newHead.left
+    if node.right is not None:
+        node.right.parent = node
+    #move the original node to the left
+    newHead.left = node
+    newHead.left.parent = newHead
+    if originalParent is None:            #update the root of the tree
+        newHead.parent is None
+        if tree:
+            tree.root = newHead
+    elif node == originalParent.left:  #update the parent's left subtree
+        originalParent.left = newHead
+        newHead.parent = originalParent
     else:
-        node.parent.right = newHead #update the parent's right subtree
-    newHead.left = node           #move the original node to the left
-    node.parent = newHead         #update the parent of the original node
-
+        originalParent.right = newHead
+        newHead.parent = originalParent
+    return newHead
 
 def rotateRight(tree,node):
     """ Rotate the given node right, making the new head be node.left """
+    logging.debug("Rotating Right: {}".format(node))
     assert(isinstance(node, Node))
-    if node.left is None:
-        return
     newHead = node.left
+    originalParent = node.parent
     node.left = newHead.right
-    if newHead.right is not None:
-        newHead.right.parent = node
-    newHead.parent = node.parent
-    if node.parent is None:
-        tree.root = newHead
-    elif node == node.parent.right:
-        node.parent.right = newHead
-    else:
-        node.parent.left = newHead
+    if node.left != None:
+        node.left.parent = node
     newHead.right = node
-    node.parent = newHead
-
+    newHead.right.parent = newHead    
+    if originalParent == None:
+        newHead.parent = None
+        if tree:
+            tree.root = newHead
+    elif node == originalParent.left:
+        originalParent.left = newHead
+        newHead.parent = originalParent
+    else:
+        originalParent.right = newHead
+        newHead.parent = originalParent
+    return newHead
+        
 def rbtreeFixup(tree,node):
-    assert(isinstance(node, Node))
-    while node.parent is not None and node.parent.colour == COLOUR.RED:
+    """ Verify and fix the RB properties hold """
+    while node.parent != None and node.parent.red:
         parent = node.parent
-        parentParent = parent.parent
-        if parentParent is None:
+        grandParent = parent.parent
+        if grandParent == None:
             break
-        elif parent == parentParent.left:
-            y = parentParent.right
-            if y is not None and y.colour == COLOUR.RED:
-                parent.colour = COLOUR.BLACK
-                y.colour = COLOUR.BLACK
-                parentParent.colour = COLOUR.RED
-                node = parentParent
+        elif parent == grandParent.left:
+            y = grandParent.right
+            if y != None and y.red:
+                parent.red = False
+                y.red = False
+                grandParent.red = True
+                node = grandParent
             else:
                 if node == parent.right:
                     node = parent
-                    rotateLeft(tree,node)
-                parent.colour = COLOUR.BLACK
-                parentParent.colour = COLOUR.RED
-                rotateRight(tree,parentParent)
+                    rotateLeft(tree,node)#invalidates parent and grandparent
+                node.parent.red = False
+                node.parent.parent.red = True
+                rotateRight(tree,node.parent.parent)
         else:
-            y = parentParent.left
-            if y is not None and y.colour == COLOUR.RED:
-                parent.colour = COLOUR.BLACK
-                y.colour = COLOUR.BLACK
-                parentParent.colour = COLOUR.RED
-                node = parentParent
+            y = grandParent.left
+            if y != None and y.red:
+                parent.red = False
+                y.red = False
+                grandParent.red = True
+                node = grandParent
             else:
                 if node == parent.left:
                     node = parent
-                    rotateRight(tree,node)
-                parent.colour = COLOUR.BLACK
-                parentParent.colour = COLOUR.RED
-                rotateLeft(tree,parentParent)
-    tree.root.colour = COLOUR.BLACK
-
+                    rotateRight(tree,node)#invalidates parent and grandparent
+                node.parent.red = False
+                node.parent.parent.red = True
+                rotateLeft(tree,node.parent.parent)
+    tree.root.red = False
 
 def transplant(tree,u,v):
     """ Transplant the node v, and its subtree, in place of node u """
-    assert(isinstance(u, Node) or u is None)
-    assert(isinstance(v, Node) or v is None)
-    
-    if u.parent is None:
+    logging.debug("Transplanting {} into {}".format(v,u))
+    if u.parent == None:
+        logging.debug("Setting root to {}".format(v))
         tree.root = v
+        v.parent = None
     elif u == u.parent.left:
-        u.parent.left = v
+        logging.debug("Transplant linking left")
+        parent = u.parent
+        u.parent.link_left(v)
     else:
-        u.parent.right = v
-    if v is not None:
-        v.parent = u.parent
-    
+        logging.debug("Transplant linking right")
+        parent = u.parent
+        u.parent.link_right(v)
+
 
 def rbTreeDelete(tree,z):
-    """ Delete the node z from the tree """
-    assert(isinstance(z, Node))
     y = z
-    origColour = y.colour
+    orig_pred = z.getPredecessor()
+    orig_succ = z.getSuccessor()
+    orig_parent = z.parent
+    y_originally_red = y.red
     x = None
-    if z.left is None: #no left subtree, just move the right up
+    if z.left == None:
+        logging.debug("No left, transplanting right")
         x = z.right
-        transplant(tree,z,z.right) 
-    elif z.right is None: #no right subtree, move the left up
+        transplant(tree,z,z.right)
+    elif z.right == None:
+        logging.debug("No right, transplanting left")
         x = z.left
         transplant(tree,z,z.left)
-    else: #both subtrees exist
-        y = z.right.getMin() #get the min of the right, and use that in place of the old head
-        #could use the max of the left? might conflict with colours
-        origColour = y.colour 
-        x = y.right 
-        if y.parent == z: #degenerate case: min of tree is z.right
-            if x is not None:
-                x.parent = y # surely this is redundant? x is already a child of y?
+    else:
+        logging.debug("Both Left and right exist")
+        y = z.right.getMin()
+        y_originally_red = y.red
+        x = y.right
+        if y.parent == z:
+            logging.debug("y.parent == z")
+            x.parent = y
         else:
-            transplant(tree,y,y.right) #move y'right subtree to where y is
-            y.right = z.right #move the right subtree of the node to delete to the min of that subtree
-            y.right.parent = y #update the parent
-        transplant(tree,z,y) #move the new minimum to where z was
-        y.left = z.left #take z's left subtree, move it to y
-        y.left.parent = y #update the parent of the left subtree
-        y.colour = z.colour #copy the colour over
-    if origColour == COLOUR.BLACK:
+            logging.debug("y.parent != z")
+            transplant(tree,y,y.right)
+            y.link_right(z.right)
+        transplant(tree,z,y)
+        y.link_left(z.left)
+        y.red = z.red
+    if not y_originally_red:
+        logging.debug("Fixingup up x: {}".format(x))
         rbDeleteFixup(tree,x)
-
-
+    #collapse when two nodes are the same
+    if orig_pred != None and orig_succ != None and orig_pred.value == orig_succ.value:
+        logging.debug("Collapsing with successor {}".format(orig_succ))
+        tree.delete_node(orig_succ)
+    logging.debug("Finished deletion")
+    
 def rbDeleteFixup(tree,x):
-    assert(isinstance(x, Node))
-    while x != tree.root and x.colour == COLOUR.BLACK: #keep going till you hit the root
-        if x == x.parent.left: #Operate on the left subtree
-            w = x.parent.right 
-            if w.colour == COLOUR.RED: # opposite subtree is red
-                w.colour = COLOUR.BLACK #switch colour of that tree and parent
-                x.parent.colour = COLOUR.RED 
-                rotateLeft(tree,x.parent) #then rotate
-                w = x.parent.right #update the the opposite subtree to the new subtree
-            if w.left.colour == COLOUR.BLACK and w.right.colour == COLOUR.BLACK: #if both subtrees are black
-                w.colour = COLOUR.RED #recolour the subtree head
-                x = x.parent #and move up
-            else: #different colours on the subtrees
-                if w.right.colour == COLOUR.BLACK: 
-                    w.left.colour = COLOUR.BLACK #normalise the colours of the left and right
-                    w.colour = COLOUR.RED #flip the parent colour
-                    rotateRight(tree,w) #rotate
-                    w = x.parent.right #update the subtree focus 
-                w.colour = x.parent.colour 
-                x.parent.colour = COLOUR.BLACK
-                w.right.colour = COLOUR.BLACK
-                rotateLeft(tree,x.parent) #rotate back if necessary
-                x = tree.root 
-        else: #mirror image for right subtree
+    while x != tree.root and not x.red:
+        if x == x.parent.left:
+            w = x.parent.right
+            if w.red:
+                w.red = False
+                x.parent.red = True
+                rotateLeft(tree,x.parent)
+                w = x.parent.right
+            if not w.left.red and not w.right.red:
+                w.red = True
+                x = x.parent
+            else:
+                if not w.right.red:
+                    w.left.red = False
+                    w.red = True
+                    rotateRight(tree,w)
+                    w = x.parent.right
+                w.red = x.parent.red
+                x.parent.red = False
+                w.right.red = False
+                rotateLeft(tree,x.parent)
+                x = tree.root
+        else: #mirror for right
             w = x.parent.left
-            if w.colour == COLOUR.RED:
-                w.colour = COLOUR.BLACK
-                x.parent.colour = COLOUR.RED
+            if w.red:
+                w.red = False
+                x.parent.red = True
                 rotateRight(tree,x.parent)
                 w = x.parent.left
-            if w.right.colour == COLOUR.BLACK and w.left.colour == COLOUR.BLACK:
-                w.colour = COLOUR.RED
+            if not w.right.red and not w.left.red:
+                w.red = True
                 x = x.parent
-            elif w.left.colour == COLOUR.BLACK:
-                w.right.colour = COLOUR.BLACK
-                w.colour = COLOUR.RED
-                rotateLeft(tree,w)
-                w = x.parent.left
-            w.colour = x.parent.colour
-            x.parent.colour = COLOUR.BLACK
-            w.left.colour = COLOUR.BLACK
-            rotateRight(tree,x.parent)
-            x = Tree.root
-    x.colour = COLOUR.BLACK
-            
+            else:
+                if not w.left.red:
+                    w.right.red = False
+                    w.red = True
+                    rotateLeft(tree,w)
+                    w = x.parent.left
+                w.red = x.parent.red
+                x.parent.red = False
+                w.left.red = False
+                rotateRight(tree,x.parent)
+                x = tree.root
+    x.red = False
+ 
+
+

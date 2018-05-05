@@ -49,7 +49,7 @@ class RBTree_Tests(unittest.TestCase):
     
     def test_cmp(self):
         """ Swaps the ordering using a custom cmp function """
-        self.t.cmp = lambda a,b: a > b
+        self.t.cmpFunc = lambda a,b,cd: a > b
         self.t.insert(4,2,6,5,2,7,8,4,2,5,2,1)
         self.assertEqual(len(self.t),12)
         mi = self.t.min()
@@ -83,8 +83,17 @@ class RBTree_Tests(unittest.TestCase):
         found = self.t.search(55)
         self.assertIsNone(found)
         
+    def test_get_chain(self):
+        baseList = [4,2,6,5,2,7,8,4,2,5,2,1]
+        self.t.insert(*baseList)
+        self.assertEqual(len(self.t),12)
+        chain = self.t.get_chain()
+        self.assertIsInstance(chain, list)
+        self.assertTrue(all([isinstance(x, rbtree.Node) for x in chain]))
+        values = [x.value for x in chain]
+        self.assertEqual(values, sorted(baseList))
 
-    #countBlackHeight
+    
       
 
 if __name__ == "__main__":

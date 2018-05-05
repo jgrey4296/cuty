@@ -1,23 +1,34 @@
-from .operations import COLOUR
-class Node:
+from types import FunctionType
+from functools import partial
+import logging as root_logger
+logging = root_logger.getLogger(__name__)
 
-    def __init__(self,id,value,parent=None,data=None):
-        self.id = id
+class Node:
+    """ The Container for RBTree Data """
+    i = 0
+    
+    def __init__(self,value,parent=None,data=None):
+        self.id = Node.i
+        Node.i += 1
         #Children:
         self.left = None
         self.right = None
         #Parent:
         self.parent = parent
         #Node Date:
-        self.colour = COLOUR.RED
+        self.red = True
         self.value = value
-        self.data = data
+        self.data = {}
+        if data is not None:
+            assert(isinstance(data,dict))
+            self.data.update(data)
+            
 
     def getBlackHeight(self,parent=None):
         current = self
         height = 0
         while current is not None:
-            if current.colour == COLOUR.BLACK:
+            if not current.red:
                 height += 1
             if current == parent:
                 current = None
@@ -26,7 +37,7 @@ class Node:
         return height
         
     def __str__(self):
-        if self.colour == COLOUR.RED:
+        if self.red:
             colour = "R"
         else:
             colour = "B"
@@ -43,3 +54,136 @@ class Node:
         while current.right is not None:
             current = current.right
         return current
+
+    def getPredecessor(self):
+        if self.left is not None:
+            return self.left.getMax()
+        current = self
+        found = False
+        while not found:
+            if current.parent is None or current.parent.right == current:
+                found = True
+            current = current.parent
+
+        if current is not self:
+            return current
+        else:
+            return None
+
+    def getSuccessor(self):
+        if self.right is not None:
+            return self.right.getMin()
+        current = self
+        found = False
+        while not found:
+            if current.parent is None or current.parent.left == current:
+                found = True
+            current = current.parent
+
+        if current is not self:
+            return current
+        else:
+            return None
+
+    def getPredecessor_while(self, condition):
+        assert(isinstance(condition, (FunctionType, partial)))
+        results = []
+        current = self.getPredecessor()
+        while current is not None and condition(current):
+            results.append(current)
+            current = current.getPredecessor()
+        return results
+        
+
+    def getSuccessor_while(self, condition):
+        assert(isinstance(condition, (FunctionType, partial)))
+        results = []
+        current = self.getSuccessor()
+        while current is not None and condition(current):
+            results.append(current)
+            current = current.getSuccessor()
+        return results
+
+
+    def getNeighbours_while(self, condition):
+        results = []
+        results += self.getPredecessor_while(condition)
+        results += self.getSuccessor_while(condition)
+        return results
+
+    def isLeaf(self):
+        return self.left is None and self.right is None
+
+    def add_left(self,node,force=False):
+        logging.debug("{}: Adding {} to Left".format(self,node))
+        if self == node:
+            node = None
+        if self.left == None or force:
+            self.link_left(node)
+        else:
+            self.get_predecessor().add_right(node)
+        
+    def add_right(self,node,force=False):
+        logging.debug("{}: Adding {} to Right".format(self,node))
+        if self == node:
+            node = None
+        if self.right == None or force:
+            self.link_right(node)
+        else:
+            self.get_successor().add_left(node)
+        
+    def disconnect_from_parent(self):
+        if self.parent != None:
+            if self.parent.left == self:
+                logging.debug("Disconnecting {} L-> {}".format(self.parent,self))
+                self.parent.left = None
+            else:
+                logging.debug("Disconnecting {} R-> {}".format(self.parent,self))
+                self.parent.right = None
+            self.parent = None
+
+    def link_left(self,node):
+        logging.debug("{} L-> {}".format(self,node))
+        if self == node:
+            node = None
+        self.left = node
+        self.left.parent = self
+
+    def link_right(self,node):
+        logging.debug("{} R-> {}".format(self,node))
+        if self == node:
+            node = None
+        self.right = node
+        if self.right is not None:
+            self.right.parent = self
+            
+    def disconnect_sequence(self):
+        self.disconnect_successor()
+        self.disconnect_predecessor()
+
+    def disconnect_hierarchy(self):
+        return [self.disconnect_left(),self.disconnect_right()]
+
+    def disconnect_left(self):
+        logging.debug("{} disconnectin left: {}".format(self,self.left))
+        if self.left != None:
+            node = self.left
+            self.left = None
+            node.parent = None
+            return node
+        return None
+
+    def disconnect_right(self):
+        logging.debug("{} disconnecting right: {}".format(self,self.right))
+        if self.right != None:
+            node = self.right
+            self.right = None
+            node.parent = None
+            return node
+        return None
+
+
+
+
+
+            
