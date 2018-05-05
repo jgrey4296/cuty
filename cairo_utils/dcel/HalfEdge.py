@@ -176,10 +176,13 @@ class HalfEdge:
     def split(self, loc, copy_data=True, face_update=True):
         """ Take an s -> e, and make it now two edges s -> (x,y) -> e 
         returns (firstHalf, newPoint, secondHalf)"""
-        assert(isinstance(loc, np.ndarray))
+        assert(isinstance(loc, (np.ndarray,Vertex)))
         start = self.origin
         end = self.twin.origin
-        newPoint = self.dcel.newVertex(loc)
+        if isinstance(loc,Vertex):
+            newPoint = loc
+        else:
+            newPoint = self.dcel.newVertex(loc)
         if copy_data:
             newPoint.data.update(start.data)
         newEdge = self.dcel.newEdge(newPoint, end)
