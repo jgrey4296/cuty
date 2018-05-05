@@ -121,5 +121,20 @@ class Line:
         #TODO
         return False
 
-    
-        
+    def __call__(self, x=None, y=None):
+        """ Solve the line for the None value. 
+        must have either x or y passed in """
+        assert(any([a is not None for a in [x,y]]))
+        assert(not all([a is not None for a in [x,y]]))
+        if x is not None:
+            if self.m is not None:
+                yprime = self.m * x + self.b
+            else:
+                yprime = 0
+            return np.array([x, yprime])
+        elif y is not None:
+            if self.m is not None:
+                xprime = (y / self.m) - self.b
+            else:
+                xprime = 0
+            return np.array([xprime, y])
