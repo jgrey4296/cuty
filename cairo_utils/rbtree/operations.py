@@ -1,10 +1,8 @@
-from enum import Enum
 import logging as root_logger
 from .Node import Node
+from .ComparisonFunctions import Directions
 
 logging = root_logger.getLogger(__name__)
-
-Directions = Enum('Directions', 'LEFT RIGHT CENTRE')
 
 """ Below are the functional implementations of Red-Black Tree operations """
 #todo: integrate these into the beachline class 
