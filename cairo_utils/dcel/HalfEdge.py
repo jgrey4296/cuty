@@ -510,7 +510,20 @@ class HalfEdge:
         assert(isinstance(centre, np.ndarray))
         return HalfEdge.ccw(centre, self.origin.toArray(), self.twin.origin.toArray())
 
-    
+    def isUpper(self):
+        verts = self.getVertices()
+        return verts[0] < verts[1]
+
+    def contains_vertex(self, vert):
+        assert(isinstance(vert, Vertex))
+        verts = self.getVertices()
+        if vert in verts:
+            return True
+        l = self.toArray()
+        p = vert.toArray()
+        return is_point_on_line(p, l)
+        
+        
 
     #------------------------------
     # def Utilities
