@@ -186,9 +186,9 @@ class DCEL(object):
             IPython.embed(simple_prompt=True)
 
         #Now transfer into the actual object:
-        self.vertices = [x.obj for x in local_vertices.values()]
-        self.halfEdges = [x.obj for x in local_edges.values()]
-        self.faces = [x.obj for x in local_faces.values()]
+        self.vertices = set([x.obj for x in local_vertices.values()])
+        self.halfEdges = set([x.obj for x in local_edges.values()])
+        self.faces = set([x.obj for x in local_faces.values()])
         self.calculate_quad_tree()
 
     @staticmethod
