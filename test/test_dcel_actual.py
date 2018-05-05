@@ -398,6 +398,9 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.dc.force_all_edge_lengths(pow(2,2))
         self.assertTrue(all([x.getLength_sq() <= (pow(2,2)) for x in self.dc.halfEdges]))
         self.assertEqual(len(self.dc.halfEdges), 8 * 2)
+
+    def test_intersect_halfedges(self):
+        self.assertTrue(False)
         
         
 if __name__ == "__main__":
