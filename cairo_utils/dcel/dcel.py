@@ -4,13 +4,13 @@ from math import atan2, degrees
 from numbers import Number
 from os.path import isfile
 from random import random
+from itertools import cycle, islice
 import IPython
 import math
 import numpy as np
 import pickle
 import pyqtree
 import sys
-from itertools import cycle, islice
 
 from ..math import get_distance
 from .Face import Face
@@ -18,6 +18,7 @@ from .HalfEdge import HalfEdge
 from .Vertex import Vertex
 from .Line import Line
 from .constants import EdgeE
+from .line_intersector import LineIntersector
 
 import logging as root_logger
 logging = root_logger.getLogger(__name__)
