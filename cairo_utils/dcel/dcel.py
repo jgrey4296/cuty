@@ -50,6 +50,8 @@ class DCEL(object):
         self.quad_tree_stack = []
         self.frontier = set()
         self.should_merge_stacks = True
+
+        self.data = {}
         
     def reset_frontier(self):
         self.frontier = set()
