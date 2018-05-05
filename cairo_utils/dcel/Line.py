@@ -11,7 +11,7 @@ logging = root_logger.getLogger(__name__)
 CENTRE = np.array([[0.5, 0.5]])
 
 class Line:
-    """ A line as a start x and y, a direction, and a length, useful for
+    """ A line as a start position, a unit direction, and a length, useful for
     algebraic manipulation """
 
     @staticmethod
@@ -83,7 +83,6 @@ class Line:
             return np.row_stack((self.destination(), self.source))
         else:
             return np.row_stack((self.source, self.destination()))
-
 
 
     def intersect_with_circle(self, centre, radius):
