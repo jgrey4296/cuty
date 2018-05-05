@@ -134,10 +134,11 @@ def draw_dcel_single_face(ctx, dcel, face, clear=True, force_centre=False, text=
 
 
 def draw_dcel_edges(ctx, dcel, text=True, width=WIDTH):
+    originalTextState = text
     drawnTexts = set()
     for edge in dcel.halfEdges:
         if edge.index not in drawnTexts:
-            text = True
+            text = originalTextState
             drawnTexts.add(edge.index)
             drawnTexts.add(edge.twin.index)
         else:
