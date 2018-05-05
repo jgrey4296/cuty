@@ -265,7 +265,16 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
         self.assertEqual(edit_e, EditE.MODIFIED)
         self.assertEqual(v1, v2)
         self.assertTrue(np.allclose(v2.toArray(), np.array([0,6])))
-        
+
+    def test_lt(self):
+        v1 = self.dc.newVertex(np.array([0,0]))
+        v2 = self.dc.newVertex(np.array([1,0]))
+        self.assertTrue(v1 < v2)
+        self.assertFalse(v2 < v1)
+        v3 = self.dc.newVertex(np.array([0,1]))
+        self.assertTrue(v3 < v1)
+        self.assertFalse(v1 < v3)
+
 
 if __name__ == "__main__":
       #use python $filename to use this logging setup

@@ -155,6 +155,15 @@ class Vertex:
         """ Check the vertex is entirely outside of the bbox [x,y,x2,y2] """
         return not self.within(bbox)
 
+    def __lt__(self, other):
+        """ Sorting top to bottom, left to right """
+        assert(isinstance(other, Vertex))
+        if np.allclose(self.loc[1], other.loc[1]):
+            return self.loc[0] < other.loc[0]
+        else:
+            return self.loc[1] > other.loc[1]
+
+    
     #------------------------------
     # def HalfEdge Access and Registration
     #------------------------------
