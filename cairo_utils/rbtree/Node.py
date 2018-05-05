@@ -22,7 +22,21 @@ class Node:
         if data is not None:
             assert(isinstance(data,dict))
             self.data.update(data)
-            
+
+        #todo: create templates for data.
+        #for arc/voronoi/beachline: left and right circle events
+
+
+    #------------------------------
+    # def Basic Info
+    #------------------------------
+    
+    def __repr__(self):
+        if self.red:
+            colour = "R"
+        else:
+            colour = "B"
+        return "({}_{} {} {})".format(colour,self.value,self.left,self.right)
 
     def getBlackHeight(self,parent=None):
         current = self
@@ -35,13 +49,6 @@ class Node:
             else:
                 current = current.parent
         return height
-        
-    def __str__(self):
-        if self.red:
-            colour = "R"
-        else:
-            colour = "B"
-        return "({}_{} {} {})".format(colour,self.value,self.left,self.right)
 
     def getMin(self):
         current = self
@@ -58,11 +65,12 @@ class Node:
     def getPredecessor(self):
         if self.left is not None:
             return self.left.getMax()
-        current = self
-        found = False
-        while not found:
-            if current.parent is None or current.parent.right == current:
-                found = True
+        if self.parent is not None and self.parent.right == self:
+            return self.parent
+        prev = self
+        current = self.parent
+        while current is not None and current.right != prev:
+            prev = current
             current = current.parent
 
         if current is not self:
@@ -73,11 +81,12 @@ class Node:
     def getSuccessor(self):
         if self.right is not None:
             return self.right.getMin()
-        current = self
-        found = False
-        while not found:
-            if current.parent is None or current.parent.left == current:
-                found = True
+        if self.parent is not None and self.parent.left == self:
+            return self.parent
+        prev = self
+        current = self.parent
+        while current is not None and current.left != prev:
+            prev = current
             current = current.parent
 
         if current is not self:
@@ -114,6 +123,10 @@ class Node:
     def isLeaf(self):
         return self.left is None and self.right is None
 
+    #------------------------------
+    # def Basic Update
+    #------------------------------
+    
     def add_left(self,node,force=False):
         logging.debug("{}: Adding {} to Left".format(self,node))
         if self == node:
@@ -121,7 +134,7 @@ class Node:
         if self.left == None or force:
             self.link_left(node)
         else:
-            self.get_predecessor().add_right(node)
+            self.getPredecessor().add_right(node)
         
     def add_right(self,node,force=False):
         logging.debug("{}: Adding {} to Right".format(self,node))
@@ -130,17 +143,7 @@ class Node:
         if self.right == None or force:
             self.link_right(node)
         else:
-            self.get_successor().add_left(node)
-        
-    def disconnect_from_parent(self):
-        if self.parent != None:
-            if self.parent.left == self:
-                logging.debug("Disconnecting {} L-> {}".format(self.parent,self))
-                self.parent.left = None
-            else:
-                logging.debug("Disconnecting {} R-> {}".format(self.parent,self))
-                self.parent.right = None
-            self.parent = None
+            self.getSuccessor().add_left(node)
 
     def link_left(self,node):
         logging.debug("{} L-> {}".format(self,node))
@@ -156,6 +159,16 @@ class Node:
         self.right = node
         if self.right is not None:
             self.right.parent = self
+        
+    def disconnect_from_parent(self):
+        if self.parent != None:
+            if self.parent.left == self:
+                logging.debug("Disconnecting {} L-> {}".format(self.parent,self))
+                self.parent.left = None
+            else:
+                logging.debug("Disconnecting {} R-> {}".format(self.parent,self))
+                self.parent.right = None
+            self.parent = None
             
     def disconnect_sequence(self):
         self.disconnect_successor()
@@ -182,8 +195,44 @@ class Node:
             return node
         return None
 
+    #------------------------------
+    # def Deprecated
+    #------------------------------
+    
+    def get_predecessor(self):
+        raise Exception("Deprecated: use getPredecessor")
 
+    def get_successor(self):
+        raise Exception("Deprecated: use getSuccessor")
 
+    def compare_simple(self):
+        raise Exception("Deprecated: use appropriate comparison function in rbtree")
 
+    def intersect(self):
+        raise Exception("Deprecated: use appropriate method in value")
 
-            
+    def update_arcs(self):
+        raise Exception("Deprecated: use rbtree update_values with appropriate lambda")
+
+    def countBlackHeight_null_add(self):
+        raise Exception("Deprecated")
+
+    def print_colour(self):
+        raise Exception("Deprecated: check node.red ")
+
+    def print_blackheight(self):
+        raise Exception("Deprecated")
+
+    def print_tree(self):
+        raise Exception("Deprecated")
+
+    def print_tree_plus(self):
+        raise Exception("Deprecated")
+
+    def getMinValue(self):
+        raise Exception("Deprecated")
+
+    def getMaxValue(self):
+        raise Exception("Deprecated")
+
+    
