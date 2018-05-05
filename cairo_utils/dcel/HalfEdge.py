@@ -449,7 +449,14 @@ class HalfEdge:
         assert(point.shape == (2,))
         coords = self.toArray()
         return is_point_on_line(point, coords)
-    
+
+
+    def __call__(self, x=None, y=None):
+        """ Pass in a value and calculate the other """
+        assert(any([a is not None for a in [x,y]]))
+        assert(not all([a is not None for a in [x,y]]))
+        theLine = Line.newLine(self.toArray())
+        return theLine(x=x, y=y)
 
     @staticmethod
     def compareEdges(center, a, b):
