@@ -28,15 +28,27 @@ class Line:
         d = vec * scale
         #cx = a.x + (dx * l)
         #cy = a.y + (dy * l)
-        return Line(a[0], d, l)
+        #Slope and intersect:
+        q = a[1] - a[0]
+        if q[0] == 0:
+            m = None
+            b = None
+        else:
+            m = q[1] / q[0]
+            b = a[0,1] - (m * a[0,0])
+        return Line(a[0], d, l, m, b)
 
     
-    def __init__(self, s, d, l, swapped=False):
+    def __init__(self, s, d, l, m, b, swapped=False):
         assert(all([isinstance(x, np.ndarray) for x in [s,d]]))
         self.source = s
         self.direction = d
         self.length = l
         self.swapped = swapped
+        #slope and intersect:
+        self.m = m
+        self.b = b
+        
 
     def __repr__(self):
         return "Line(S: {}, D: {}, L: {}, SW: {})".format(self.source,
