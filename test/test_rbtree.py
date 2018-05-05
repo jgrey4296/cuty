@@ -1,7 +1,9 @@
 import unittest
 import logging
+import IPython
 from test_context import cairo_utils as utils
 from cairo_utils import rbtree
+from cairo_utils.rbtree import ComparisonFunctions as CompFuncs
 
 
 class RBTree_Tests(unittest.TestCase):
@@ -49,7 +51,7 @@ class RBTree_Tests(unittest.TestCase):
     
     def test_cmp(self):
         """ Swaps the ordering using a custom cmp function """
-        self.t.cmpFunc = lambda a,b,cd: a > b
+        self.t.cmpFunc = CompFuncs.inverted_comparison
         self.t.insert(4,2,6,5,2,7,8,4,2,5,2,1)
         self.assertEqual(len(self.t),12)
         mi = self.t.min()
@@ -73,14 +75,14 @@ class RBTree_Tests(unittest.TestCase):
     def test_search(self):
         self.t.insert(4,2,6,5,2,7,8,4,2,5,2,1)
         self.assertEqual(len(self.t),12)
-        found = self.t.search(4)
+        found, side = self.t.search(4)
         self.assertIsNotNone(found)
         self.assertIsInstance(found, rbtree.Node)
         
     def test_search_missing(self):
         self.t.insert(4,2,6,5,2,7,8,4,2,5,2,1)
         self.assertEqual(len(self.t),12)
-        found = self.t.search(55)
+        found, side = self.t.search(55)
         self.assertIsNone(found)
         
     def test_get_chain(self):
@@ -93,8 +95,19 @@ class RBTree_Tests(unittest.TestCase):
         values = [x.value for x in chain]
         self.assertEqual(values, sorted(baseList))
 
-    
-      
+    def test_colours(self):
+        baseList = [4,2,6,5,2,7,8,4,2,5,2,1]
+        self.t.insert(*baseList)
+        self.assertEqual(len(self.t),12)
+        chain = self.t.get_chain()
+        for node in chain:
+            if node.red:
+                self.assertTrue(node.left is None or not node.left.red)
+                self.assertTrue(node.right is None or not node.right.red)
+        #todo: check it is maintained when inserting and deleting
+
+    #test that the path to farthest leaf is no more than
+    #twice as long as path to shortest
 
 if __name__ == "__main__":
     #use python $filename to use this logging setup
