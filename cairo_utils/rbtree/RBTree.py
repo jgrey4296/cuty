@@ -18,7 +18,7 @@ class RBTree:
     5) All paths from a node to its leaves contain the same number of black nodes
     """
     
-    def __init__(self, cmpFunc=None, eqFunc=None):
+    def __init__(self, cmpFunc=None, eqFunc=None, cleanupFunc=None):
         """ Initialise the rb tree container, ie: the node list """
 
         #Default Comparison and Equality functions with dummy data ignored
@@ -26,14 +26,16 @@ class RBTree:
             cmpFunc = default_comparison
         if eqFunc is None:
             eqFunc = default_equality
+        if cleanupFunc is None:
+            cleanupFunc = lambda x: []
         assert(isinstance(cmpFunc, (partial, FunctionType)))
         assert(isinstance(eqFunc, (partial, FunctionType)))
         
         self.nodes = []
-        self.values = []
         self.root = None
         self.cmpFunc = cmpFunc
         self.eqFunc = eqFunc
+        self.cleanupFunc = cleanupFunc
 
     #------------------------------
     # def Basic Access
@@ -52,20 +54,20 @@ class RBTree:
         """ Get the min value of the tree """
         if self.root is None:
             return None
-        return self.root.getMin()
+        return self.root.min()
 
     def max(self):
         """ Get the max value of the tree """
         if self.root is None:
             return None
-        return self.root.getMax()
+        return self.root.max()
 
     def get_chain(self):
         """ Get the sequence of leaf values, from left to right """
         if self.root is None:
             return []
         chain = []
-        current = self.root.getMin()
+        current = self.root.min()
         while current is not None:
             chain.append(current)
             current = current.getSuccessor()
@@ -104,8 +106,7 @@ class RBTree:
             cmpFunc = self.cmpFunc
         if eqFunc is None:
             eqFunc = self.eqFunc
-
-        parent = None
+        parent = self.root
         current = self.root
         comp = Directions.CENTRE
         while current is not None and not eqFunc(current,value, cmpData):
@@ -133,28 +134,34 @@ class RBTree:
         function signature:  f(value, funcData)
         """
         assert(isinstance(func, (FunctionType, partial)))
-        for v in self.values:
-            func(v, funcData)
+        for node in self.nodes:
+            func(node.value, funcData)
     
     def insert(self,*args, data=None, cmpData=None):
         nodes = []
         for x in args:
             newNode = self.__insert(x, data=data, cmpData=cmpData)
-            nodes.append(nodes)
+            nodes.append(newNode)
         return nodes
 
-    def delete(self, *args):
+    def delete(self, *args, cleanupFunc=None):
         """ Delete a value from the tree """
-        for node in args:
-            assert(isinstance(node, Node))
-            assert(node.value in self.values)
-            rbTreeDelete(self,node)
-            self.values.remove(node.value)
-            self.nodes.remove(node)
+        if cleanupFunc is None:
+            cleanupFunc = self.cleanupFunc
+        toRemove = set(args)
+        while bool(toRemove):
+            target = toRemove.pop()
+            assert(isinstance(target, Node))
+            if target not in self.nodes:
+                continue
+            toRemove.update(cleanupFunc(target))
+            rbTreeDelete(self,target)
+            self.nodes.remove(target)
 
     def delete_value(self,value):
         node,direction = self.search(value)
-        self.delete(node)
+        if node is not None:
+            self.delete(node)
             
     #------------------------------
     # def Private Update
@@ -163,19 +170,15 @@ class RBTree:
         """ Insert a value into the tree """
         parent, direction = self.search(value, closest=True, cmpData=cmpData)
         if direction is Directions.LEFT:
-            return self.__insert_predecessor(parent, value, data=data)
+            return self.insert_predecessor(parent, value, data=data)
         else:
-            return self.__insert_successor(parent, value, data=data)
+            return self.insert_successor(parent, value, data=data)
 
 
-    def __insert_successor(self,existing_node,newValue, data=None):
+    def insert_successor(self,existing_node,newValue, data=None):
         assert(existing_node is None or isinstance(existing_node, Node))
         new_node = Node(newValue, data=data)
-        self.values.append(newValue)
         self.nodes.append(new_node)
-        if existing_node is None:
-            existing_node = self.root
-            
         if existing_node is None:
             self.root = new_node
         else:
@@ -183,14 +186,10 @@ class RBTree:
         self.__balance(new_node)
         return new_node
 
-    def __insert_predecessor(self,existing_node,newValue, data=None):
+    def insert_predecessor(self,existing_node,newValue, data=None):
         assert(existing_node is None or isinstance(existing_node, Node))
         new_node = Node(newValue, data=data)
-        self.values.append(newValue)
         self.nodes.append(new_node)
-        if existing_node == None :
-            existing_node = self.root
-            
         if existing_node == None:
             self.root = new_node
         else:
@@ -199,7 +198,7 @@ class RBTree:
         return new_node
 
     def __balance(self, node):
-        assert(node is None or isinstance(node, Node))
+        assert(isinstance(node, Node))
         rbtreeFixup(self, node)
     
     #------------------------------
@@ -241,11 +240,6 @@ class RBTree:
     def insert_many(self, *values):
         raise Exception("Deprecated: use insert")
 
-    def insert_predecessor(self):
-        raise Exception("Deprecated: use __insert_predecessor")
-
-    def insert_successor(self):
-        raise Exception("Deprecated: use __insert_successor")
 
     def debug_chain(self):
         raise Exception("Deprecated")
