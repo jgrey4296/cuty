@@ -1,5 +1,8 @@
 from enum import Enum
+import math
 import logging as root_logger
+import IPython
+import numpy as np
 logging = root_logger.getLogger(__name__)
 
 Directions = Enum('Directions', 'LEFT RIGHT CENTRE')
@@ -26,16 +29,19 @@ def default_equality(a, b, eqData):
     """ Standard Equality test """
     return a.value == b
 
+def arc_equality(a, b, eqData):
+    return False
+
 def arc_comparison(a, b, compData):
-    """ Function to compare two arcs. 
+    """ Function to compare an arc and xposition
     Used in Beachline/Voronoi """
-    pred = a.get_predecessor()
-    succ = a.get_successor()
+    pred = a.getPredecessor()
+    succ = a.getSuccessor()
     logging.debug("Pred: {}, Succ: {}".format(pred,succ))
     pred_intersect = None
     succ_intersect = None
     the_range = [-math.inf,math.inf]
-    if pred == NilNode and succ == NilNode: #Base case: single arc
+    if pred == None and succ == None: #Base case: single arc
         logging.debug("Single Arc: {}".format(a.value))
         if b < a.value.fx:
             return Directions.LEFT
@@ -45,7 +51,7 @@ def arc_comparison(a, b, compData):
     pred_self = Directions.CENTRE
     self_succ = Directions.CENTRE
             
-    if pred != NilNode:
+    if pred != None:
         pred_intersect = a.value.intersect(pred.value)
         pred_int = pred_intersect.astype(dtype=np.int)
         pred_above_self = a.value.fy < pred.value.fy
@@ -65,7 +71,7 @@ def arc_comparison(a, b, compData):
                 if b < pred_intersect[1,0]:
                     pred_self = Directions.LEFT
                 
-    if succ != NilNode:
+    if succ != None:
         succ_intersect = succ.value.intersect(a.value)
         succ_int = succ_intersect.astype(dtype=np.int)
         succ_above_self = a.value.fy < succ.value.fy
