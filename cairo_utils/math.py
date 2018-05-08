@@ -592,3 +592,12 @@ def within_bbox(point, bbox, tolerance=TOLERANCE):
     inYBounds = bbox[1] < point[1] and point[1] < bbox[3]
     return inXBounds and inYBounds
 
+def bbox_centre(bbox):
+    assert(isinstance(bbox, np.ndarray))
+    assert(bbox.shape == (4,))
+    bbox_t = bbox.reshape((2,2)).transpose()
+    mins = bbox_t[:,0]
+    maxs = bbox_t[:,1]
+    ranges = maxs - mins
+    midPoint = ranges * 0.5
+    return midPoint
