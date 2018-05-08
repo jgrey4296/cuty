@@ -1,6 +1,7 @@
 import logging as root_logger
 from .Node import Node
 from .ComparisonFunctions import Directions
+import IPython
 
 logging = root_logger.getLogger(__name__)
 
@@ -10,50 +11,20 @@ def rotateLeft(tree,node):
     """ Rotate the given node left, making the new head be node.right """
     logging.debug("Rotating Left: {}".format(node))
     assert(isinstance(node,Node))
-    if node.right is None:
-        return #early exit if rotating is unnecessary
-    newHead = node.right #Get the right subtree
-    originalParent = node.parent
-    #left subtree becomes the right subtree:
-    node.right = newHead.left
-    if node.right is not None:
-        node.right.parent = node
-    #move the original node to the left
-    newHead.left = node
-    newHead.left.parent = newHead
-    if originalParent is None:            #update the root of the tree
-        newHead.parent is None
-        if tree:
-            tree.root = newHead
-    elif node == originalParent.left:  #update the parent's left subtree
-        originalParent.left = newHead
-        newHead.parent = originalParent
-    else:
-        originalParent.right = newHead
-        newHead.parent = originalParent
+    assert(node.right is not None)
+    setAsRoot, newHead = node.rotate_left()
+    if setAsRoot:
+        tree.root = newHead
     return newHead
 
 def rotateRight(tree,node):
     """ Rotate the given node right, making the new head be node.left """
     logging.debug("Rotating Right: {}".format(node))
     assert(isinstance(node, Node))
-    newHead = node.left
-    originalParent = node.parent
-    node.left = newHead.right
-    if node.left != None:
-        node.left.parent = node
-    newHead.right = node
-    newHead.right.parent = newHead    
-    if originalParent == None:
-        newHead.parent = None
-        if tree:
-            tree.root = newHead
-    elif node == originalParent.left:
-        originalParent.left = newHead
-        newHead.parent = originalParent
-    else:
-        originalParent.right = newHead
-        newHead.parent = originalParent
+    assert(node.left is not None)
+    setAsRoot, newHead = node.rotate_right()
+    if setAsRoot:
+        tree.root = newHead
     return newHead
         
 def rbtreeFixup(tree,node):
@@ -93,107 +64,106 @@ def rbtreeFixup(tree,node):
                 rotateLeft(tree,node.parent.parent)
     tree.root.red = False
 
-def transplant(tree,u,v):
-    """ Transplant the node v, and its subtree, in place of node u """
-    logging.debug("Transplanting {} into {}".format(v,u))
-    if u.parent == None:
-        logging.debug("Setting root to {}".format(v))
-        tree.root = v
-        v.parent = None
-    elif u == u.parent.left:
+def transplant(tree,target,replacement):
+    """ Transplant the node replacement, and its subtree, 
+    in place of node target """
+    #logging.debug("Transplanting {} into {}".format(replacement,target))
+    if target.parent == None:
+        logging.debug("Setting root to {}".format(replacement.id))
+        tree.root = replacement
+    elif target.parent.on_left(target):
         logging.debug("Transplant linking left")
-        parent = u.parent
-        u.parent.link_left(v)
+        parent = target.parent
+        target.disconnect_from_parent()
+        parent.link_left(replacement)
     else:
         logging.debug("Transplant linking right")
-        parent = u.parent
-        u.parent.link_right(v)
+        parent = target.parent
+        target.disconnect_from_parent()
+        parent.link_right(replacement)
 
 
-def rbTreeDelete(tree,z):
-    y = z
-    orig_pred = z.getPredecessor()
-    orig_succ = z.getSuccessor()
-    orig_parent = z.parent
-    y_originally_red = y.red
-    x = None
-    if z.left == None:
+def rbTreeDelete(tree,node):
+    target = node 
+    target_originally_red = target.red
+    current = None
+    logging.debug("Deleting Node: {}".format(node))
+    if target.left is None:
         logging.debug("No left, transplanting right")
-        x = z.right
-        transplant(tree,z,z.right)
-    elif z.right == None:
+        current = target.right
+        transplant(tree,target,target.right)
+    elif target.right is None:
         logging.debug("No right, transplanting left")
-        x = z.left
-        transplant(tree,z,z.left)
+        current = target.left
+        transplant(tree,target,target.left)
     else:
         logging.debug("Both Left and right exist")
-        y = z.right.getMin()
-        y_originally_red = y.red
-        x = y.right
-        if y.parent == z:
-            logging.debug("y.parent == z")
-            x.parent = y
+        target = target.right.min()
+        target_originally_red = target.red
+        current = target.right
+        if target.parent == node:
+            if current != None:
+                logging.debug("target.parent == node")
+                current.parent = target
         else:
-            logging.debug("y.parent != z")
-            transplant(tree,y,y.right)
-            y.link_right(z.right)
-        transplant(tree,z,y)
-        y.link_left(z.left)
-        y.red = z.red
-    if not y_originally_red:
-        logging.debug("Fixingup up x: {}".format(x))
-        rbDeleteFixup(tree,x)
-    #collapse when two nodes are the same
-    if orig_pred != None and orig_succ != None and orig_pred.value == orig_succ.value:
-        logging.debug("Collapsing with successor {}".format(orig_succ))
-        tree.delete_node(orig_succ)
-    logging.debug("Finished deletion")
+            logging.debug("target.parent != node")
+            transplant(tree,target,target.right)
+            target.link_right(node.right)
+
+        transplant(tree,node,target)
+        target.link_left(node.left)
+        target.red = node.red
+        
+    if not target_originally_red:
+        logging.debug("Fixing up current: {}".format(current))
+        rbDeleteFixup(tree,current)
     
-def rbDeleteFixup(tree,x):
-    while x != tree.root and not x.red:
-        if x == x.parent.left:
-            w = x.parent.right
+def rbDeleteFixup(tree,node):
+    assert(node is not None)
+    while node != tree.root and node is not None and not node.red:
+        if node.parent.on_left(node):
+            w = node.parent.right
             if w.red:
                 w.red = False
-                x.parent.red = True
-                rotateLeft(tree,x.parent)
-                w = x.parent.right
+                node.parent.red = True
+                rotateLeft(tree,node.parent)
+                w = node.parent.right
             if not w.left.red and not w.right.red:
                 w.red = True
-                x = x.parent
+                node = node.parent
             else:
                 if not w.right.red:
                     w.left.red = False
                     w.red = True
                     rotateRight(tree,w)
-                    w = x.parent.right
-                w.red = x.parent.red
-                x.parent.red = False
+                    w = node.parent.right
+                w.red = node.parent.red
+                node.parent.red = False
                 w.right.red = False
-                rotateLeft(tree,x.parent)
-                x = tree.root
+                rotateLeft(tree,node.parent)
+                node = tree.root
         else: #mirror for right
-            w = x.parent.left
+            w = node.parent.left
             if w.red:
                 w.red = False
-                x.parent.red = True
-                rotateRight(tree,x.parent)
-                w = x.parent.left
+                node.parent.red = True
+                rotateRight(tree,node.parent)
+                w = node.parent.left
             if not w.right.red and not w.left.red:
                 w.red = True
-                x = x.parent
+                node = node.parent
             else:
                 if not w.left.red:
                     w.right.red = False
                     w.red = True
                     rotateLeft(tree,w)
-                    w = x.parent.left
-                w.red = x.parent.red
-                x.parent.red = False
+                    w = node.parent.left
+                w.red = node.parent.red
+                node.parent.red = False
                 w.left.red = False
-                rotateRight(tree,x.parent)
-                x = tree.root
-    x.red = False
+                rotateRight(tree,node.parent)
+                node = tree.root
+        node.red = False
  
 
 
