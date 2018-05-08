@@ -23,6 +23,7 @@ quadratic:
 
 rbtree:
 	python -m unittest test_rbtree.py -v
+	python -m unittest test_rbtree_node.py -v
 
 tree:
 	python -m unittest test_tree.py -v
