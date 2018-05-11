@@ -1,12 +1,9 @@
 #to enable custom logging, switch to python main_tests.py
-all: main math quadratic parabola tree dcel rbtree beachline
+all: main math quadratic parabola tree dcel rbtree
 
 main:
 	python -m unittest main_tests.py -v
 
-
-beachline:
-	python -m unittest test_beachline.py -v
 
 dcel:
 	-rm dcel_actual_save_test.dcel
