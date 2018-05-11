@@ -41,11 +41,12 @@ class Node:
         if other is None:
             return False
         return self.id == other.id
-    
+
     def __repr__(self):
         if self.value is not None and hasattr(self.value, "id"):
             return "({}_{})".format(ascii_uppercase[self.value.id % 26], int(self.value.id/26))
-
+        else:
+            return "({})".format(self.value)
         
 
     def getBlackHeight(self,parent=None):
@@ -72,7 +73,7 @@ class Node:
     def getPredecessor(self):
         if self.left is not None:
             return self.left.max()
-        if self.parent is not None and self.parent.right == self:
+        if self.parent is not None and not self.parent.on_left(self):
             return self.parent
         prev = self
         current = self.parent
@@ -90,7 +91,7 @@ class Node:
     def getSuccessor(self):
         if self.right is not None:
             return self.right.min()
-        if self.parent is not None and self.parent.left == self:
+        if self.parent is not None and self.parent.on_left(self):
             return self.parent
         prev = self
         current = self.parent
@@ -184,7 +185,7 @@ class Node:
     def disconnect_from_parent(self):
         parent = self.parent
         if self.parent != None:
-            if self.parent.left == self:
+            if self.parent.on_left(self):
                 self.parent.left = None
             else:
                 self.parent.right = None
@@ -226,7 +227,7 @@ class Node:
             setAsRoot = False
             originally_on_left = self.parent.on_left(self)
             orig_parent = self.parent
-            self.disconnect_from_parent()
+            newRight.disconnect_from_parent()
         newHead.disconnect_from_parent()
         if newLeft is not None:
             newLeft.disconnect_from_parent()
@@ -251,7 +252,7 @@ class Node:
             setAsRoot = False
             originally_on_left = self.parent.on_left(self)
             orig_parent = self.parent
-            self.disconnect_from_parent()
+            newLeft.disconnect_from_parent()
         newHead.disconnect_from_parent()
         if newRight is not None:
             newRight.disconnect_from_parent()
