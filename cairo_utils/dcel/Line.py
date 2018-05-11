@@ -132,7 +132,7 @@ class Line:
                 yprime = 0
             return np.array([x, yprime])
         elif y is not None:
-            if self.m is not None:
+            if self.m is not None and self.m != 0:
                 xprime = (y / self.m) - self.b
             else:
                 xprime = 0
