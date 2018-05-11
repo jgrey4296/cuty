@@ -406,22 +406,35 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         e3 = self.dc.createEdge(np.array([0.5,0.9]), np.array([0.5,-0.9]))
         #intersect
         results = self.dc.intersect_halfEdges()
-        #IPython.embed(simple_prompt=True)
-        #verify starts
-
-        #verify ends
-
-        #verify contains
-        
-
+        #first intersection
+        self.assertTrue(e2.twin in results[0].contain)
+        self.assertTrue(e3 in results[0].contain)
+        #second intersection:
+        self.assertTrue(e1 in results[1].contain)
+        self.assertTrue(e3 in results[1].contain)
+        #Start-end match:
+        self.assertTrue(e2.twin in results[2].end)
+        self.assertTrue(e1 in results[2].end)
         
         
     def test_intersect_halfedges_no_intersections(self):
-        return 
-
+        #create
+        e1 = self.dc.createEdge(np.array([0,0]), np.array([1,0]))
+        e2 = self.dc.createEdge(np.array([0,1]), np.array([1,2]))
+        e3 = self.dc.createEdge(np.array([-2,0]), np.array([0,4]))
+        #intersect
+        results = self.dc.intersect_halfEdges()
+        #verify
+        self.assertEqual(len(results), 0)
         
     def test_intersect_halfedges_endpoints(self):
-        return        
+        e1 = self.dc.createEdge(np.array([0,0]), np.array([1,0]))
+        e2 = self.dc.createEdge(np.array([1,0]), np.array([1,1]))
+        e3 = self.dc.createEdge(np.array([1,1]), np.array([0,0]))
+        results = self.dc.intersect_halfEdges()
+        self.assertEqual(len(results), 3)
+
+        
         
         
 if __name__ == "__main__":
