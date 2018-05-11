@@ -120,8 +120,13 @@ class RBTree:
                 break
 
         if closest and current is None:
+            #closest non-exact match found
             return (parent, comp)
+        elif current is None:
+            #nothing found
+            return (None, None)
         else:
+            #exact match found
             return (current, comp)
     
     
@@ -158,10 +163,12 @@ class RBTree:
             rbTreeDelete(self,target)
             self.nodes.remove(target)
 
-    def delete_value(self,value):
-        node,direction = self.search(value)
-        if node is not None:
-            self.delete(node)
+    def delete_value(self,*args, cmpFunc=None, eqFunc=None, cleanupFunc=None,
+                     cmpData=None):
+        for val in args:
+            node,direction = self.search(val, cmpFunc=cmpFunc, eqFunc=eqFunc, cmpData=cmpData)
+            if node is not None:
+                self.delete(node, cleanupFunc=cleanupFunc)
             
     #------------------------------
     # def Private Update
