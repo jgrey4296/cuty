@@ -588,7 +588,7 @@ class DCEL(object):
     # def Utilities
     #------------------------------
 
-    def intersect_halfedges(self, edgeSet=None):
+    def intersect_halfEdges(self, edgeSet=None):
         """ run a sweep line over the dcel, 
         getting back halfedge intersections """
         return LineIntersector(edgeSet=edgeSet, dcel=self)
