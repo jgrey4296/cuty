@@ -107,7 +107,7 @@ class RBTree_Tests(unittest.TestCase):
         n1.add_left(n2)
         self.assertEqual(n1.getPredecessor(), n2)
 
-    def test_get_predcessor_basic_2(self):
+    def test_get_predecessor_basic_2(self):
         n1 = Node(2)
         n2 = Node(3)
         n1.add_right(n2)
@@ -203,32 +203,38 @@ class RBTree_Tests(unittest.TestCase):
         self.assertFalse(n1.on_left(n3))
 
     def test_rotate_right(self):
+        n0 = Node(1)
         n1 = Node(2)
         n2 = Node(3)
         n3 = Node(4)
         n4 = Node(5)
+        n0.add_left(n1)
         n1.add_left(n2)
         n1.add_right(n3)
         n2.add_right(n4)
         setAsRoot, newHead = n1.rotate_right()
-        self.assertTrue(setAsRoot)
+        #self.assertTrue(setAsRoot)
         self.assertEqual(newHead, n2)
         self.assertEqual(n1.left, n4)
         self.assertEqual(n4.parent, n1)
+        self.assertEqual(n0.left, newHead)
 
     def test_rotate_left(self):
+        n0 = Node(1)
         n1 = Node(2)
         n2 = Node(3)
         n3 = Node(4)
         n4 = Node(5)
+        n0.add_right(n1)
         n1.add_left(n2)
         n1.add_right(n3)
         n3.add_left(n4)
         setAsRoot, newHead = n1.rotate_left()
-        self.assertTrue(setAsRoot)
+        #self.assertTrue(setAsRoot)
         self.assertEqual(newHead, n3)
         self.assertEqual(n1.right, n4)
         self.assertEqual(n4.parent, n1)
+        self.assertEqual(n0.right, newHead)
         
     def test_get_pred_succ_while_no_condition(self):
         n1 = Node(2)
