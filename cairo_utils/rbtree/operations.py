@@ -68,8 +68,11 @@ def transplant(tree,target,replacement):
     """ Transplant the node replacement, and its subtree, 
     in place of node target """
     #logging.debug("Transplanting {} into {}".format(replacement,target))
+    if replacement is not None:
+        replacement.disconnect_from_parent()
+
     if target.parent == None:
-        logging.debug("Setting root to {}".format(replacement.id))
+        logging.debug("Setting root to {}".format(replacement))
         tree.root = replacement
     elif target.parent.on_left(target):
         logging.debug("Transplant linking left")
@@ -104,6 +107,7 @@ def rbTreeDelete(tree,node):
         if target.parent == node:
             if current != None:
                 logging.debug("target.parent == node")
+                target.disconnect_from_parent()
                 current.parent = target
         else:
             logging.debug("target.parent != node")
@@ -119,20 +123,20 @@ def rbTreeDelete(tree,node):
         rbDeleteFixup(tree,current)
     
 def rbDeleteFixup(tree,node):
-    assert(node is not None)
     while node != tree.root and node is not None and not node.red:
         if node.parent.on_left(node):
             w = node.parent.right
-            if w.red:
+            if w is not None and w.red:
                 w.red = False
                 node.parent.red = True
                 rotateLeft(tree,node.parent)
                 w = node.parent.right
-            if not w.left.red and not w.right.red:
+            if w is not None and (w.left is None or not w.left.red) and \
+               (w.right is None or not w.right.red):
                 w.red = True
                 node = node.parent
-            else:
-                if not w.right.red:
+            elif w is not None:
+                if w.right is None or not w.right.red:
                     w.left.red = False
                     w.red = True
                     rotateRight(tree,w)
@@ -144,16 +148,17 @@ def rbDeleteFixup(tree,node):
                 node = tree.root
         else: #mirror for right
             w = node.parent.left
-            if w.red:
+            if w is not None and w.red:
                 w.red = False
                 node.parent.red = True
                 rotateRight(tree,node.parent)
                 w = node.parent.left
-            if not w.right.red and not w.left.red:
+            if w is not None and (w.left is None or not w.left.red) and \
+               (w.right is None or not w.right.red):
                 w.red = True
                 node = node.parent
-            else:
-                if not w.left.red:
+            elif w is not None:
+                if w.left is None or not w.left.red:
                     w.right.red = False
                     w.red = True
                     rotateLeft(tree,w)
@@ -164,6 +169,8 @@ def rbDeleteFixup(tree,node):
                 rotateRight(tree,node.parent)
                 node = tree.root
         node.red = False
+        if w is None:
+            node = None
  
 
 
