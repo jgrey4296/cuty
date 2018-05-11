@@ -399,8 +399,29 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertTrue(all([x.getLength_sq() <= (pow(2,2)) for x in self.dc.halfEdges]))
         self.assertEqual(len(self.dc.halfEdges), 8 * 2)
 
-    def test_intersect_halfedges(self):
-        self.assertTrue(False)
+    def test_intersect_halfedges_simple(self):
+        #create some edges
+        e1 = self.dc.createEdge(np.array([0,0]),np.array([1,0]))
+        e2 = self.dc.createEdge(np.array([1,0]),np.array([0,1]))
+        e3 = self.dc.createEdge(np.array([0.5,0.9]), np.array([0.5,-0.9]))
+        #intersect
+        results = self.dc.intersect_halfEdges()
+        #IPython.embed(simple_prompt=True)
+        #verify starts
+
+        #verify ends
+
+        #verify contains
+        
+
+        
+        
+    def test_intersect_halfedges_no_intersections(self):
+        return 
+
+        
+    def test_intersect_halfedges_endpoints(self):
+        return        
         
         
 if __name__ == "__main__":
