@@ -514,6 +514,10 @@ class HalfEdge:
         verts = self.getVertices()
         return verts[0] < verts[1]
 
+    def isFlat(self):
+        arr = self.toArray()
+        return arr[0,1] == arr[1,1]
+    
     def contains_vertex(self, vert):
         assert(isinstance(vert, Vertex))
         verts = self.getVertices()
