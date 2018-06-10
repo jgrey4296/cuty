@@ -70,13 +70,48 @@ class Line:
         ys = (nline[:,1] * np.invert(ys_min + ys_max)) + (min_y * ys_min) + (max_y * ys_max)
         return np.column_stack((xs,ys))
         
+    def subdivide(self, s):
+        assert(isinstance(s, int))
+        #plus two
+        subdivisions = np.linspace(0,1,s+2).reshape((-1,1))
+        new_points = self.source + ((subdivisions * self.length) * self.direction)
+        return new_points
 
-    def destination(self):
+    def ratio_subdivide(self, ss, srange=None):
+        """ subdivides a line by a set of ratios that sum to 1 """
+        assert(isinstance(ss, np.ndarray))
+        assert(0.99 <= ss.sum() < 1.1)
+        if srange is None:
+            srange = (0,1)
+        assert(isinstance(srange, tuple))
+        assert(srange[0] <= srange[1])
+        
+        new_points = np.array([self.source])
+        current_r = 0.0
+        ratios = list(ss[0])
+        while bool(ratios):
+            r = ratios.pop(0)
+            if srange[1] < r:
+                ratios.append(r - srange[1])
+                r = srange[1]
+            current_r += r
+            if bool(ratios) and r <= srange[0]:
+                continue
+            if not bool(ratios) and current_r != 1:
+                current_r = 1                
+            new_points = np.row_stack((new_points,
+                                       self.source + ((current_r * self.length) * self.direction)))
+        
+        return new_points
+        
+    
+    def destination(self, l=None, r=None):
         """ Calculate the destination vector of the line """
-        return self.source + (self.length * self.direction)
-        # ex = self.source[0] + (self.length * self.direction[0])
-        # ey = self.source[1] + (self.length * self.direction[1])
-        # return np.array([ex, ey])
+        if r is not None:
+            l = self.length * r
+        if l is None:
+            l = self.length
+        return self.source + (l * self.direction)
 
     def bounds(self):
         if self.swapped:
@@ -108,13 +143,6 @@ class Line:
         result = self.source + (np.array([[t],[t2]]) * self.direction)
         return result
 
-    def __lt__(self, other):
-        #TODO
-        return False
-
-    def __gt__(self, other):
-        #TODO
-        return False
 
     def intersect(self, other):
         #TODO
