@@ -7,7 +7,7 @@ from .make_gif import Make_Gif
 
 from . import drawing
 from . import math
-
+from . import easings
 
 _author = "jgrey"
 _version = "0.1.3"
