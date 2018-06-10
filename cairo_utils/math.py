@@ -4,6 +4,7 @@ from functools import partial
 import logging as root_logger
 import IPython
 from scipy.interpolate import splprep, splev
+from types import FunctionType
 import numpy as np
 import numpy.random
 import random
@@ -104,21 +105,44 @@ def createLine(x, y, ex, ey, t):
     line = sampleAlongLine(x, y, ex, ey, lin)
     return line
 
-def bezier1cp(start, cp, end, t):
-    """ Given the start, end, and a control point, create t number of points along that bezier """
-    assert(hasattr(start, '__len__'))
-    assert(hasattr(cp, '__len__'))
-    assert(hasattr(end, '__len__'))
-    samplePoints = np.linspace(0, 1, t)
+def bezier1cp(start, cp, end, t, f=None, p=None):
+    """ Given the start, end, and a control point, create t number of points along that bezier
+    t : the number of points to linearly create used to sample along the bezier
+    f : a transform function for the sample points prior to calculate bezier
+    p : an overriding set of arbitrary sample points for calculate bezier
+    """
+    assert(isinstance(start, np.ndarray))
+    assert(isinstance(cp, np.ndarray))
+    assert(isinstance(end, np.ndarray))
+    if p is not None:
+        assert(isinstance(p, np.ndarray))
+        samplePoints = p
+    else:
+        samplePoints = np.linspace(0, 1, t)
+        if f is not None:    
+            assert(isinstance(f, FunctionType))
+            #f is an easing lookup function
+            samplePoints = f(t)
     line1 = createLine(*start, *cp, t)
     line2 = createLine(*cp, *end, t)
     out = sampleAlongLine(line1[:, 0], line1[:, 1], line2[:, 0], line2[:, 1], samplePoints)
     return out
 
-def bezier2cp(start, cp1, cp2, end, t):
-    """ Given a start, end, and two control points along the way, create t number of points along that bezier """
-    assert(all([hasattr(a, '__len__') for a in [start, cp1, cp2, end]]))
-    samplePoints = np.linspace(0, 1, t)
+def bezier2cp(start, cp1, cp2, end, t, f=None, p=None):
+    """ Given a start, end, and two control points along the way, create t number of points along that bezier
+    t : The number of points to sample linearly
+    f : the transform function for the linear sampling
+    p : arbitrary points to use for sampling instead    
+    """
+    assert(all([isinstance(a, np.ndarray) for a in [start, cp1, cp2, end]]))
+    if p is not None:
+        assert(isinstance(p, np.ndarray))
+        samplePoints = p
+    else:
+        samplePoints = np.linspace(0, 1, t)
+        if f is not None:
+            assert(isinstance(f, FunctionType))
+            samplePoints = f(samplePoints)
     line1 = createLine(*start, *cp1, t)
     line2 = createLine(*cp1, *cp2, t)
     line3 = createLine(*cp2, *end, t)
@@ -128,11 +152,13 @@ def bezier2cp(start, cp1, cp2, end, t):
                                          line2[:, 0],
                                          line2[:, 1],
                                          samplePoints)
+
     cp2e_interpolation = sampleAlongLine(line2[:, 0],
                                          line2[:, 1],
                                          line3[:, 0],
                                          line3[:, 1],
                                          samplePoints)
+
     out = sampleAlongLine(s2cp_interpolation[:, 0],
                           s2cp_interpolation[:, 1],
                           cp2e_interpolation[:, 0],
@@ -166,9 +192,6 @@ def get_distance_xyxy(x1,y1,x2,y2):
     return get_distance_raw(np.array([x1,y1]),np.array([x2,y2]))[0]
 
 
-def get_normal(p1, p2):
-    """ Get the normalized direction from two points """
-    raise Exception("Misnamed: Use get_unit_vector")
 
 def get_unit_vector(p1, p2):    
     assert(isinstance(p1, np.ndarray))
@@ -601,3 +624,12 @@ def bbox_centre(bbox):
     ranges = maxs - mins
     midPoint = ranges * 0.5
     return midPoint
+
+#------------------------------
+# def DEPRECATED
+#------------------------------
+
+
+def get_normal(p1, p2):
+    """ Get the normalized direction from two points """
+    raise Exception("Deprecated: Use get_unit_vector")
