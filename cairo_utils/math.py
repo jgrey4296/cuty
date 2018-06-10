@@ -4,7 +4,6 @@ from functools import partial
 import logging as root_logger
 import IPython
 from scipy.interpolate import splprep, splev
-from types import FunctionType
 import numpy as np
 import numpy.random
 import random
@@ -120,7 +119,7 @@ def bezier1cp(start, cp, end, t, f=None, p=None):
     else:
         samplePoints = np.linspace(0, 1, t)
         if f is not None:    
-            assert(isinstance(f, FunctionType))
+            assert(callable(f))
             #f is an easing lookup function
             samplePoints = f(t)
     line1 = createLine(*start, *cp, t)
@@ -141,7 +140,7 @@ def bezier2cp(start, cp1, cp2, end, t, f=None, p=None):
     else:
         samplePoints = np.linspace(0, 1, t)
         if f is not None:
-            assert(isinstance(f, FunctionType))
+            assert(callable(f))
             samplePoints = f(samplePoints)
     line1 = createLine(*start, *cp1, t)
     line2 = createLine(*cp1, *cp2, t)
