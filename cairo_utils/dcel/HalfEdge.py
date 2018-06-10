@@ -5,12 +5,14 @@ from math import pi, atan2, copysign, degrees
 import numpy as np
 import IPython
 from itertools import islice, cycle
-from ..math import inCircle, get_distance, intersect, sampleAlongLine, get_unit_vector, extend_line, rotatePoint, is_point_on_line, get_distance_raw, bbox_to_lines
-from ..constants import TWOPI, IntersectEnum, EPSILON, TOLERANCE
-from .constants import EditE, EDGE_FOLLOW_GUARD
+from ..math import inCircle, get_distance, intersect, sampleAlongLine, get_unit_vector, extend_line, rotatePoint, is_point_on_line, get_distance_raw, bbox_to_lines, get_midpoint
+from ..constants import TWOPI, IntersectEnum, EPSILON, TOLERANCE, START, END, SMALL_RADIUS, FACE, EDGE, VERTEX, WIDTH
+from ..drawing import drawRect, drawCircle, clear_canvas, drawText
+from .constants import EditE, EDGE_FOLLOW_GUARD, EdgeE, SampleFormE
 from .Vertex import Vertex
 from .Line import Line
-
+from .Drawable import Drawable
+from .sample_specs import SampleSpec
 
 logging = root_logger.getLogger(__name__)
 
@@ -19,7 +21,7 @@ TWOPI = 2 * PI
 HALFPI = PI * 0.5
 QPI = PI * 0.5
 
-class HalfEdge:
+class HalfEdge(Drawable):
     """ A Canonical Half-Edge. Has an origin point, and a twin
     	half-edge for its end point,
         Auto-maintains counter-clockwise vertex order with it's twin.
@@ -107,7 +109,10 @@ class HalfEdge:
             nextHE = self.next.index
         if self.prev is not None:
             prevHE = self.prev.index
+        enumData = {a.name:b for a,b in self.data.items() if a in EdgeE}
+        nonEnumData = {a:b for a,b in self.data.items() if a not in EdgeE}
 
+            
         return {
             'i' : self.index,
             'origin' : origin,
@@ -115,7 +120,8 @@ class HalfEdge:
             'face' : face,
             'next' : nextHE,
             'prev' : prevHE,
-            'data' : self.data
+            "enumData" : enumData,
+            "nonEnumData": nonEnumData
         }
 
     #------------------------------
@@ -147,6 +153,110 @@ class HalfEdge:
         data = (self.index, f, origin, twin, p, n, coords)
         return "(HE: {}, f: {}, O: {}, T: {}, P: {}, N: {}, XY: {})".format(*data)
 
+    def draw(self, ctx, data_override=None, clear=False, text=False, width=None):
+        logging.info("Drawing Edge: {} | {}".format(self.index, self.twin.index))
+        if clear:
+            clear_canvas(ctx)
+        data = self.data.copy()
+        if data_override is not None:
+            assert(isinstance(data_override, dict))
+            data.update(data_override)
+
+        #defaults
+        colour = EDGE
+        startEndPoints = False
+        startCol = START
+        endCol = END
+        startRad = width
+        endRad = width
+        writeText = "HE:{}.{}".format(self.index, self.twin.index)
+        bezier = False
+        bezier_simp = False
+        sampleDescr = None
+        
+        #retrieve custom values
+        if EdgeE.WIDTH in data:
+            width = data[EdgeE.WIDTH]
+            startRad = width
+            endRad = width
+        if EdgeE.STROKE in data:
+            colour = data[EdgeE.STROKE]
+        if EdgeE.START in data and isinstance(data[EdgeE.START], (list, np.ndarray)):
+            startCol = data[EdgeE.START]
+        if EdgeE.END in data and isinstance(data[EdgeE.END], (list, np.ndarray)):
+            endCol = data[EdgeE.END]
+        if EdgeE.START in data and EdgeE.END in data:
+            startEndPoints = True
+        if EdgeE.STARTRAD in data:
+            startRad = data[EdgeE.STARTRAD]
+        if EdgeE.ENDRAD in data:
+            endRad = data[EdgeE.ENDRAD]
+        if EdgeE.TEXT in data:
+            text = True
+            if isinstance(data[EdgeE.TEXT], str):
+                writeText = data[EdgeE.TEXT]
+        if EdgeE.BEZIER in data:
+            bezier = data[EdgeE.BEZIER]
+            assert(isinstance(bezier,tuple))
+        if EdgeE.BEZIER_SIMPLIFY in data:
+            bezier_simp = True
+        if EdgeE.SAMPLE in data:
+            sampleDescr = data[EdgeE.SAMPLE]
+            assert(isinstance(sampleDescr, SampleSpec))
+
+        #Get Start and end points
+        v1, v2 = self.getVertices()
+        if v1 is None or v2 is None:
+            #early exit if line is not completed
+            return
+        centre = get_midpoint(v1.toArray(), v2.toArray())
+        logging.debug("Drawing HalfEdge {} : {}, {} - {}, {}".format(self.index,
+                                                                     v1.loc[0],
+                                                                     v1.loc[1],
+                                                                     v2.loc[0],
+                                                                     v2.loc[1]))
+        sample_data = None
+        if sampleDescr is not None:
+            #draw as a sampled line
+            sampleDescr(ctx, self)
+
+        if EdgeE.NULL in data:
+            return 
+
+        ctx.set_line_width(width)
+        ctx.set_source_rgba(*colour)
+        
+        #draw as a line/curve
+        #todo: allow beziers to be simplified to straight lines
+        if bool(bezier):
+            logging.info("Drawing Bezier: {}".format(bezier))
+            cp1, cp2 = bezier
+            if cp2 is None:
+                cp2 = cp1
+                cp1 = v1.loc
+                ctx.new_path()
+            else:
+                ctx.move_to(*v1.loc)
+            if bezier_simp:
+                ctx.line_to(*cp1, *cp2, *v2.loc)
+            else:
+                ctx.curve_to(*cp1, *cp2, *v2.loc)
+        else:
+            logging.info("Drawing Straight Line")
+            ctx.line_to(*v2.loc)
+
+        ctx.stroke()
+    
+        if startEndPoints:
+            ctx.set_source_rgba(*startCol)
+            drawCircle(ctx, *v1.loc, startRad)
+            ctx.set_source_rgba(*endCol)
+            drawCircle(ctx, *v2.loc, endRad)
+
+        if text:
+            drawText(ctx, *centre, writeText)
+
+    
     #------------------------------
     # def Math
     #------------------------------
