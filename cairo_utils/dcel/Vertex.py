@@ -5,13 +5,16 @@ from numbers import Number
 import logging as root_logger
 import numpy as np
 
-from .constants import EditE
+from .constants import EditE, VertE, SampleE, SampleFormE
 from ..math import inCircle, rotatePoint
-from ..constants import TWOPI, D_EPSILON, TOLERANCE
+from ..constants import TWOPI, D_EPSILON, TOLERANCE, VERTEX, VERTRAD
+from ..drawing import drawRect, drawText, clear_canvas, drawCircle
+from .Drawable import Drawable
+from .sample_specs import SampleSpec
 
 logging = root_logger.getLogger(__name__)
 
-class Vertex:
+class Vertex(Drawable):
     """ A Simple vertex for two dimensions.
     Has a pair of coordinates, and stores the edges associated with it. 
     """
@@ -72,12 +75,16 @@ class Vertex:
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
         logging.debug("Exporting Vertex: {}".format(self.index))
+        enumData = {a.name:b for a,b in self.data.items() if a in VertE}
+        nonEnumData = {a:b for a,b in self.data.items() if a not in VertE}
+        
         return {
             'i': self.index,
             'x': self.loc[0],
             'y': self.loc[1],
             'halfEdges' : [x.index for x in self.halfEdges],
-            "data" : self.data,
+            "enumData" : enumData,
+            "nonEnumData": nonEnumData,
             "active" : self.active
         }
 
@@ -248,3 +255,35 @@ class Vertex:
         else:
             self.loc = newLoc
             return (self, EditE.MODIFIED)
+
+    def draw(self, ctx, data_override=None):
+        data = self.data.copy()
+        if data_override is not None:
+            data.update(data_override)
+        
+        vertCol = VERTEX
+        vertRad = VERTRAD
+        sampleDescr = None
+        
+        if VertE.STROKE in data and isinstance(data[VertE.STROKE], (list, np.ndarray)):
+            vertCol = data[VertE.STROKE]
+        if VertE.RADIUS in data:
+            vertRad = data[VertE.RADIUS]
+        if VertE.SAMPLE in data:
+            sampleDescr = data[VertE.SAMPLE]
+            assert(isinstance(sampleDescr, SampleSpec))
+
+        if sampleDescr is not None:
+            #draw as a sampled line
+            sampleDescr(ctx, self)
+            
+        if VertE.NULL in data:
+            return 
+
+        ctx.set_source_rgba(*vertCol)
+        drawCircle(ctx, *self.loc, vertRad)
+
+
+    
+        
+        
