@@ -33,7 +33,7 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
     def test_export_import(self):
         """ Check the exported fieldnames """
         exported = self.e._export()
-        self.assertTrue(all([x in exported for x in ["i","origin","twin","face","next","prev","data"]]))
+        self.assertTrue(all([x in exported for x in ["i","origin","twin","face","next","prev","enumData","nonEnumData"]]))
 
     def test_split(self):
         """ Check an edge can be split at a point """

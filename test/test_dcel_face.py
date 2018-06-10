@@ -41,7 +41,7 @@ class DCEL_FACE_Tests(unittest.TestCase):
     def test_export(self):
         """ Test the export of a face """
         data = self.f._export()
-        self.assertTrue(all([x in data for x in ['i','edges','sitex','sitey','data']]))
+        self.assertTrue(all([x in data for x in ['i','edges','sitex','sitey','enumData','nonEnumData']]))
         self.assertEqual(len(data['edges']), 4)
         self.assertEqual(data['i'], self.f.index)
 

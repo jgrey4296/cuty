@@ -318,7 +318,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertTrue('vertices' in exportedData)
         self.assertEqual(len(exportedData['vertices']), 2)
         for x in exportedData['vertices']:
-            self.assertTrue(all([y in x for y in ['i','x','y','halfEdges','data','active']]))
+            self.assertTrue(all([y in x for y in ['i','x','y','halfEdges','enumData','nonEnumData','active']]))
         
     def test_export_halfedges(self):
         self.dc.createEdge(np.array([0,0]), np.array([1,1]))
@@ -329,7 +329,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertTrue('halfEdges' in exportedData)
         self.assertEqual(len(exportedData['halfEdges']), 4)
         for x in exportedData['halfEdges']:
-            self.assertTrue(all([y in x for y in ['i','origin','twin','face','next','prev','data']]))
+            self.assertTrue(all([y in x for y in ['i','origin','twin','face','next','prev','enumData', 'nonEnumData']]))
         
 
     def test_export_faces(self):
@@ -339,13 +339,15 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertTrue('faces' in exportedData)
         self.assertEqual(len(exportedData['faces']), 2)
         for x in exportedData['faces']:
-            self.assertTrue(all([y in x for y in ['i','edges','sitex','sitey','data']]))
+            self.assertTrue(all([y in x for y in ['i','edges','sitex','sitey','enumData', 'nonEnumData']]))
         
 
     def test_import_vertices(self):
         testData = {
-            'vertices' : [{'i': 5, 'x': 3, 'y':4, 'halfEdges': [], 'data':{}, 'active': True },
-            {'i': 10,'x':10,'y':5, 'halfEdges':[], 'data':{}, 'active':False }],
+            'vertices' : [{'i': 5, 'x': 3, 'y':4, 'halfEdges': [], 'enumData':{},
+                           'nonEnumData': {}, 'active': True },
+            {'i': 10,'x':10,'y':5, 'halfEdges':[], 'enumData':{},
+             'nonEnumData': {}, 'active':False }],
             'halfEdges' : [],
             'faces' : [],
             'bbox' : np.array([0,0,10,10])           
@@ -357,8 +359,10 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
 
     def test_import_halfEdges(self):
         testData = {
-            'vertices' : [{'i': 5, 'x': 3, 'y':4, 'halfEdges': [], 'data':{}, 'active': True },
-            {'i': 10,'x':10,'y':5, 'halfEdges':[], 'data':{}, 'active':False }],
+            'vertices' : [{'i': 5, 'x': 3, 'y':4, 'halfEdges': [], 'enumData':{},
+                           'nonEnumData': {}, 'active': True },
+            {'i': 10,'x':10,'y':5, 'halfEdges':[], 'enumData':{},
+                           'nonEnumData': {}, 'active':False }],
             'halfEdges' : [],
             'faces' : [],
             'bbox' : np.array([0,0,10,10])           
@@ -369,8 +373,10 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
 
     def test_import_faces(self):
         testData = {
-            'vertices' : [{'i': 5, 'x': 3, 'y':4, 'halfEdges': [], 'data':{}, 'active': True },
-            {'i': 10,'x':10,'y':5, 'halfEdges':[], 'data':{}, 'active':False }],
+            'vertices' : [{'i': 5, 'x': 3, 'y':4, 'halfEdges': [], 'enumData':{},
+                           'nonEnumData': {}, 'active': True },
+                          {'i': 10,'x':10,'y':5, 'halfEdges':[], 'enumData':{},
+                           'nonEnumData': {}, 'active':False }],
             'halfEdges' : [],
             'faces' : [],
             'bbox' : np.array([0,0,10,10])           

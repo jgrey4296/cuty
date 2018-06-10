@@ -59,7 +59,7 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
     def test_vertex_export_import(self):
         """ Check the exported vertex data has a minimum set of fields """
         exported = self.v._export()
-        self.assertTrue(all([x in exported for x in ["i","x","y","halfEdges","data","active"]]))
+        self.assertTrue(all([x in exported for x in ["i","x","y","halfEdges","enumData","nonEnumData","active"]]))
 
     def test_vertex_activation(self):
         """ Check vertices can be activated and deactivated """
