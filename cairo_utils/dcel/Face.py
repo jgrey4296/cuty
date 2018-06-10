@@ -8,16 +8,20 @@ from math import radians
 from scipy.spatial import ConvexHull
 import IPython
 
-from .constants import EditE
+from ..constants import START, END, SMALL_RADIUS, FACE, EDGE, VERTEX, WIDTH
+from ..drawing import drawRect, drawCircle, clear_canvas, drawText
+from .constants import EditE, FaceE, SampleFormE
 from .Vertex import Vertex
 from .HalfEdge import HalfEdge
+from .Drawable import Drawable
 from ..constants import TWOPI
 from .. import math as cumath
 from ..math import rotatePoint, calc_bbox_corner, within_bbox
+from .sample_specs import SampleSpec
 
 logging = root_logger.getLogger(__name__)
 
-class Face(object):
+class Face(Drawable):
     """ A Face with a start point for its outer component list,
     and all of its inner components """
 
@@ -111,6 +115,114 @@ class Face(object):
         edgeList = len(self.edgeList)
         return "(Face: {}, edgeList: {})".format(self.index, edgeList)        
 
+    def draw(self, ctx, clear=False, force_centre=False, text=False, data_override=None):
+        """ Draw a single Face from a dcel. 
+        Can be the only thing drawn (clear=True),
+        Can be drawn in the centre of the context for debugging (force_centre=True)
+        """
+        data = self.data.copy()
+        if data_override is not None:
+            assert(isinstance(data, dict))
+            data.update(data_override)
+        
+        #early exits:
+        if len(self.edgeList) < 2:
+            return
+        #Custom Clear
+        if clear:
+            clear_canvas(ctx)
+
+        #Data Retrieval:
+        lineWidth = WIDTH
+        vertColour = START
+        vertRad = SMALL_RADIUS
+        faceCol = FACE
+        radius = SMALL_RADIUS
+        text_string = "F: {}".format(self.index)
+        should_offset_text = FaceE.TEXT_OFFSET in data
+        centroidCol = VERTEX
+        drawCentroid = FaceE.CENTROID in data
+        sampleDescr = None
+    
+        if drawCentroid and isinstance(data[FaceE.CENTROID], (list, np.ndarray)):
+            centroidCol = data[FaceE.CENTROID]
+        if FaceE.STARTVERT in data and isinstance(data[FaceE.STARTVERT], (list, np.ndarray)):
+            vertColour = data[FaceE.STARTVERT]
+        if FaceE.STARTRAD in data:
+            vertRad = data[FaceE.STARTRAD]
+        if FaceE.FILL in data and isinstance(data[FaceE.FILL], (list, np.ndarray)):
+            faceCol = data[FaceE.FILL]
+        if FaceE.CEN_RADIUS in data:
+            radius = data[FaceE.CEN_RADIUS]
+        if FaceE.TEXT in data:
+            text_string = data[FaceE.TEXT]
+        if FaceE.WIDTH in data:
+            lineWidth = data[FaceE.WIDTH]
+        if FaceE.SAMPLE in data:
+            sampleDescr = data[FaceE.SAMPLE]
+            assert(isinstance(sampleDescr, SampleSpec))
+
+            
+        #Centre to context
+        midPoint = (self.dcel.bbox[2:] - self.dcel.bbox[:2]) * 0.5
+        faceCentre = self.getCentroid()
+        if force_centre:
+            invCentre = -faceCentre
+            ctx.translate(*invCentre)
+            ctx.translate(*midPoint)
+
+        if sampleDescr is not None:
+            #draw as a sampled line
+            sampleDescr(ctx, self)
+            
+        if FaceE.NULL in data:
+            return
+        
+        ctx.set_line_width(lineWidth)
+        ctx.set_source_rgba(*faceCol)
+        #Setup Edges:
+        initial = True
+        for x in self.getEdges():
+            v1, v2 = x.getVertices()
+            assert(v1 is not None)
+            assert(v2 is not None)
+            logging.debug("Drawing Face {} edge {}".format(self.index, x.index))
+            logging.debug("Drawing Face edge from ({}, {}) to ({}, {})".format(v1.loc[0], v1.loc[1],
+                                                                               v2.loc[0], v2.loc[1]))
+            if initial:
+                ctx.move_to(*v1.loc)
+                initial = False
+            ctx.line_to(*v2.loc)
+
+            #todo move this out
+            if FaceE.STARTVERT in data:
+                ctx.set_source_rgba(*vertColour)
+                drawCircle(ctx, *v1.loc, vertRad)
+
+            
+        #****Draw*****
+        if FaceE.FILL not in data:
+            ctx.stroke()
+        else:
+            ctx.close_path()
+            ctx.fill()
+
+
+        #Drawing the Centroid point
+        ctx.set_source_rgba(*END)
+        if drawCentroid:
+            ctx.set_source_rgba(*centroidCol)
+            drawCircle(ctx, *faceCentre, radius)
+        
+        #Text Retrieval and drawing
+        if text or FaceE.TEXT in data:
+            drawText(ctx, *faceCentre, text_string, offset=should_offset_text)
+        
+        #Reset the forced centre
+        if force_centre:
+            ctx.translate(*(midPoint * -1))
+            ctx.translate(*centre)
+    
     #------------------------------
     # def Exporting
     #------------------------------
@@ -119,12 +231,16 @@ class Face(object):
     def _export(self):
         """ Export identifiers rather than objects, to allow reconstruction """
         logging.debug("Exporting face: {}".format(self.index))
+        enumData = {a.name:b for a,b in self.data.items() if a in FaceE}
+        nonEnumData = {a:b for a,b in self.data.items() if a not in FaceE}
+
         return {
             'i' : self.index,
             'edges' : [x.index for x in self.edgeList if x is not None],
             'sitex' : self.site[0],
             'sitey' : self.site[1],
-            'data'  : self.data
+            "enumData" : enumData,
+            "nonEnumData": nonEnumData
         }
 
 
