@@ -42,19 +42,19 @@ class DCEL(object):
         assert(isinstance(bbox, np.ndarray))
         assert(len(bbox) == 4)
         self.vertices = set([])
-        self.faces = set()
+        self.faces = set([])
         self.halfEdges = set([])
         self.bbox = bbox
         #todo: make this a stack of quadtrees
         self.vertex_quad_tree = pyqtree.Index(bbox=self.bbox)
         self.quad_tree_stack = []
-        self.frontier = set()
+        self.frontier = set([])
         self.should_merge_stacks = True
 
         self.data = {}
         
     def reset_frontier(self):
-        self.frontier = set()
+        self.frontier = set([])
 
     def copy(self):
         newDCEL = DCEL(self.bbox)
@@ -128,31 +128,53 @@ class DCEL(object):
         of export output from a dcel """
         assert(all([x in data for x in ['vertices', 'halfEdges', 'faces', 'bbox']]))
         self.bbox = data['bbox']
-        #dictionarys:
+        
+        #dictionarys used to store {newIndex : (newIndex, newObject, oldData)}
         local_vertices = {}
         local_edges = {}
         local_faces = {}
-
+        output_mapping = {}
+        
+        #-----
+        # Reconstruct Verts, Edges, Faces: 
+        #-----
         #construct vertices by index
         logging.info("Re-Creating Vertices: {}".format(len(data['vertices'])))
         for vData in data['vertices']:
-            newVert = Vertex(np.array([vData['x'], vData['y']]), index=vData['i'], data=vData['data'], dcel=self, active=vData['active'])
+            combined_data = {}
+            combined_data.update({VertE.__members__[a] : b for a,b in vData['enumData'].items()})
+            combined_data.update(vData['nonEnumData'])
+            
+            newVert = Vertex(np.array([vData['x'], vData['y']]), index=vData['i'], data=combined_data,
+                             dcel=self, active=vData['active'])
             logging.debug("Re-created vertex: {}".format(newVert.index))
             local_vertices[newVert.index] = DataPair(newVert.index, newVert, vData)
+            
         #edges by index
-        logging.info("Re-Creating Edges: {}".format(len(data['halfEdges'])))
         for eData in data['halfEdges']:
-            newEdge = HalfEdge(index=eData['i'], data=eData['data'], dcel=self)
+            combined_data = {}
+            combined_data.update({VertE.__members__[a] : b for a,b in eData['enumData'].items()})
+            combined_data.update(eData['nonEnumData'])
+            newEdge = HalfEdge(index=eData['i'], data=combined_data, dcel=self)
             logging.debug("Re-created Edge: {}".format(newEdge.index))
             local_edges[newEdge.index] = DataPair(newEdge.index, newEdge, eData)
+            
         #faces by index
         logging.info("Re-Creating Faces: {}".format(len(data['faces'])))
         for fData in data['faces']:
-            newFace = Face(site=np.array([fData['sitex'], fData['sitey']]), index=fData['i'], data=fData['data'], dcel=self)
+            combined_data = {}
+            combined_data.update({FaceE.__members__[a] : b for a,b in fData['enumData'].items()})
+            combined_data.update(fData['nonEnumData'])
+            newFace = Face(site=np.array([fData['sitex'], fData['sitey']]), index=fData['i'],
+                           data=combined_data, dcel=self)
             logging.debug("Re-created face: {}".format(newFace.index))
             local_faces[newFace.index] = DataPair(newFace.index, newFace, fData)
-        #Everything now exists,  so:
-        #connect the objects up,  instead of just using ids
+
+        #-----
+        # def Upon reconstruction, reattach ids to the same objects
+        #-----
+        #this only update standard connections, not user connections
+        #TODO: PASS OUT A MAPPING OF OLD IDS TO NEW FOR USER UPDATES
         try:
             #connect vertices to their edges
             for vertex in local_vertices.values():
@@ -177,6 +199,7 @@ class DCEL(object):
         except Exception as e:
             logging.info("Error for edge")
             IPython.embed(simple_prompt=True)
+            
         try:
             #connect faces to their edges
             for face in local_faces.values():
@@ -185,12 +208,15 @@ class DCEL(object):
             logging.info("Error for face")
             IPython.embed(simple_prompt=True)
 
-        #Now transfer into the actual object:
-        self.vertices = set([x.obj for x in local_vertices.values()])
-        self.halfEdges = set([x.obj for x in local_edges.values()])
-        self.faces = set([x.obj for x in local_faces.values()])
+        #Now recalculate the quad tree as necessary
         self.calculate_quad_tree()
 
+        #todo: pass the mapping back
+        output_mapping['verts'] = {x.data['i'] : x.key for x in local_vertices.values()}
+        output_mapping['edges'] = {x.data['i'] : x.key for x in local_edges.values()}
+        output_mapping['faces'] = {x.data['i'] : x.key for x in local_faces.values()}        
+        return output_mapping
+        
     @staticmethod
     def loadfile(filename):
         """ Create a DCEL from a saved pickle """
@@ -485,6 +511,41 @@ class DCEL(object):
                 continue
             path.append(self.createEdge(a,b, edata=edata, vdata=vdata))
         return path        
+
+    def createBezier(self, vs, edata=None, vdata=None):
+        """ Takes a list of tuples (len 3 or 4), and creates
+        approximation lines, that can be triggered later to
+        draw the true bezier shape,
+        Bezier Tuple: (Start, cps, End)"""
+        assert(isinstance(vs, list))
+        assert(all([isinstance(x,tuple) for x in vs]))
+        if edata is None:
+            edata = {}
+        edges = []
+        for v in vs:
+            if len(v) == 2 and all([isinstance(x,tuple) for x in v]):
+                #is a single edge, with different control points for different
+                #directions
+                raise Exception("Dual Control Point Edges not yet supported")
+            elif len(v) == 3:
+                #is a single cp bezier
+                a,cp,b = v
+                edge = self.createEdge(a,b,edata=edata, vdata=vdata)
+                edge.data[EdgeE.BEZIER] = (cp,None)
+                edge.twin.data[EdgeE.NULL] = True
+                edges.append(edge)
+            elif len(v) == 4:
+                #is a two cp bezier
+                a,cp1,cp2,b = v
+                edge = self.createEdge(a,b,edata=edata, vdata=vdata)
+                edge.data[EdgeE.BEZIER] = (cp1, cp2)
+                edge.twin.data[EdgeE.NULL] = True
+            else:
+                raise Exception("Unrecognised bezier type: {}".format(len(v)))
+
+        return edges
+                
+        
     
     #------------------------------
     # def Coherence Utils
