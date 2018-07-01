@@ -27,7 +27,6 @@ class Line:
             scale = 1/l
         d = vec * scale
         #cx = a.x + (dx * l)
-        #cy = a.y + (dy * l)
         #Slope and intersect:
         q = a[1] - a[0]
         if q[0] == 0:
@@ -36,15 +35,16 @@ class Line:
         else:
             m = q[1] / q[0]
             b = a[0,1] - (m * a[0,0])
-        return Line(a[0], d, l, m, b)
+        return Line(a[0], d, l, m, b, originArr=a)
 
     
-    def __init__(self, s, d, l, m, b, swapped=False):
+    def __init__(self, s, d, l, m, b, swapped=False, originArr=None):
         assert(all([isinstance(x, np.ndarray) for x in [s,d]]))
         self.source = s
         self.direction = d
         self.length = l
         self.swapped = swapped
+        self.originArr = originArr
         #slope and intersect:
         self.m = m
         self.b = b
@@ -157,11 +157,12 @@ class Line:
             if self.m is not None:
                 yprime = self.m * x + self.b
             else:
-                yprime = 0
+                yprime = self.source[1]
             return np.array([x, yprime])
         elif y is not None:
             if self.m is not None and self.m != 0:
-                xprime = (y / self.m) - self.b
+                xprime = (y - self.b) / self.m
+                #xprime = (y / self.m) - self.b
             else:
-                xprime = 0
+                xprime = self.source[0]
             return np.array([xprime, y])
