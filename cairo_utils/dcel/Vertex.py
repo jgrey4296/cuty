@@ -10,7 +10,6 @@ from ..math import inCircle, rotatePoint
 from ..constants import TWOPI, D_EPSILON, TOLERANCE, VERTEX, VERTRAD
 from ..drawing import drawRect, drawText, clear_canvas, drawCircle
 from .Drawable import Drawable
-from .sample_specs import SampleSpec
 
 logging = root_logger.getLogger(__name__)
 
@@ -56,6 +55,7 @@ class Vertex(Drawable):
 
         if self.dcel is not None and self not in self.dcel.vertices:
             self.dcel.vertices.add(self)
+            self.dcel.vertex_quad_tree.insert(item=self, bbox=self.bbox())
 
                 
     
@@ -92,11 +92,13 @@ class Vertex(Drawable):
     # def Human Readable Representations
     #------------------------------
     
-    def __str__(self):
-        return "({:.3f},{:.3f})".format(self.loc[0], self.loc[1])
+    # def __str__(self):
+    #     return "({:.3f},{:.3f})".format(self.loc[0], self.loc[1])
 
     def __repr__(self):
-        return "(V: {}, edges: {}, ({:.3f}, {:.3f})".format(self.index, len(self.halfEdges),
+        edges = [x.index for x in self.halfEdges]
+        edges += [x.twin.index for x in self.halfEdges]
+        return "(V: {}, edges: {}, ({:.3f}, {:.3f})".format(self.index, edges,
                                                            self.loc[0], self.loc[1])
 
 
@@ -271,7 +273,6 @@ class Vertex(Drawable):
             vertRad = data[VertE.RADIUS]
         if VertE.SAMPLE in data:
             sampleDescr = data[VertE.SAMPLE]
-            assert(isinstance(sampleDescr, SampleSpec))
 
         if sampleDescr is not None:
             #draw as a sampled line
