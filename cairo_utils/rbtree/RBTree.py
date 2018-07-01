@@ -102,6 +102,8 @@ class RBTree:
     def search(self, value, cmpFunc=None, eqFunc=None,
                cmpData=None, closest=False):
         """ Search the tree for a value """
+        logging.debug("Searching for: {}".format(value))
+
         if cmpFunc is None:
             cmpFunc = self.cmpFunc
         if eqFunc is None:
@@ -109,24 +111,27 @@ class RBTree:
         parent = self.root
         current = self.root
         comp = Directions.CENTRE
-        while current is not None and not eqFunc(current,value, cmpData):
+        while current is not None:
             parent = current
             comp = cmpFunc(current, value, cmpData)
             if comp is Directions.LEFT:
                 current = current.left
             elif comp is Directions.RIGHT:
                 current = current.right
-            else:
+            elif eqFunc(current,value, cmpData) or comp is Directions.CENTRE:
                 break
 
         if closest and current is None:
             #closest non-exact match found
+            logging.debug("Found Closest: {}, {}".format(parent, comp))
             return (parent, comp)
         elif current is None:
             #nothing found
+            logging.debug("Found Nothing")
             return (None, None)
         else:
             #exact match found
+            logging.debug("Found Exact: {}, {}".format(current, comp))
             return (current, comp)
     
     
@@ -184,6 +189,7 @@ class RBTree:
 
     def insert_successor(self,existing_node,newValue, data=None):
         assert(existing_node is None or isinstance(existing_node, Node))
+        logging.debug("Inserting Successor")
         new_node = Node(newValue, data=data)
         self.nodes.append(new_node)
         if existing_node is None:
@@ -195,6 +201,7 @@ class RBTree:
 
     def insert_predecessor(self,existing_node,newValue, data=None):
         assert(existing_node is None or isinstance(existing_node, Node))
+        logging.debug("Inserting predecessor")
         new_node = Node(newValue, data=data)
         self.nodes.append(new_node)
         if existing_node == None:
