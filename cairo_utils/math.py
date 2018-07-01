@@ -295,7 +295,8 @@ def rotatePoint(p,cen=None,rads=None, radMin=-QUARTERPI,radMax=QUARTERPI):
             useRads = useRads[0]
     else:
         useRads = rads
-    #apply to 1d slices, this allows multiple points to be passed into the function together,
+    #apply to 1d slices, this allows multiple points to be
+    #passed into the function together,
     #without messing up the rotation matmul
     rotM = rotMatrix(useRads)
     offset = (p - cen)
@@ -322,9 +323,9 @@ def __rotatePoint_obsolete(p, cen, rads):
     return unCentred
 
 
-def randomRad(min=-TWOPI,max=TWOPI):
+def randomRad(min=-TWOPI,max=TWOPI, shape=(1,)):
     """ Get a random value within the range of radians -2pi -> 2pi """ 
-    return min + (np.random.random() * (max-min)) 
+    return min + (np.random.random(shape) * (max-min)) 
 
 def rotMatrix(rad):
     """ Get a matrix for rotating a point by an amount of radians """
@@ -374,8 +375,6 @@ def intersect(l1, l2, tolerance=TOLERANCE):
     l1maxs = np.max((p0, p1), axis=0) + tolerance
     l2maxs = np.max((p2,p3), axis=0) + tolerance
 
-
-    
     if (l1mins <= xyb).all() and (l2mins <= xyb).all() and \
        (xyb <= l1maxs).all() and (xyb <= l2maxs).all():
         return xyb
@@ -399,12 +398,12 @@ def is_point_on_line(p, l):
     in_bounds_x =  l_min_x <= p[0] <= l_max_x
     in_bounds_y = l_min_y <= p[1] <= l_max_y
     
-    if (l[0,0] - l[1,0]) == 0:
+    if np.allclose((l[0,0] - l[1,0]), 0):
         return in_bounds_y and in_bounds_x
     slope = (l[0,1] - l[1,1]) / (l[0,0] - l[1,0])
     y_intersect = - slope * l[0,0] + l[0,1]
     line_y = slope * p[0] + y_intersect
-    return line_y == p[1] and in_bounds_y and in_bounds_x
+    return np.allclose(line_y, p[1]) and in_bounds_y and in_bounds_x
         
 
 def random_points(n):
