@@ -17,7 +17,6 @@ from .Drawable import Drawable
 from ..constants import TWOPI
 from .. import math as cumath
 from ..math import rotatePoint, calc_bbox_corner, within_bbox
-from .sample_specs import SampleSpec
 
 logging = root_logger.getLogger(__name__)
 
@@ -160,7 +159,6 @@ class Face(Drawable):
             lineWidth = data[FaceE.WIDTH]
         if FaceE.SAMPLE in data:
             sampleDescr = data[FaceE.SAMPLE]
-            assert(isinstance(sampleDescr, SampleSpec))
 
             
         #Centre to context
@@ -690,43 +688,13 @@ class Face(Drawable):
             candidateSet = set()
         candidatesPlusSelf = candidateSet.union([self], self.edgeList, [x.twin for x in self.edgeList if x.twin is not None])
         return any([x.has_constraints(candidatesPlusSelf) for x in self.edgeList])
+
+    def are_points_within(self, points):
+        assert(isinstance(points, np.ndarray))
+        #see https://stackoverflow.com/questions/217578
+        raise Exception("Unimplemented: are_points_within")
+    
         
-        
-            
-        # #if they intersect with different bounding walls,  they need a corner
-        # intersect_1 = current_edge.intersects_edge(bbox)
-        # intersect_2 = prior_edge.intersects_edge(bbox)
-        # logging.debug("Intersect Values: {} {}".format(intersect_1, intersect_2))
-
-        # if intersect_1 is None or intersect_2 is None:
-        #     logging.debug("Non- side intersecting lines")
-
-        # #Simple connection requirement, straight line between end points
-        # if intersect_1 == intersect_2 or any([x is None for x in [intersect_1, intersect_2]]):
-        #     logging.debug("Match, new simple edge between: {}={}".format(current_edge.index,
-        #                                                                  prior_edge.index))
-        #     #connect together with simple edge
-        #     #twin face is not set because theres no face outside of bounds
-        #     newEdge = self.newEdge(prior_edge.twin.origin,
-        #                            current_edge.origin,
-        #                            face=f,
-        #                            prev=prior_edge)
-        #     newEdge.setPrev(prior_edge)
-        #     current_edge.setPrev(newEdge)
-
-        # else:
-        #     logging.debug("Creating a corner edge connection between: {}={}".format(current_edge.index, prior_edge.index))
-        #     #Connect the edges via an intermediate, corner vertex
-        #     newVert = self.create_corner_vertex(intersect_1, intersect_2, bbox)
-        #     logging.debug("Corner Vertex: {}".format(newVert))
-        #     newEdge_1 = self.newEdge(prior_edge.twin.origin, newVert, face=f, prev=prior_edge)
-        #     newEdge_2 = self.newEdge(newVert, current_edge.origin, face=f, prev=newEdge_1)
-            
-        #     current_edge.addPrev(newEdge_2)
-        #     newEdge_2.addPrev(newEdge_1)
-        #     newEdge_1.addPrev(prior_edge)
-
-
     #------------------------------
     # def deprecated
     #------------------------------
@@ -735,19 +703,3 @@ class Face(Drawable):
     def __getCentroid(self):
         """ An iterative construction of the centroid """
         raise Exception("Deprecated: use getavgcentroid or getcentroidfrombbox")
-        # vertices = [x.origin for x in self.edgeList if x.origin is not None]
-        # centroid = np.array([0.0, 0.0])
-        # signedArea = 0.0
-        # for i, v in enumerate(vertices):
-        #     if i+1 < len(vertices):
-        #         n_v = vertices[i+1]
-        #     else:
-        #         n_v = vertices[0]
-        #     a = v.loc[0]*n_v.loc[1] - n_v.loc[0]*v.loc[1]
-        #     signedArea += a
-        #     centroid += [(v.loc[0]+n_v.loc[0])*a, (v.loc[1]+n_v.loc[1])*a]
-
-        # signedArea *= 0.5
-        # if signedArea != 0:
-        #     centroid /= (6*signedArea)
-        # return centroid
