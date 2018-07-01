@@ -412,15 +412,45 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         e3 = self.dc.createEdge(np.array([0.5,0.9]), np.array([0.5,-0.9]))
         #intersect
         results = self.dc.intersect_halfEdges()
+        self.assertTrue(len(results) == 3)
         #first intersection
-        self.assertTrue(e2.twin in results[0].contain)
-        self.assertTrue(e3 in results[0].contain)
+        i1 = [x for x in results if np.allclose(x.vertex.loc, np.array([0.5,0.5]))][0]
+        self.assertIsNotNone(i1)
+        self.assertTrue(e2.twin in i1.contain)
+        self.assertTrue(e3 in i1.contain)
         #second intersection:
-        self.assertTrue(e1 in results[1].contain)
-        self.assertTrue(e3 in results[1].contain)
+        i2 = [x for x in results if np.allclose(x.vertex.loc, np.array([1,0]))][0]
+        self.assertIsNotNone(i2)
+        self.assertTrue(e1 in i2.end)
+        self.assertTrue(e2.twin in i2.end)
         #Start-end match:
-        self.assertTrue(e2.twin in results[2].end)
-        self.assertTrue(e1 in results[2].end)
+        i3 = [x for x in results if np.allclose(x.vertex.loc, np.array([0.5,0]))][0]
+        self.assertTrue(e1 in i3.contain)
+        self.assertTrue(e3 in i3.contain)
+
+    def test_intersect_halfedges_non_flat(self):
+        #create some edges
+        e1 = self.dc.createEdge(np.array([0,0]),np.array([1,0.5]))
+        e2 = self.dc.createEdge(np.array([1,0.5]),np.array([0,1]))
+        e3 = self.dc.createEdge(np.array([0.5,1]), np.array([0.5,-1]))
+        #intersect
+        results = self.dc.intersect_halfEdges()
+        self.assertTrue(len(results) == 3)
+        #first intersection
+        i1 = [x for x in results if np.allclose(x.vertex.loc, np.array([0.5,0.75]))][0]
+        self.assertIsNotNone(i1)
+        self.assertTrue(e2.twin in i1.contain)
+        self.assertTrue(e3 in i1.contain)
+        #second intersection:
+        i2 = [x for x in results if np.allclose(x.vertex.loc, np.array([1,0.5]))][0]
+        self.assertIsNotNone(i2)
+        self.assertTrue(e1.twin in i2.start)
+        self.assertTrue(e2.twin in i2.end)
+        #Start-end match:
+        i3 = [x for x in results if np.allclose(x.vertex.loc, np.array([0.5,0.25]))][0]
+        self.assertTrue(e1.twin in i3.contain)
+        self.assertTrue(e3 in i3.contain)
+        
         
         
     def test_intersect_halfedges_no_intersections(self):
