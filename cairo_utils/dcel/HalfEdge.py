@@ -6,13 +6,12 @@ import numpy as np
 import IPython
 from itertools import islice, cycle
 from ..math import inCircle, get_distance, intersect, sampleAlongLine, get_unit_vector, extend_line, rotatePoint, is_point_on_line, get_distance_raw, bbox_to_lines, get_midpoint
-from ..constants import TWOPI, IntersectEnum, EPSILON, TOLERANCE, START, END, SMALL_RADIUS, FACE, EDGE, VERTEX, WIDTH
+from ..constants import TWOPI, IntersectEnum, EPSILON, TOLERANCE, START, END, SMALL_RADIUS, FACE, EDGE, VERTEX, WIDTH, D_EPSILON
 from ..drawing import drawRect, drawCircle, clear_canvas, drawText
 from .constants import EditE, EDGE_FOLLOW_GUARD, EdgeE, SampleFormE
 from .Vertex import Vertex
 from .Line import Line
 from .Drawable import Drawable
-from .sample_specs import SampleSpec
 
 logging = root_logger.getLogger(__name__)
 
@@ -129,7 +128,7 @@ class HalfEdge(Drawable):
     #------------------------------
     
     def __str__(self):
-        return "HalfEdge: {} - {}".format(self.origin, self.twin.origin)
+        return "HalfEdge {}: {} - {}".format(self.index, self.origin, self.twin.origin)
 
     def __repr__(self):
         origin = "n/a"
@@ -192,17 +191,17 @@ class HalfEdge(Drawable):
         if EdgeE.ENDRAD in data:
             endRad = data[EdgeE.ENDRAD]
         if EdgeE.TEXT in data:
-            text = True
             if isinstance(data[EdgeE.TEXT], str):
                 writeText = data[EdgeE.TEXT]
+            elif data[EdgeE.TEXT] == False:
+                writeText = None
         if EdgeE.BEZIER in data:
             bezier = data[EdgeE.BEZIER]
-            assert(isinstance(bezier,tuple))
+            assert(isinstance(bezier, list))
         if EdgeE.BEZIER_SIMPLIFY in data:
             bezier_simp = True
         if EdgeE.SAMPLE in data:
             sampleDescr = data[EdgeE.SAMPLE]
-            assert(isinstance(sampleDescr, SampleSpec))
 
         #Get Start and end points
         v1, v2 = self.getVertices()
@@ -230,19 +229,21 @@ class HalfEdge(Drawable):
         #todo: allow beziers to be simplified to straight lines
         if bool(bezier):
             logging.info("Drawing Bezier: {}".format(bezier))
-            cp1, cp2 = bezier
-            if cp2 is None:
-                cp2 = cp1
-                cp1 = v1.loc
-                ctx.new_path()
-            else:
-                ctx.move_to(*v1.loc)
-            if bezier_simp:
-                ctx.line_to(*cp1, *cp2, *v2.loc)
-            else:
-                ctx.curve_to(*cp1, *cp2, *v2.loc)
+            ctx.new_path()
+            for b in bezier:
+                ctx.move_to(*b[0])
+                if bezier_simp:
+                    ctx.line_to(*b[-1])
+                    continue
+                if len(b) == 3:
+                    ctx.curve_to(*b[0], *b[1], *b[2])
+                else:
+                    assert(len(b) == 4)
+                    ctx.curve_to(*b[1], *b[2], *b[3])
+
         else:
             logging.info("Drawing Straight Line")
+            ctx.move_to(*v1.loc)
             ctx.line_to(*v2.loc)
 
         ctx.stroke()
@@ -253,7 +254,7 @@ class HalfEdge(Drawable):
             ctx.set_source_rgba(*endCol)
             drawCircle(ctx, *v2.loc, endRad)
 
-        if text:
+        if text and writeText is not None:
             drawText(ctx, *centre, writeText)
 
     
@@ -628,15 +629,18 @@ class HalfEdge(Drawable):
         arr = self.toArray()
         return arr[0,1] == arr[1,1]
     
-    def contains_vertex(self, vert):
+    def contains_vertex(self, vert, tolerance=D_EPSILON):
         assert(isinstance(vert, Vertex))
-        verts = self.getVertices()
+        verts = self.toArray()
         if vert in verts:
             return True
         l = self.toArray()
         p = vert.toArray()
         return is_point_on_line(p, l)
-        
+        # l = Line.newLine(verts)
+        # xprime = l(y=vert.loc[1])[0]
+        # diff = abs(vert.loc[0]) - abs(xprime)
+        # return -(tolerance) <= diff <= tolerance
         
 
     #------------------------------
