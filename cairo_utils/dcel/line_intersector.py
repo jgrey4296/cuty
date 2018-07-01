@@ -4,9 +4,10 @@ from functools import partial
 import IPython
 import numpy as np
 from collections import namedtuple
+from math import inf
 
 from ..heaputils import pop_while_same, HeapWrapper
-from ..rbtree import RBTree
+from ..rbtree import RBTree, Directions
 from .constants import SWEEP_NUDGE
 from .Vertex import Vertex
 from .HalfEdge import HalfEdge
@@ -34,180 +35,287 @@ class IntersectResult:
                                                                                    self.start,
                                                                                    self.contain,
                                                                                    self.end)
-        
 
+#------------------------------
+# def Comparison functions
+#------------------------------
+    
+def lineCmp(a, b, cd):
+    """ Line comparison to be used in the status tree """
+    aVal = a.value(y=cd)[0]
+    bVal = b(y=cd)[0]
+    logging.debug("aVal: {}  bVal: {}".format(aVal, bVal, aVal < bVal))
+    if aVal < bVal:
+        return Directions.RIGHT
+    elif bVal < aVal:
+        return Directions.LEFT
+    return Directions.CENTRE
+
+def lineCmpVert(a, b, cd):
+    aVal = a.value(y=cd)[0]
+    logging.debug("VERT aVal: {}  bVal: {}".format(aVal, b[0], aVal < b[0]))
+    if aVal < b[0]:
+        return Directions.RIGHT
+    elif b[0] < aVal:
+        return Directions.LEFT
+    return Directions.CENTRE
+
+
+#------------------------------
+# def MAIN CLASS
+#------------------------------
+
+    
 class LineIntersector:
     """ Processes a DCEL to intersect halfEdges, 
     in a self contained class
     """
 
-    def __new__(self, edgeSet=None, dcel=None):
-        logging.debug("Starting line intersection algorithm")
-        #setup the set of edges to intersect
-        assert(edgeSet is not None or dcel is not None)
-        if edgeSet is None:
-            edgeSet = dcel.halfEdges.copy()
-        else:
-            assert(isinstance(edgeSet, set))
-            edgeSet = edgeSet
-        lowerEdges = [e for e in edgeSet if not e.isUpper()]
-        
-        logging.debug("EdgeSet: {}, lowerEdges: {}".format(len(edgeSet), len(lowerEdges)))
-        results = []
-        discovered = set()
+    def __init__(self, dcel):
+        self.dcel = dcel
+        self.edgeSet = set()
+        self.lowerEdges = []
+        self.results = []
+        self.discovered = set()
+        self.sweep_y = inf
         #Tree to keep active edges in,
         #Sorted by the x's for the current y of the sweep line
-        status_tree = RBTree(cmpFunc=lambda a,b,cd: a.value(y=cd)[0] < b(y=cd)[0],
-                             eqFunc=lambda a,b,cd: np.allclose(a.value(y=cd),b(y=cd)))
+        self.status_tree = RBTree(cmpFunc=lineCmp,
+                                  eqFunc=lambda a,b,cd: np.allclose(a.value(y=cd),b(y=cd)))
         #Heap of (vert, edge) pairs,
         #with invariant: all([e.isUpper() for v,e in event_list])
-        event_list = [HeapWrapper(x.origin, x) for x in edgeSet.difference(lowerEdges)]
-        event_list += [HeapWrapper(x.origin, x.twin) for x in lowerEdges]
-        heapq.heapify(event_list)
-
-        #populate the discovered set:
-        discovered.update([x.ord for x in event_list])
+        self.event_list = []
         
-        logging.debug("Event_list: {}".format(len(event_list)))
+    #------------------------------
+    # def MAIN CALL
+    #------------------------------
+    
+    def __call__(self, edgeSet=None):
+        self.initialise_data(edgeSet=edgeSet)
+        assert(bool(self.event_list))
+        assert(bool(self.lowerEdges))
+        assert(bool(self.discovered))
+        assert(not bool(self.results))
+        assert(self.sweep_y == inf)
+        
         #Main loop of the Intersection Algorithm
-        while bool(event_list):
+        while bool(self.event_list):
             logging.debug("--------------------")
-            logging.debug("Event list remaining: {}".format(len(event_list)))
-            logging.debug("\n".join([repr(x) for x in event_list]))
-            #Get all segments that are on the current vertex
-            curr_vert, curr_edge_list = pop_while_same(event_list)
-            assert(isinstance(curr_vert, Vertex))
-            assert(not bool(curr_edge_list) or \
-                   all([isinstance(x, HalfEdge) for x in curr_edge_list]))
-
-            sweep_y = curr_vert.toArray()[1]
-            #find the nearest segment in the tree
-            logging.debug("Searching tree")
-            closest_node,d = status_tree.search(curr_vert.toArray(),
-                                                cmpData=sweep_y,
-                                                closest=True,
-                                                cmpFunc=lambda a,b,cd: a.value(y=cd)[0] < b[0],
-                                                eqFunc=lambda a,b,cd: np.allclose(a.value(y=cd), b))
-
-            candidates = curr_edge_list.copy()
-            upper_set = set()
-            lower_set = set()
-            contain_set = set()
+            logging.debug("Event list remaining: {}".format(len(self.event_list)))
+            logging.debug("\n".join([repr(x) for x in self.event_list]))
             
-            if closest_node is not None:
-                logging.debug("Segment found")
-                closest_segment = closest_node.value
-                #Construct the starting, continuing, and ending sets
+            curr_vert, curr_edge_list = self.get_next_event()
+            logging.debug("Curr Vert: {}".format(curr_vert))
+            self.update_sweep(curr_vert)
+            self.debug_chain()
 
-                logging.debug("Getting neighbours")
-                candidate_nodes = closest_node.getNeighbours_while(partial(NEIGHBOUR_CONDITION, curr_vert))
-                candidates += [x.value for x in candidate_nodes]
-                
-            logging.debug("Finished neighbours")
-            for c in candidates:
-                if c.origin == curr_vert:
-                    upper_set.add(c)
-                elif c.twin.origin == curr_vert:
-                    lower_set.add(c)
-                else:
-                    contain_set.add(c)
-
-            #----- Sets constructed
-
-            #Report the intersections
-            if sum([len(x) for x in [upper_set, lower_set, contain_set]]) > 1:
-                logging.debug("Reporting intersections")
-                results.append(IntersectResult(curr_vert, upper_set, contain_set, lower_set))
-
-            #delete contain and lower sets
-            logging.debug("Deleting values")
-            status_tree.delete_value(*contain_set.union(lower_set), cmpData=sweep_y)
+            logging.debug("Searching tree")            
+            closest_node, d = self.search_tree(curr_vert)
+            upper_set, contain_set, lower_set = self.determine_sets(curr_vert,
+                                                                    closest_node,
+                                                                    curr_edge_list.copy())
+            logging.debug("Upper Set: {}".format(upper_set))
+            logging.debug("Contain Set: {}".format(contain_set))
+            logging.debug("Lower Set: {}".format(lower_set))
+            self.report_intersections(curr_vert, upper_set, contain_set, lower_set)
+            
+            #todo: delete non-flat points of the non-flat event
+            self.delete_values(contain_set.union(lower_set))
 
             #insert the segments with the status line a little lower
-            logging.debug("Inserting values")
             candidate_lines = contain_set.union(upper_set)
-            flat_lines = set([x for x in candidate_lines if x.isFlat()])
-            newNodes = status_tree.insert(*candidate_lines.difference(flat_lines),
-                                          cmpData=sweep_y + SWEEP_NUDGE)
-            newNodes += status_tree.insert(*flat_lines,
-                                           cmpData=sweep_y + SWEEP_NUDGE)
-
+            newNodes = self.insert_values(candidate_lines)
+            
             #Calculate additional events
-            logging.debug("Finding new Events")
-            if closest_node is not None and (len(contain_set) + len(upper_set)) == 0:
-                leftN = closest_node.getPredecessor()
-                rightN = closest_node.getSuccessor()
-                if leftN is not None and rightN is not None:
-                    LineIntersector.findNewEvents(leftN.value,
-                                                  rightN.value,
-                                                  curr_vert,
-                                                  event_list,
-                                                  discovered)
-            else:
-                paired = [(a.value(y=sweep_y)[0], a) for a in newNodes]
-                paired.sort(key=lambda x: x[0])
+            self.debug_chain()
+            self.handle_new_events(curr_vert, closest_node, newNodes)
 
-                #todo: might not be candidates, might be a sorted set access
-                leftmost = paired[0][1]
-                leftmostN = leftmost.getPredecessor()
-                if leftmostN is not None and leftmost is not None:
-                    LineIntersector.findNewEvents(leftmostN.value,
-                                                  leftmost.value,
-                                                  curr_vert,
-                                                  event_list,
-                                                  discovered)
+        assert(self.sweep_y != inf)
+        assert(not bool(self.event_list))
+        return self.results
+
+
+    def initialise_data(self, edgeSet=None):
+        logging.debug("Starting line intersection algorithm")
+        self.results = []
+        #setup the set of edges to intersect
+        if edgeSet is None:
+            self.edgeSet = self.dcel.halfEdges.copy()
+        else:
+            assert(isinstance(edgeSet, set))
+            self.edgeSet = edgeSet
+        assert(self.edgeSet is not None)
+        self.lowerEdges = [e for e in self.edgeSet if not e.isUpper()]        
+        self.event_list = [HeapWrapper(x.origin, x, desc="initial") for x in self.edgeSet.difference(self.lowerEdges)]
+        self.event_list += [HeapWrapper(x.origin, x.twin, desc="initial_twin") for x in self.lowerEdges]
+        heapq.heapify(self.event_list)
+        self.discovered.update([x.ord for x in self.event_list])
+        
+        logging.debug("EdgeSet: {}, lowerEdges: {}".format(len(self.edgeSet), len(self.lowerEdges)))
+        logging.debug("Event_list: {}".format(len(self.event_list)))
+
+    def determine_sets(self, curr_vert, closest, candidates):
+        assert(isinstance(curr_vert, Vertex))
+        upper_set = set()
+        contain_set = set()
+        lower_set = set()
+
+        if closest is not None:
+            closest_segment = closest.value
+            #if a line is horizontal, switch to a call(y) while, and get lines until not in horizontal bounds
+            candidate_nodes = closest.getNeighbours_while(partial(NEIGHBOUR_CONDITION, curr_vert))
+            candidates += [x.value for x in candidate_nodes]
+            candidates.append(closest_segment)
+
+        logging.debug("Candidates: {}".format(candidates))
+        #todo: adapt for horizontal lines
+        #init a dictionary for intersections for each individual horizontal line
+        #foreach individual horizontal line, test candidates until failure, then break
+        for c in candidates:
+            if c.origin == curr_vert:
+                upper_set.add(c)
+            elif c.twin.origin == curr_vert:
+                lower_set.add(c)
+            elif c.contains_vertex(curr_vert):
+                contain_set.add(c)
+        logging.debug("Upper Set: {}".format([x.index for x in upper_set]))
+        logging.debug("Contain Set: {}".format([x.index for x in contain_set]))
+        logging.debug("Lower Set: {}".format([x.index for x in lower_set]))
+        return (upper_set, contain_set, lower_set)
+
+        
+
+    def handle_new_events(self, curr_vert, closest, newNodes):
+        logging.debug("Finding new Events")
+        #todo: only find new events if there is a set of non-horizontal lines
+        if not bool(newNodes):
+            logging.debug("closest_node is not None")
+            leftN = None
+            rightN = None
+            if closest is not None:
+                leftN = closest.getPredecessor()
+                rightN = closest.getSuccessor()
+            logging.debug("LeftN: {}".format(leftN))
+            logging.debug("RightN: {}".format(rightN))
+
+            if leftN is not None and rightN is not None:
+                self.findNewEvents(leftN.value,
+                                   rightN.value,
+                                   curr_vert.toArray())
+        else:
+            logging.debug("Closest_node is None")
+            assert(bool(self.status_tree))
+            paired = [(a.value(y=(self.sweep_y+SWEEP_NUDGE))[0], a) for a in newNodes]
+            paired.sort(key=lambda x: x[0])
+            logging.debug("New Nodes: {}".format([x[1].value.index for x in paired]))
+            if not bool(paired):
+                return
+            #todo: might not be candidates, might be a sorted set access
+            leftmost = paired[0][1]
+            leftmostN = leftmost.getPredecessor()
+            if leftmostN is not None and leftmost is not None:
+                self.findNewEvents(leftmostN.value,
+                                   leftmost.value,
+                                   curr_vert.toArray())
+
                 
-                rightmost = paired[-1][1]
-                rightmostN = rightmost.getSuccessor()
+            rightmost = paired[-1][1]
+            rightmostN = rightmost.getSuccessor()
                 
-                if rightmost is not None and rightmostN is not None:
-                    LineIntersector.findNewEvents(rightmost.value,
-                                                  rightmostN.value,
-                                                  curr_vert,
-                                                  event_list,
-                                                  discovered)
+            if rightmost is not None and rightmostN is not None:
+                self.findNewEvents(rightmost.value,
+                                   rightmostN.value,
+                                   curr_vert.toArray())
 
-        return results
-
-    @staticmethod
-    def findNewEvents(a,b,vert, heap, discovered):
-        assert(isinstance(vert, Vertex))
+    def findNewEvents(self, a,b,loc):
+        assert(isinstance(loc, np.ndarray))
         assert(isinstance(a, HalfEdge))
         assert(isinstance(b, HalfEdge))
 
-        logging.debug("Finding Events for: {}, {}, {}".format(a,b,vert))        
-        dcel = vert.dcel
+        logging.debug("Finding Events for: {}, {}, {}".format(a.index,b.index,loc))        
         intersection = a.intersect(b)
         matchVert = None
         if intersection is None:
             logging.debug("No intersection")
             return
         #TODO: only works on cartesian
-        if intersection[1] > vert.loc[1]:
+        if intersection[1] > loc[1]:
             logging.debug("Intersection too high")
             return
-        if intersection[1] < vert.loc[1] or\
-           (intersection[1] == vert.loc[1] and vert.loc[0] <= intersection[0]):
+        if intersection[1] < loc[1] or\
+           (intersection[1] == loc[1] and loc[0] <= intersection[0]):
             logging.debug("Within bounds")
-            matchVert = dcel.newVertex(intersection)
-            if matchVert in discovered:
+            matchVert = self.dcel.newVertex(intersection)
+            if matchVert in self.discovered:
                 logging.debug("Vertex already discovered")
                 return
         #finally, success!:
         if matchVert is not None:
-            discovered.add(matchVert)
-            wrapped = HeapWrapper(matchVert, a)
+            self.discovered.add(matchVert)
+            wrapped = HeapWrapper(matchVert, a, desc="newEvent")
+            wrapped2 = HeapWrapper(matchVert, b, desc="newEvent")
             logging.debug("Adding: {}".format(wrapped))
-
-            heapq.heappush(heap, wrapped)
-            wrapped2 = HeapWrapper(matchVert, b)
-            heapq.heappush(heap, wrapped2)
+            heapq.heappush(self.event_list, wrapped)
+            heapq.heappush(self.event_list, wrapped2)
     
+    #------------------------------
+    # def UTILITIES
+    #------------------------------
 
+    def debug_chain(self):
+        chain = [x.value.index for x in self.status_tree.get_chain()]
+        logging.debug("Tree Chain is: {}".format(chain))
 
+    def report_intersections(self, v, u, c, l):
+        #todo: for each horizontal crossing point separately
+        if sum([len(x) for x in [u, l, c]]) > 1:
+            logging.debug("Reporting intersections")
+            self.results.append(IntersectResult(v, u, c, l))
 
+    def get_next_event(self):
+        #Get all segments that are on the current vertex
+        curr_vert, curr_edge_list = pop_while_same(self.event_list)
+        assert(not bool(curr_edge_list) or all([isinstance(x, HalfEdge) for x in curr_edge_list]))
+        return curr_vert, curr_edge_list
 
+    def delete_values(self, values):
+        logging.debug("Deleting values")
+        assert(all([x.isUpper() for x in values]))
+        self.status_tree.delete_value(*values, cmpData=self.sweep_y)
 
+    def insert_values(self, candidates):
+        logging.debug("Inserting values")
+        flat_lines = set([x for x in candidates if x.isFlat()])
+        #insert only non-flat lines
+        toAdd = candidates.difference(flat_lines)
+        assert(all([x.isUpper() for x in toAdd]))
+        newNodes = self.status_tree.insert(*toAdd,
+                                           cmpData=(self.sweep_y + SWEEP_NUDGE))
+        newNodes += self.status_tree.insert(*flat_lines,
+                                           cmpData=(self.sweep_y + SWEEP_NUDGE))
+
+        return newNodes
+        
+    def update_sweep(self, curr):
+        assert(isinstance(curr, Vertex))
+        candidate = curr.toArray()[1]
+        if candidate > self.sweep_y:
+            raise Exception("Sweep line moved in wrong direction")
+        self.sweep_y = candidate
+
+    def search_tree(self, curr):
+        assert(isinstance(curr, Vertex))
+        closest_node,d = self.status_tree.search(curr.toArray(),
+                                            cmpData=self.sweep_y,
+                                            closest=True,
+                                            cmpFunc=lineCmpVert,
+                                            eqFunc=lambda a, b, cd: np.allclose(a.value(y=cd), b))
+
+        if closest_node is not None:
+            logging.debug("Closest Node: {}".format(closest_node.value.index))
+        else:
+            logging.debug("Closest Node is None")
+        return closest_node, d
 
 
 
