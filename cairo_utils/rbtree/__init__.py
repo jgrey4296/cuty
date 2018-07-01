@@ -8,3 +8,4 @@
 
 from .RBTree import RBTree
 from .Node import Node
+from .ComparisonFunctions import Directions
