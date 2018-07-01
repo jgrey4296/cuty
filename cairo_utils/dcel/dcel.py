@@ -17,7 +17,7 @@ from .Face import Face
 from .HalfEdge import HalfEdge
 from .Vertex import Vertex
 from .Line import Line
-from .constants import EdgeE
+from .constants import EdgeE, VertE
 from .line_intersector import LineIntersector
 
 import logging as root_logger
@@ -151,9 +151,10 @@ class DCEL(object):
             local_vertices[newVert.index] = DataPair(newVert.index, newVert, vData)
             
         #edges by index
+        logging.info("Re-Creating HalfEdges: {}".format(len(data['halfEdges'])))
         for eData in data['halfEdges']:
             combined_data = {}
-            combined_data.update({VertE.__members__[a] : b for a,b in eData['enumData'].items()})
+            combined_data.update({EdgeE.__members__[a] : b for a,b in eData['enumData'].items()})
             combined_data.update(eData['nonEnumData'])
             newEdge = HalfEdge(index=eData['i'], data=combined_data, dcel=self)
             logging.debug("Re-created Edge: {}".format(newEdge.index))
@@ -401,8 +402,7 @@ class DCEL(object):
             #no matching vertex,  add this new one
             newVert = Vertex(loc, data=data, dcel=self)
             logging.debug("No matching vertex,  storing: {}, {}".format(newVert, newVert.bbox()))
-            self.vertices.add(newVert)
-            self.vertex_quad_tree.insert(item=newVert, bbox=newVert.bbox())
+
         assert(newVert is not None)
         return newVert
 
@@ -512,7 +512,7 @@ class DCEL(object):
             path.append(self.createEdge(a,b, edata=edata, vdata=vdata))
         return path        
 
-    def createBezier(self, vs, edata=None, vdata=None):
+    def createBezier(self, vs, edata=None, vdata=None, single=False):
         """ Takes a list of tuples (len 3 or 4), and creates
         approximation lines, that can be triggered later to
         draw the true bezier shape,
@@ -522,6 +522,17 @@ class DCEL(object):
         if edata is None:
             edata = {}
         edges = []
+
+        if single:
+            #create a single, multi breakpoint line
+            first = vs[0]
+            last = vs[-1]
+            e = self.createEdge(first[0], last[-1], edata=edata, vdata=vdata)
+            e.data[EdgeE.BEZIER] = vs
+            e.twin.data[EdgeE.NULL] = True
+            return [e]
+        
+            
         for v in vs:
             if len(v) == 2 and all([isinstance(x,tuple) for x in v]):
                 #is a single edge, with different control points for different
@@ -531,14 +542,14 @@ class DCEL(object):
                 #is a single cp bezier
                 a,cp,b = v
                 edge = self.createEdge(a,b,edata=edata, vdata=vdata)
-                edge.data[EdgeE.BEZIER] = (cp,None)
+                edge.data[EdgeE.BEZIER] = [v]
                 edge.twin.data[EdgeE.NULL] = True
                 edges.append(edge)
             elif len(v) == 4:
                 #is a two cp bezier
                 a,cp1,cp2,b = v
                 edge = self.createEdge(a,b,edata=edata, vdata=vdata)
-                edge.data[EdgeE.BEZIER] = (cp1, cp2)
+                edge.data[EdgeE.BEZIER] = [v]
                 edge.twin.data[EdgeE.NULL] = True
             else:
                 raise Exception("Unrecognised bezier type: {}".format(len(v)))
@@ -652,7 +663,9 @@ class DCEL(object):
     def intersect_halfEdges(self, edgeSet=None):
         """ run a sweep line over the dcel, 
         getting back halfedge intersections """
-        return LineIntersector(edgeSet=edgeSet, dcel=self)
+        
+        li = LineIntersector(self)
+        return li(edgeSet=edgeSet)
 
     
     def orderVertices(self, focus, vertices):
