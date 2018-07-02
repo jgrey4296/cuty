@@ -8,6 +8,7 @@ from math import inf
 
 from ..heaputils import pop_while_same, HeapWrapper
 from ..rbtree import RBTree, Directions
+from ..constants import D_EPSILON
 from .constants import SWEEP_NUDGE
 from .Vertex import Vertex
 from .HalfEdge import HalfEdge
@@ -42,23 +43,53 @@ class IntersectResult:
     
 def lineCmp(a, b, cd):
     """ Line comparison to be used in the status tree """
-    aVal = a.value(y=cd)[0]
-    bVal = b(y=cd)[0]
-    logging.debug("aVal: {}  bVal: {}".format(aVal, bVal, aVal < bVal))
+    #Is horizontal:
+    aHor = a.value.isFlat()
+    bHor = b.isFlat()
+    #---
+    aVal = a.value(y=cd['y'])[0]
+    bVal = b(y=cd['y'])[0]
+    if aHor:
+        aVal = cd['x'] + D_EPSILON
+    if bHor:
+        bVal = cd['x'] + D_EPSILON
+    logging.debug("Line Cmp: A: {}, B: {}, start_x:{}".format(aVal, bVal, cd['x']))
     if aVal < bVal:
         return Directions.RIGHT
     elif bVal < aVal:
         return Directions.LEFT
+        
     return Directions.CENTRE
 
+def lineEq(a, b, cd):
+    return a.value.index == b.index
+
 def lineCmpVert(a, b, cd):
-    aVal = a.value(y=cd)[0]
-    logging.debug("VERT aVal: {}  bVal: {}".format(aVal, b[0], aVal < b[0]))
-    if aVal < b[0]:
-        return Directions.RIGHT
-    elif b[0] < aVal:
-        return Directions.LEFT
-    return Directions.CENTRE
+    result = Directions.CENTRE
+    if a.value.isFlat():
+        ranges = a.value.getRanges()
+        logging.debug("VERT_H aVal: {}  bVal: {}".format(ranges, b[0]))
+        if b[0] < ranges[0,0]:
+            result = Directions.LEFT
+        elif b[0] > ranges[0,1]:
+            result =  Directions.RIGHT
+    else:
+        aVal = a.value(y=cd)[0]
+        logging.debug("VERT aVal: {}  bVal: {}".format(aVal, b[0]))
+        if aVal < b[0]:
+            result = Directions.RIGHT
+        elif b[0] < aVal:
+            result = Directions.LEFT
+    return result
+
+def lineEqVert(a,b,cd):
+    return np.allclose(a.value(y=cd), b)
+
+def lineSortConvert(a,y,curr_x):
+    if a.isFlat():
+        return curr_x
+    else:
+        return a(y=y)[0]
 
 
 #------------------------------
@@ -81,7 +112,7 @@ class LineIntersector:
         #Tree to keep active edges in,
         #Sorted by the x's for the current y of the sweep line
         self.status_tree = RBTree(cmpFunc=lineCmp,
-                                  eqFunc=lambda a,b,cd: np.allclose(a.value(y=cd),b(y=cd)))
+                                  eqFunc=lineEq)
         #Heap of (vert, edge) pairs,
         #with invariant: all([e.isUpper() for v,e in event_list])
         self.event_list = []
@@ -93,7 +124,6 @@ class LineIntersector:
     def __call__(self, edgeSet=None):
         self.initialise_data(edgeSet=edgeSet)
         assert(bool(self.event_list))
-        assert(bool(self.lowerEdges))
         assert(bool(self.discovered))
         assert(not bool(self.results))
         assert(self.sweep_y == inf)
@@ -114,18 +144,17 @@ class LineIntersector:
             upper_set, contain_set, lower_set = self.determine_sets(curr_vert,
                                                                     closest_node,
                                                                     curr_edge_list.copy())
-            logging.debug("Upper Set: {}".format(upper_set))
-            logging.debug("Contain Set: {}".format(contain_set))
-            logging.debug("Lower Set: {}".format(lower_set))
             self.report_intersections(curr_vert, upper_set, contain_set, lower_set)
             
             #todo: delete non-flat points of the non-flat event
-            self.delete_values(contain_set.union(lower_set))
+            self.delete_values(contain_set.union(lower_set), curr_x=curr_vert.loc[0])
 
+            self.debug_chain()
+            
             #insert the segments with the status line a little lower
             candidate_lines = contain_set.union(upper_set)
-            newNodes = self.insert_values(candidate_lines)
-            
+            newNodes = self.insert_values(candidate_lines, curr_x=curr_vert.loc[0])
+
             #Calculate additional events
             self.debug_chain()
             self.handle_new_events(curr_vert, closest_node, newNodes)
@@ -143,6 +172,9 @@ class LineIntersector:
             self.edgeSet = self.dcel.halfEdges.copy()
         else:
             assert(isinstance(edgeSet, set))
+            #get the twins as well
+            twins = [x.twin for x in edgeSet]
+            edgeSet.update(twins)
             self.edgeSet = edgeSet
         assert(self.edgeSet is not None)
         self.lowerEdges = [e for e in self.edgeSet if not e.isUpper()]        
@@ -205,7 +237,7 @@ class LineIntersector:
         else:
             logging.debug("Closest_node is None")
             assert(bool(self.status_tree))
-            paired = [(a.value(y=(self.sweep_y+SWEEP_NUDGE))[0], a) for a in newNodes]
+            paired = [(lineSortConvert(a.value,self.sweep_y+SWEEP_NUDGE, curr_vert.loc[0]), a) for a in newNodes]
             paired.sort(key=lambda x: x[0])
             logging.debug("New Nodes: {}".format([x[1].value.index for x in paired]))
             if not bool(paired):
@@ -278,21 +310,21 @@ class LineIntersector:
         assert(not bool(curr_edge_list) or all([isinstance(x, HalfEdge) for x in curr_edge_list]))
         return curr_vert, curr_edge_list
 
-    def delete_values(self, values):
-        logging.debug("Deleting values")
+    def delete_values(self, values, curr_x):
+        logging.debug("Deleting values: {}".format([x.index for x in values]))
         assert(all([x.isUpper() for x in values]))
-        self.status_tree.delete_value(*values, cmpData=self.sweep_y)
+        self.status_tree.delete_value(*values, cmpData={'y':self.sweep_y,'x': curr_x})
 
-    def insert_values(self, candidates):
-        logging.debug("Inserting values")
+    def insert_values(self, candidates, curr_x):
+        logging.debug("Inserting values: {}".format([x.index for x in candidates]))
         flat_lines = set([x for x in candidates if x.isFlat()])
         #insert only non-flat lines
         toAdd = candidates.difference(flat_lines)
         assert(all([x.isUpper() for x in toAdd]))
         newNodes = self.status_tree.insert(*toAdd,
-                                           cmpData=(self.sweep_y + SWEEP_NUDGE))
+                                           cmpData={'y':(self.sweep_y + SWEEP_NUDGE), 'x': curr_x})
         newNodes += self.status_tree.insert(*flat_lines,
-                                           cmpData=(self.sweep_y + SWEEP_NUDGE))
+                                            cmpData={'y':(self.sweep_y + SWEEP_NUDGE), 'x': curr_x})
 
         return newNodes
         
@@ -309,7 +341,7 @@ class LineIntersector:
                                             cmpData=self.sweep_y,
                                             closest=True,
                                             cmpFunc=lineCmpVert,
-                                            eqFunc=lambda a, b, cd: np.allclose(a.value(y=cd), b))
+                                            eqFunc=lineEqVert)
 
         if closest_node is not None:
             logging.debug("Closest Node: {}".format(closest_node.value.index))
