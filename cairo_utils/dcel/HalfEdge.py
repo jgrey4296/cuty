@@ -5,7 +5,7 @@ from math import pi, atan2, copysign, degrees
 import numpy as np
 import IPython
 from itertools import islice, cycle
-from ..math import inCircle, get_distance, intersect, sampleAlongLine, get_unit_vector, extend_line, rotatePoint, is_point_on_line, get_distance_raw, bbox_to_lines, get_midpoint
+from ..math import inCircle, get_distance, intersect, sampleAlongLine, get_unit_vector, extend_line, rotatePoint, is_point_on_line, get_distance_raw, bbox_to_lines, get_midpoint, getRanges
 from ..constants import TWOPI, IntersectEnum, EPSILON, TOLERANCE, START, END, SMALL_RADIUS, FACE, EDGE, VERTEX, WIDTH, D_EPSILON
 from ..drawing import drawRect, drawCircle, clear_canvas, drawText
 from .constants import EditE, EDGE_FOLLOW_GUARD, EdgeE, SampleFormE
@@ -66,7 +66,12 @@ class HalfEdge(Drawable):
             self.data.update(data)
         if self.dcel is not None and self not in self.dcel.halfEdges:
             self.dcel.halfEdges.add(self)
-            
+
+    def eq_verts(self, other):
+        assert(isinstance(other, HalfEdge))
+        sVerts = self.getVertices()
+        oVerts = other.getVertices()
+        return all([s == o for s,o in zip(sVerts,oVerts)])
 
     def copy(self):
         """ Copy the halfedge pair. sub-copies the vertexs too """
@@ -153,7 +158,7 @@ class HalfEdge(Drawable):
         return "(HE: {}, f: {}, O: {}, T: {}, P: {}, N: {}, XY: {})".format(*data)
 
     def draw(self, ctx, data_override=None, clear=False, text=False, width=None):
-        logging.info("Drawing Edge: {} | {}".format(self.index, self.twin.index))
+        logging.debug("Drawing Edge: {} | {}".format(self.index, self.twin.index))
         if clear:
             clear_canvas(ctx)
         data = self.data.copy()
@@ -228,7 +233,7 @@ class HalfEdge(Drawable):
         #draw as a line/curve
         #todo: allow beziers to be simplified to straight lines
         if bool(bezier):
-            logging.info("Drawing Bezier: {}".format(bezier))
+            logging.debug("Drawing Bezier: {}".format(bezier))
             ctx.new_path()
             for b in bezier:
                 ctx.move_to(*b[0])
@@ -242,7 +247,7 @@ class HalfEdge(Drawable):
                     ctx.curve_to(*b[1], *b[2], *b[3])
 
         else:
-            logging.info("Drawing Straight Line")
+            logging.debug("Drawing Straight Line")
             ctx.move_to(*v1.loc)
             ctx.line_to(*v2.loc)
 
@@ -569,6 +574,10 @@ class HalfEdge(Drawable):
         theLine = Line.newLine(self.toArray())
         return theLine(x=x, y=y)
 
+    def getRanges(self):
+        arr = getRanges(self.toArray())
+        return arr
+    
     @staticmethod
     def compareEdges(center, a, b):
         """ Compare two halfedges against a centre point, returning whether a is CCW, equal, or CW from b 
