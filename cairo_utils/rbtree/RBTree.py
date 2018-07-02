@@ -120,6 +120,8 @@ class RBTree:
                 current = current.right
             elif eqFunc(current,value, cmpData) or comp is Directions.CENTRE:
                 break
+            else:
+                raise Exception("Search Failure: Not left, right, or equal") 
 
         if closest and current is None:
             #closest non-exact match found
