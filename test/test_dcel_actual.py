@@ -451,8 +451,6 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertTrue(e1.twin in i3.contain)
         self.assertTrue(e3 in i3.contain)
         
-        
-        
     def test_intersect_halfedges_no_intersections(self):
         #create
         e1 = self.dc.createEdge(np.array([0,0]), np.array([1,0]))
@@ -470,6 +468,14 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         results = self.dc.intersect_halfEdges()
         self.assertEqual(len(results), 3)
 
+    def test_intersect_three_vert_one_horizontal(self):
+        v1 = self.dc.createEdge(np.array([0,0]), np.array([0,2000]))
+        v2 = self.dc.createEdge(np.array([1000,0]), np.array([1000,2000]))
+        v3 = self.dc.createEdge(np.array([2000,0]), np.array([2000,2000]))
+        
+        h1 = self.dc.createEdge(np.array([0,2000]), np.array([2000,2000]))
+        results = self.dc.intersect_halfEdges(edgeSet=set([v1,v2,v3,h1]))
+        self.assertEqual(len(results), 3)
         
         
         
