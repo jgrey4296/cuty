@@ -623,6 +623,12 @@ def bbox_centre(bbox):
     midPoint = ranges * 0.5
     return midPoint
 
+def getRanges(a):
+    assert(isinstance(a, np.ndarray))
+    assert(a.shape[1] == 2)
+    ranges = np.array([a.min(axis=0), a.max(axis=0)])
+    return ranges.T
+
 #------------------------------
 # def DEPRECATED
 #------------------------------
