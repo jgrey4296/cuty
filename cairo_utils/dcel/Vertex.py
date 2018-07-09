@@ -6,8 +6,8 @@ import logging as root_logger
 import numpy as np
 
 from .constants import EditE, VertE, SampleE, SampleFormE
+from ..constants import TWOPI, D_EPSILON, TOLERANCE, VERTEX, VERTRAD, ALLCLOSE_TOLERANCE
 from ..math import inCircle, rotatePoint
-from ..constants import TWOPI, D_EPSILON, TOLERANCE, VERTEX, VERTRAD
 from ..drawing import drawRect, drawText, clear_canvas, drawCircle
 from .Drawable import Drawable
 
@@ -98,7 +98,7 @@ class Vertex(Drawable):
     def __repr__(self):
         edges = [x.index for x in self.halfEdges]
         edges += [x.twin.index for x in self.halfEdges]
-        return "(V: {}, edges: {}, ({:.3f}, {:.3f})".format(self.index, edges,
+        return "(V: {}, edges: {}, ({:.3f}, {:.3f}))".format(self.index, edges,
                                                            self.loc[0], self.loc[1])
 
 
@@ -167,7 +167,7 @@ class Vertex(Drawable):
     def __lt__(self, other):
         """ Sorting top to bottom, left to right """
         assert(isinstance(other, Vertex))
-        if np.allclose(self.loc[1], other.loc[1]):
+        if np.allclose(self.loc[1], other.loc[1], atol=ALLCLOSE_TOLERANCE[0], rtol=ALLCLOSE_TOLERANCE[1]):
             return self.loc[0] < other.loc[0]
         else:
             return self.loc[1] > other.loc[1]
