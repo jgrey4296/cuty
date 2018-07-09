@@ -19,9 +19,11 @@ PI = pi
 TWOPI = 2 * pi
 QUARTERPI = 0.5 * pi
 THREEFOURTHSTWOPI = 3/4 * TWOPI
-EPSILON = sys.float_info.epsilon
-D_EPSILON = EPSILON * 10000000
+EPSILON = max(1e-12,sys.float_info.epsilon)
+D_EPSILON = 1e-6 #EPSILON * 10000000
 TOLERANCE = 0.5
+ALLCLOSE_TOLERANCE = [1e-10, 1e-10]
+
 
 VERTRAD = 10
 
