@@ -162,7 +162,6 @@ class Line:
         elif y is not None:
             if self.m is not None and self.m != 0:
                 xprime = (y - self.b) / self.m
-                #xprime = (y / self.m) - self.b
             else:
                 xprime = self.source[0]
             return np.array([xprime, y])
