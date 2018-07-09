@@ -3,14 +3,12 @@ from cairo_utils import dcel
 import unittest
 import logging
 import IPython
-#https://ipython.readthedocs.io/en/stable/config/options/terminal.html
-#IPython.embed(simple_prompt=True)
-#in shell: ipython --simple-prompty --matplotlib
 #Import TestCase Instances here:
 from test_dcel_vertex import DCEL_VERTEX_Tests
 from test_dcel_halfedge import DCEL_HALFEDGE_Tests
 from test_dcel_face import DCEL_FACE_Tests
 from test_dcel_actual import DCEL_ACTUAL_Tests
+from test_dcel_line_intersect import DCEL_LINE_INTERSECT_Tests
 ##
 
 if __name__ == '__main__':
