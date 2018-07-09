@@ -215,33 +215,30 @@ class LineIntersector:
 
         
 
-    def handle_new_events(self, curr_vert, closest, newNodes):
+    def handle_new_events(self, curr_vert, newNodes):
         logging.debug("Finding new Events")
         #todo: only find new events if there is a set of non-horizontal lines
         if not bool(newNodes):
-            logging.debug("closest_node is not None")
-            leftN = None
-            rightN = None
-            if closest is not None:
-                leftN = closest.getPredecessor()
-                rightN = closest.getSuccessor()
-            logging.debug("LeftN: {}".format(leftN))
-            logging.debug("RightN: {}".format(rightN))
-
-            if leftN is not None and rightN is not None:
-                self.findNewEvents(leftN.value,
-                                   rightN.value,
-                                   curr_vert.toArray())
-        else:
-            logging.debug("Closest_node is None")
-            assert(bool(self.status_tree))
-            paired = [(lineSortConvert(a.value,self.sweep_y+SWEEP_NUDGE, curr_vert.loc[0]), a) for a in newNodes]
-            paired.sort(key=lambda x: x[0])
-            logging.debug("New Nodes: {}".format([x[1].value.index for x in paired]))
-            if not bool(paired):
+            closest_node, d = self.search_tree(curr_vert)
+            if closest_node is None:
                 return
-            #todo: might not be candidates, might be a sorted set access
-            leftmost = paired[0][1]
+            leftN = closest_node.getPredecessor()
+            rightN = closest_node.getSuccessor()
+            if leftN is not None:
+                self.findNewEvents(leftN.value, closest_node.value, curr_vert.toArray())
+            if rightN is not None:
+                self.findNewEvents(closest_node.value, rightN.value, curr_vert.toArray())
+
+        else:
+            logging.debug("New nodes added")
+            assert(bool(self.status_tree))
+            if not bool(newNodes):
+                return
+            #TODO: this could be more efficient
+            chain = self.status_tree.get_chain()
+            ordered = [x for x in chain if x in newNodes]
+            logging.debug("New Nodes: {}".format([x.value.index for x in ordered]))
+            leftmost = ordered[0]
             leftmostN = leftmost.getPredecessor()
             if leftmostN is not None and leftmost is not None:
                 self.findNewEvents(leftmostN.value,
@@ -249,7 +246,7 @@ class LineIntersector:
                                    curr_vert.toArray())
 
                 
-            rightmost = paired[-1][1]
+            rightmost = ordered[-1]
             rightmostN = rightmost.getSuccessor()
                 
             if rightmost is not None and rightmostN is not None:
