@@ -262,15 +262,19 @@ class LineIntersector:
         assert(isinstance(a, HalfEdge))
         assert(isinstance(b, HalfEdge))
 
-        logging.debug("Finding Events for: {}, {}, {}".format(a.index,b.index,loc))        
+        logging.debug("Finding Events for: {}, {}, {}".format(a.index,b.index,loc))
         intersection = a.intersect(b)
         matchVert = None
         if intersection is None:
             logging.debug("No intersection")
             return
+        if a.isFlat() or b.isFlat():
+            logging.debug("Forcing same y position")
+            intersection[1] = loc[1]
+        
         #TODO: only works on cartesian
         if intersection[1] > loc[1]:
-            logging.debug("Intersection too high")
+            logging.debug("Intersection too high: {} -- {}".format(intersection[1], loc[1]))
             return
         if intersection[1] < loc[1] or\
            (intersection[1] == loc[1] and loc[0] <= intersection[0]):
@@ -317,20 +321,35 @@ class LineIntersector:
         return curr_vert, curr_edge_list
 
     def delete_values(self, values, curr_x):
+        logging.debug("--------------------")
         logging.debug("Deleting values: {}".format([x.index for x in values]))
         assert(all([x.isUpper() for x in values]))
-        self.status_tree.delete_value(*values, cmpData={'y':self.sweep_y,'x': curr_x})
+        chain = [x.value.index for x in self.status_tree.get_chain()]
+        logging.debug("Chain: {}".format(chain))
+        self.status_tree.delete_value(*values, cmpData={'y':self.sweep_y, 'nudge': -SWEEP_NUDGE,
+                                                        'x': curr_x - D_EPSILON})
+
+
+        #Verify:
+        chain = [x.value.index for x in self.status_tree.get_chain()]
+        try:
+            assert(all([x.index not in chain for x in values]))
+        except AssertionError as e:
+            IPython.embed(simple_prompt=True)
 
     def insert_values(self, candidates, curr_x):
         logging.debug("Inserting values: {}".format([x.index for x in candidates]))
+
         flat_lines = set([x for x in candidates if x.isFlat()])
         #insert only non-flat lines
         toAdd = candidates.difference(flat_lines)
         assert(all([x.isUpper() for x in toAdd]))
         newNodes = self.status_tree.insert(*toAdd,
-                                           cmpData={'y':(self.sweep_y + SWEEP_NUDGE), 'x': curr_x})
+                                           cmpData={'y':self.sweep_y, 'nudge': SWEEP_NUDGE,
+                                                    'x': curr_x + D_EPSILON})
         newNodes += self.status_tree.insert(*flat_lines,
-                                            cmpData={'y':(self.sweep_y + SWEEP_NUDGE), 'x': curr_x})
+                                            cmpData={'y':self.sweep_y, 'nudge':SWEEP_NUDGE,
+                                                     'x': curr_x + D_EPSILON})
 
         return newNodes
         
@@ -338,16 +357,16 @@ class LineIntersector:
         assert(isinstance(curr, Vertex))
         candidate = curr.toArray()[1]
         if candidate > self.sweep_y:
-            raise Exception("Sweep line moved in wrong direction")
+            raise Exception("Sweep line moved in wrong direction: {} vs {}".format(candidate, self.sweep_y))
         self.sweep_y = candidate
 
     def search_tree(self, curr):
         assert(isinstance(curr, Vertex))
         closest_node,d = self.status_tree.search(curr.toArray(),
-                                            cmpData=self.sweep_y,
-                                            closest=True,
-                                            cmpFunc=lineCmpVert,
-                                            eqFunc=lineEqVert)
+                                                 cmpData={'y': self.sweep_y, 'x': curr.toArray()[0]},
+                                                 closest=True,
+                                                 cmpFunc=lineCmpVert,
+                                                 eqFunc=lineEqVert)
 
         if closest_node is not None:
             logging.debug("Closest Node: {}".format(closest_node.value.index))
