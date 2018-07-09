@@ -20,7 +20,6 @@ class RBTree:
     
     def __init__(self, cmpFunc=None, eqFunc=None, cleanupFunc=None):
         """ Initialise the rb tree container, ie: the node list """
-
         #Default Comparison and Equality functions with dummy data ignored
         if cmpFunc is None:
             cmpFunc = default_comparison
@@ -100,7 +99,7 @@ class RBTree:
     #------------------------------
 
     def search(self, value, cmpFunc=None, eqFunc=None,
-               cmpData=None, closest=False):
+               cmpData=None, closest=False, start=None):
         """ Search the tree for a value """
         logging.debug("Searching for: {}".format(value))
 
@@ -108,20 +107,21 @@ class RBTree:
             cmpFunc = self.cmpFunc
         if eqFunc is None:
             eqFunc = self.eqFunc
-        parent = self.root
-        current = self.root
-        comp = Directions.CENTRE
-        while current is not None:
+        if start is None:
+            start = self.root        
+        parent = start
+        current = start
+        comp = None
+        while current is not None and not eqFunc(current, value, cmpData):
             parent = current
             comp = cmpFunc(current, value, cmpData)
             if comp is Directions.LEFT:
+                logging.debug("left")
                 current = current.left
-            elif comp is Directions.RIGHT:
-                current = current.right
-            elif eqFunc(current,value, cmpData) or comp is Directions.CENTRE:
-                break
             else:
-                raise Exception("Search Failure: Not left, right, or equal") 
+                assert(comp is Directions.RIGHT)
+                logging.debug("right")
+                current = current.right
 
         if closest and current is None:
             #closest non-exact match found
@@ -163,6 +163,7 @@ class RBTree:
         toRemove = set(args)
         while bool(toRemove):
             target = toRemove.pop()
+            logging.debug("Removing Target: {}".format(target))
             assert(isinstance(target, Node))
             if target not in self.nodes:
                 continue
@@ -176,6 +177,9 @@ class RBTree:
             node,direction = self.search(val, cmpFunc=cmpFunc, eqFunc=eqFunc, cmpData=cmpData)
             if node is not None:
                 self.delete(node, cleanupFunc=cleanupFunc)
+            else:
+                logging.debug("Not Found: {}".format(val))
+                
             
     #------------------------------
     # def Private Update
