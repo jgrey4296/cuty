@@ -47,49 +47,44 @@ def lineCmp(a, b, cd):
     aHor = a.value.isFlat()
     bHor = b.isFlat()
     #---
-    aVal = a.value(y=cd['y'])[0]
-    bVal = b(y=cd['y'])[0]
-    if aHor:
-        aVal = cd['x'] + D_EPSILON
-    if bHor:
-        bVal = cd['x'] + D_EPSILON
-    logging.debug("Line Cmp: A: {}, B: {}, start_x:{}".format(aVal, bVal, cd['x']))
-    if aVal < bVal:
-        return Directions.RIGHT
-    elif bVal < aVal:
-        return Directions.LEFT
+    logging.debug("Comparison: {} - {}".format(a.value.index, b.index))
+    logging.debug("Flat:       {} - {}".format(aHor, bHor))
+    y = cd['y']
+    if not (aHor or bHor):
+        y += cd['nudge']
+    aRanges = a.value.getRanges()
+    bRanges = b.getRanges()
         
-    return Directions.CENTRE
+    aVal = a.value(y=y)[0]
+    bVal = b(y=y)[0]
+    if bHor:
+        bVal = min(max(cd['x'], bRanges[0,0]), bRanges[0,1])
+    if aHor:
+        aVal = min(max(cd['x'], aRanges[0,0]), aRanges[0,1])
+
+    logging.debug("Values: {} - {}".format(aVal, bVal))
+    
+    if aVal <= bVal:
+        return Directions.RIGHT
+    return Directions.LEFT
 
 def lineEq(a, b, cd):
-    return a.value.index == b.index
+    return a.value == b
 
 def lineCmpVert(a, b, cd):
-    result = Directions.CENTRE
+    result = Directions.LEFT
     if a.value.isFlat():
-        ranges = a.value.getRanges()
-        logging.debug("VERT_H aVal: {}  bVal: {}".format(ranges, b[0]))
-        if b[0] < ranges[0,0]:
-            result = Directions.LEFT
-        elif b[0] > ranges[0,1]:
-            result =  Directions.RIGHT
+        aVal = cd['x']
     else:
-        aVal = a.value(y=cd)[0]
-        logging.debug("VERT aVal: {}  bVal: {}".format(aVal, b[0]))
-        if aVal < b[0]:
-            result = Directions.RIGHT
-        elif b[0] < aVal:
-            result = Directions.LEFT
+        aVal = a.value(y=cd['y'])[0]
+    logging.debug("VERT aVal{}: {}  bVal: {}".format(a.value.index,aVal, b[0]))
+    
+    if aVal <= b[0]:
+        result = Directions.RIGHT
     return result
 
 def lineEqVert(a,b,cd):
-    return np.allclose(a.value(y=cd), b)
-
-def lineSortConvert(a,y,curr_x):
-    if a.isFlat():
-        return curr_x
-    else:
-        return a(y=y)[0]
+    return np.allclose(a.value(y=cd['y']), b)
 
 
 #------------------------------
