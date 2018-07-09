@@ -104,6 +104,7 @@ class LineIntersector:
         self.results = []
         self.discovered = set()
         self.sweep_y = inf
+        self.sweep_y_prev = inf
         #Tree to keep active edges in,
         #Sorted by the x's for the current y of the sweep line
         self.status_tree = RBTree(cmpFunc=lineCmp,
@@ -132,7 +133,7 @@ class LineIntersector:
             curr_vert, curr_edge_list = self.get_next_event()
             logging.debug("Curr Vert: {}".format(curr_vert))
             self.update_sweep(curr_vert)
-            self.debug_chain()
+            self.debug_chain("Initial")
 
             logging.debug("Searching tree")            
             closest_node, d = self.search_tree(curr_vert)
@@ -142,17 +143,19 @@ class LineIntersector:
             self.report_intersections(curr_vert, upper_set, contain_set, lower_set)
             
             #todo: delete non-flat points of the non-flat event
-            self.delete_values(contain_set.union(lower_set), curr_x=curr_vert.loc[0])
+            self.delete_values(contain_set, curr_x=curr_vert.loc[0])
+            self.delete_values(lower_set, curr_x=curr_vert.loc[0])
+            self.debug_chain("Deleted")
 
-            self.debug_chain()
             
             #insert the segments with the status line a little lower
             candidate_lines = contain_set.union(upper_set)
             newNodes = self.insert_values(candidate_lines, curr_x=curr_vert.loc[0])
 
             #Calculate additional events
-            self.debug_chain()
-            self.handle_new_events(curr_vert, closest_node, newNodes)
+            self.debug_chain("Inserted")
+            
+            self.handle_new_events(curr_vert, newNodes)
 
         assert(self.sweep_y != inf)
         assert(not bool(self.event_list))
@@ -289,9 +292,17 @@ class LineIntersector:
     # def UTILITIES
     #------------------------------
 
-    def debug_chain(self):
+    def debug_chain(self, str=None):
+        if str is None:
+            str = ""
         chain = [x.value.index for x in self.status_tree.get_chain()]
-        logging.debug("Tree Chain is: {}".format(chain))
+        logging.debug("{} Tree Chain is: {}".format(str, chain))
+        encountered = set()
+        for x in chain:
+            if x in encountered:
+                raise Exception("Duplicated: {}".format(x))
+            encountered.add(x)
+        
 
     def report_intersections(self, v, u, c, l):
         #todo: for each horizontal crossing point separately
