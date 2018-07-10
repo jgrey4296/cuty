@@ -13,7 +13,6 @@ def default_comparison(a, b, compData):
     """ Standard smallest to largest comparison function """
     if a.value < b:
         return Directions.RIGHT
-
     return Directions.LEFT
 
 def inverted_comparison(a, b, compData):
@@ -27,67 +26,37 @@ def default_equality(a, b, eqData):
     return a.value == b
 
 def arc_equality(a, b, eqData):
-    #todo: return true if  a.pred|a < b < a|a.succ
-    raise Exception("Unimplemented")
+    #return true if  a.pred|a < b < a|a.succ
+    l_inter, r_inter = __arc_intersects(a,b,eqData)
+    result = False
+    if l_inter is not None and r_inter is not None:
+        result = l_inter < b < r_inter
+    elif r_inter is not None:
+        result = b < r_inter
+    elif l_inter is not None:
+        result = l_inter < b
+    return result
 
 def arc_comparison(a, b, compData):
     """ Function to compare an arc and xposition
     Used in Beachline/Voronoi """
-    pred = a.getPredecessor()
-    succ = a.getSuccessor()
-    logging.debug("Pred: {}, Succ: {}".format(pred,succ))
-    pred_intersect = None
-    succ_intersect = None
-    the_range = [-math.inf,math.inf]
-    if pred == None and succ == None: #Base case: single arc
-        logging.debug("Single Arc: {}".format(a.value))
+    l_inter, r_inter = __arc_intersects(a,b,compData)
+    pred_self = False
+    self_succ = False
+
+    if l_inter == None and r_inter == None: #Base case: single arc
         if b < a.value.fx:
             return Directions.LEFT
         else:
             return Directions.RIGHT
 
-    pred_self = False
-    self_succ = False
-            
-    if pred != None:
-        pred_intersect = a.value.intersect(pred.value)
-        pred_int = pred_intersect.astype(dtype=np.int)
-        pred_above_self = a.value.fy < pred.value.fy
-        logging.debug("Comparing x:{:.1f} to pred_intersect: {}".format(b, pred_int))
-        logging.debug("Pred above self: {}".format(pred_above_self))
-        if pred_intersect is not None and len(pred_intersect) == 1:
-            if b < pred_intersect[0,0]:
-                pred_self = True
-        elif pred_intersect is not None and len(pred_intersect) == 2:
-            if pred_above_self:
-                if b < pred_intersect[0,0]:
-                    pred_self = True
-            else:
-                if b < pred_intersect[1,0]:
-                    pred_self = True
-                
-    if succ != None:
-        succ_intersect = succ.value.intersect(a.value)
-        succ_int = succ_intersect.astype(dtype=np.int)
-        succ_above_self = a.value.fy < succ.value.fy
-        logging.debug("Comparing b:{:.1f} to succ_intersect: {}".format(b, succ_int))
-        logging.debug("Succ above a: {}".format(succ_above_self))
-        if succ_intersect is not None and len(succ_intersect) == 1:
-            if b > succ_intersect[0,0]:
-                self_succ = True
-        elif succ_intersect is not None and len(succ_intersect) == 2:
-            if succ_above_self:
-                if succ_intersect[1,0] < b:
-                    self_succ = True
-            else:
-                if succ_intersect[0,0] < b:
-                    self_succ = True
-
-    logging.debug("pred_self: {}".format(pred_self))
-    logging.debug("self_succ: {}".format(self_succ))
-
-    
-    
+    if l_inter is not None:
+        if b < l_inter:
+            pred_self = True
+    if r_inter is not None:
+        if r_inter < b:
+            self_succ = True
+                    
     if pred_self:
         return Directions.LEFT
     if self_succ:
@@ -95,3 +64,38 @@ def arc_comparison(a, b, compData):
     
     return Directions.LEFT
 
+def __arc_intersects(a, b, compData):
+    pred = a.getPredecessor()
+    succ = a.getSuccessor()
+    pred_intersect = None
+    succ_intersect = None
+    pred_intersect_out = None
+    succ_intersect_out = None
+    pred_above_self = None
+    succ_above_self = None
+    
+    if pred != None:
+        pred_intersect = a.value.intersect(pred.value)
+        pred_above_self = a.value.fy < pred.value.fy
+                
+    if succ != None:
+        succ_intersect = succ.value.intersect(a.value)
+        succ_above_self = a.value.fy < succ.value.fy
+
+    if pred_intersect is not None and len(pred_intersect) == 1:
+        pred_intersect_out = pred_intersect[0,0]
+    elif pred_intersect is not None and len(pred_intersect) == 2:
+        if pred_above_self:
+            pred_intersect_out = pred_intersect[0,0]
+        else:
+            pred_intersect_out = pred_intersect[1,0]
+
+    if succ_intersect is not None and len(succ_intersect) == 1:
+        succ_intersect_out = succ_intersect[0,0]
+    elif succ_intersect is not None and len(succ_intersect) == 2:
+            if succ_above_self:
+                succ_intersect_out = succ_intersect[1,0]
+            else:
+                succ_intersect_out = succ_intersect[0,0]
+        
+    return (pred_intersect_out, succ_intersect_out)
