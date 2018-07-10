@@ -106,7 +106,8 @@ class RBTree_Tests(unittest.TestCase):
         n2 = Node(3)
         n1.add_left(n2)
         self.assertEqual(n1.getPredecessor(), n2)
-
+        self.assertIsNone(n2.getPredecessor())
+        
     def test_get_predecessor_basic_2(self):
         n1 = Node(2)
         n2 = Node(3)
