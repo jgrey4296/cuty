@@ -35,7 +35,7 @@ class RBTree:
         self.cmpFunc = cmpFunc
         self.eqFunc = eqFunc
         self.cleanupFunc = cleanupFunc
-
+        
     #------------------------------
     # def Basic Access
     #------------------------------
@@ -65,9 +65,13 @@ class RBTree:
         """ Get the sequence of leaf values, from left to right """
         if self.root is None:
             return []
+        found = set()
         chain = []
         current = self.root.min()
         while current is not None:
+            if current in found:
+                IPython.embed(simple_prompt=True)
+            found.add(current)
             chain.append(current)
             current = current.getSuccessor()
         return chain
