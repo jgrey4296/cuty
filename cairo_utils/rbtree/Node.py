@@ -9,7 +9,7 @@ class Node:
     """ The Container for RBTree Data """
     i = 0
     
-    def __init__(self,value,parent=None,data=None):
+    def __init__(self,value,parent=None,data=None,eqFunc=None):
         self.id = Node.i
         Node.i += 1
         #Children:
@@ -21,6 +21,7 @@ class Node:
         self.red = True
         self.value = value
         self.data = {}
+        self.eqFunc = eqFunc
         if data is not None:
             assert(isinstance(data,dict))
             self.data.update(data)
@@ -34,19 +35,23 @@ class Node:
     #------------------------------
 
     def __hash__(self):
+        if self.value is not None and hasattr(self.value, "id"):
+            return self.value.id
         return self.id
     
     def __eq__(self, other):
         assert(other is None or isinstance(other, Node))
+        result = False
         if other is None:
-            return False
-        return self.id == other.id
+            return result
+        result = self.id == other.id
+        return result
 
     def __repr__(self):
         if self.value is not None and hasattr(self.value, "id"):
-            return "({}_{})".format(ascii_uppercase[self.value.id % 26], int(self.value.id/26))
+            return "({}_{})".format(ascii_uppercase[self.value.id % 26], int(self.value.id/26), self.id)
         else:
-            return "({})".format(self.value)
+            return "({}:{})".format(self.value, self.id)
         
 
     def getBlackHeight(self,parent=None):
@@ -214,7 +219,7 @@ class Node:
 
     def on_left(self, node):
         assert(isinstance(node, Node))
-        return node == self.left
+        return self.left == node
     
     def rotate_right(self):
         setAsRoot = True
