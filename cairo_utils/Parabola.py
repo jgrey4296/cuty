@@ -36,9 +36,15 @@ class Parabola(object):
         self.sb = 2 * self.sa * self.vh
         self.sc = self.sa * (pow(self.vh,2)) + self.vk
 
+    def __hash__(self):
+        return hash(self.id)
+        
     def __str__(self):
         return "y = {0:.2f} * x^2 + {1:.2f} x + {2:.2f}".format(self.sa,self.sb,self.sc)
-        
+
+    def __repr__(self):
+        return "y = {} * x^2 + {} x + {}".format(self.sa,self.sb,self.sc)
+    
     def is_left_of_focus(self,x):
         return x < self.fx
         
@@ -113,7 +119,10 @@ class Parabola(object):
             self.va, self.vh, self.vk,
             self.sa,self.sb,self.sc            
             ])
-        
+
+    def toArray(self):
+        return self.to_numpy_array()
+    
     def __eq__(self,parabola2):
         """ Compare two parabolas """
         assert(isinstance(parabola2, Parabola))
