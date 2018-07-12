@@ -19,7 +19,6 @@ from .Vertex import Vertex
 from .Line import Line
 from .constants import EdgeE, VertE
 from .line_intersector import LineIntersector
-
 import logging as root_logger
 logging = root_logger.getLogger(__name__)
 
@@ -449,14 +448,14 @@ class DCEL(object):
         logging.debug("Created Edge Pair: {}".format(e2.index))
         return e1
 
-    def newFace(self, site=None, edges=None, verts=None, coords=None):
+    def newFace(self, site=None, edges=None, verts=None, coords=None, data=None):
         """ Creates a new face to link edges """
         usedList = [edges is not None, verts is not None, coords is not None]
         assert(len([x for x in usedList if x]) < 2)
         if site is None:
             site = np.array([0,0])
         assert(isinstance(site, np.ndarray))
-        newFace = Face(site=site, dcel=self)
+        newFace = Face(site=site, dcel=self, data=data)
         self.faces.add(newFace)
         #populate the face if applicable:
         coordHullGen = False
