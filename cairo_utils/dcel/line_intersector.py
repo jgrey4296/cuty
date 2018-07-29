@@ -86,11 +86,9 @@ def lineCmpVert(a, b, cd):
 def lineEqVert(a,b,cd):
     return np.allclose(a.value(y=cd['y']), b)
 
-
 #------------------------------
 # def MAIN CLASS
 #------------------------------
-
     
 class LineIntersector:
     """ Processes a DCEL to intersect halfEdges, 
