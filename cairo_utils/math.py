@@ -9,12 +9,30 @@ from .constants import TWOPI, QUARTERPI, EPSILON, TOLERANCE, IntersectEnum
 
 logging = root_logger.getLogger(__name__)
 
-#Partial Matrix Mul constructor for use in rotate point
-#for slices of a 2d array:
 def constructMatMul(a):
+    """ Partial Matrix Mul constructor for use in rotate point
+    for slices of a 2d array: """
     assert(isinstance(a, np.ndarray))
     return partial(lambda x,y: x @ y, a)
 
+#------------------------------
+# def circle functions
+#------------------------------
+
+def displace_around_circle(xys,amnt,num):
+    """ displace the data around a scaled noisy circle """
+    #Create a circle:
+    t = np.linspace(0,2*pi,num)
+    rotation = np.column_stack((sin(t),cos(t)))
+    #add some noise:
+    rnd = np.random.random(num)
+    #jitter the rotation:
+    combined = np.column_stack((rotation[:,0] * rnd, rotation[:,1] * rnd))
+    #control the amount of this noise to apply
+    scaled = amnt * combined
+    #apply the noise to the data
+    mod_points = xys + scaled
+    return mod_points
 
 def sampleCircle(x, y, radius, numOfSteps):
     """ take a position and radius,  get a set of random positions on that circle """
@@ -23,210 +41,18 @@ def sampleCircle(x, y, radius, numOfSteps):
     yPos = y + (np.sin(randI) * radius)
     return np.column_stack((xPos, yPos))
 
-def _interpolate(xy, num_points, smoothing=0.2):
-    """ given a set of points, generate values between those points """
-    assert(isinstance(xy, np.ndarray))
-    assert(len(xy.shape) == 2)
-    assert(xy.shape[0] >= 4)
-    assert(xy.shape[1] == 2)
-    splineTuple, splineValues = splprep([xy[:, 0], xy[:, 1]], s=smoothing)
-    interpolatePoints = np.linspace(0, 1, num_points)
-    smoothedXY = np.column_stack(splev(interpolatePoints, splineTuple))
-    return smoothedXY
-
-def getDirections(xys):
-    """ Given a set of points, get the unit direction
-    from each point to the next point
-    """
-    assert(isinstance(xys, np.ndarray))
-    assert(len(xys.shape) == 2)
-    #convert to vectors:
-    #xysPrime.shape = (n, 4)
-    xysPrime = np.column_stack((xys[1:, :], xys[:-1, :]))
-
-    dx = xysPrime[:, 2] - xysPrime[:, 0]
-    dy = xysPrime[:, 3] - xysPrime[:, 1]
-
-    #radians:
-    arc = np.arctan2(dy, dx)
-    directions = np.column_stack([np.cos(arc), np.sin(arc)])
-
-    #hypotenuse
-    dd = np.sqrt(np.square(dx)+np.square(dy))
-    return (directions, dd)
-
-def granulate(xys, grains=10, mult=2):
-    """ Given a set of points, duplicate each point and offset each slightly
-    by the direction between the points
-    """
-    assert(isinstance(xys, np.ndarray))
-    assert(len(xys.shape) == 2)
-    directions, dd = getDirections(xys)
-    granulated = None
-    for i, d in enumerate(dd):
-        subGranules = xys[i, :] + (d * directions[i, :]*(np.random.random((grains, 1))) * mult)
-        if granulated is None:
-            granulated = subGranules
-        else:
-            granulated = np.row_stack((granulated, subGranules))
-    return granulated
-
-
-def vary(xys, stepSize, pix):
-    """ 
-    for a given set of points, wiggle them slightly
-    """
-    assert(isinstance(xys, np.ndarray))
-    assert(len(xys.shape) == 2)
-    r = (1.0-2.0 * np.random.random((len(xys), 1)))
-    scale = np.reshape(np.arange(len(xys)).astype('float'), (len(xys), 1))
-    noise = (r*scale*stepSize)
-    a = np.random.random(len(xys))
-    rnd = np.column_stack((np.cos(a), np.sin(a)))
-    rndNoise = rnd * noise
-    rndNoisePix = rndNoise * pix
-    xysPrime = xys + rndNoisePix
-    return xysPrime
-
-
-def sampleAlongLine(x, y, ex, ey, t):
-    """ Get a point as a ratio along the given start and end points,
-    returns as a 2d np array """
-    o_x = (1 - t) * x + t * ex
-    o_y = (1 - t) * y + t * ey
-    return np.column_stack((o_x, o_y))
-
-def createLine(x, y, ex, ey, t):
-    """ Given a start and end, create t number of points along that line """
-    lin = np.linspace(0, 1, t)
-    line = sampleAlongLine(x, y, ex, ey, lin)
-    return line
-
-def bezier1cp(start, cp, end, t, f=None, p=None):
-    """ Given the start, end, and a control point, create t number of points along that bezier
-    t : the number of points to linearly create used to sample along the bezier
-    f : a transform function for the sample points prior to calculate bezier
-    p : an overriding set of arbitrary sample points for calculate bezier
-    """
-    assert(isinstance(start, np.ndarray))
-    assert(isinstance(cp, np.ndarray))
-    assert(isinstance(end, np.ndarray))
-    if p is not None:
-        assert(isinstance(p, np.ndarray))
-        samplePoints = p
-    else:
-        samplePoints = np.linspace(0, 1, t)
-        if f is not None:    
-            assert(callable(f))
-            #f is an easing lookup function
-            samplePoints = f(t)
-    line1 = createLine(*start, *cp, t)
-    line2 = createLine(*cp, *end, t)
-    out = sampleAlongLine(line1[:, 0], line1[:, 1], line2[:, 0], line2[:, 1], samplePoints)
-    return out
-
-def bezier2cp(start, cp1, cp2, end, t, f=None, p=None):
-    """ Given a start, end, and two control points along the way, create t number of points along that bezier
-    t : The number of points to sample linearly
-    f : the transform function for the linear sampling
-    p : arbitrary points to use for sampling instead    
-    """
-    assert(all([isinstance(a, np.ndarray) for a in [start, cp1, cp2, end]]))
-    if p is not None:
-        assert(isinstance(p, np.ndarray))
-        samplePoints = p
-    else:
-        samplePoints = np.linspace(0, 1, t)
-        if f is not None:
-            assert(callable(f))
-            samplePoints = f(samplePoints)
-    line1 = createLine(*start, *cp1, t)
-    line2 = createLine(*cp1, *cp2, t)
-    line3 = createLine(*cp2, *end, t)
-
-    s2cp_interpolation = sampleAlongLine(line1[:, 0],
-                                         line1[:, 1],
-                                         line2[:, 0],
-                                         line2[:, 1],
-                                         samplePoints)
-
-    cp2e_interpolation = sampleAlongLine(line2[:, 0],
-                                         line2[:, 1],
-                                         line3[:, 0],
-                                         line3[:, 1],
-                                         samplePoints)
-
-    out = sampleAlongLine(s2cp_interpolation[:, 0],
-                          s2cp_interpolation[:, 1],
-                          cp2e_interpolation[:, 0],
-                          cp2e_interpolation[:, 1],
-                          samplePoints)
-
-    return out
-
-def get_distance_raw(p1, p2):
-    """ Get the non-square-root distance for pairs of points """
-    assert(isinstance(p1, np.ndarray))
-    assert(isinstance(p2, np.ndarray))
-    p1 = p1.reshape(-1, 2)
-    p2 = p2.reshape(-1, 2)
-    dSquared = pow(p2-p1, 2)
-    #summed = dSquared[:, 0] + dSquared[:, 1]
-    summed = dSquared.sum(axis=1)
-    return summed
-
-def get_distance(p1, p2):
-    """ Get the square-root distance of pairs of points """
-    assert(isinstance(p1, np.ndarray))
-    assert(isinstance(p2, np.ndarray))
-   
-    summed = get_distance_raw(p1, p2)
-    sqrtd = np.sqrt(summed)
-    return sqrtd
-
-def get_distance_xyxy(x1,y1,x2,y2):
-    """ Utility to get the raw distance of points as separate x's and y's  """
-    return get_distance_raw(np.array([x1,y1]),np.array([x2,y2]))[0]
-
-
-
-def get_unit_vector(p1, p2):    
-    assert(isinstance(p1, np.ndarray))
-    assert(isinstance(p2, np.ndarray))
-    d = get_distance(p1, p2)
-    if np.allclose(d, 0):
-        return np.array([0, 0])
-    n = (p2-p1)
-    normalized = n / d
-    return normalized
-
-
-def get_bisector(p1, p2, r=False):
-    """ With a normalised line,  rotate 90 degrees,
-    r=True : to the right
-    r=False : to the left
-    """
-    n = get_unit_vector(p1, p2)
-    if r:
-        nPrime = n.dot([[0, -1],
-                        [1, 0]])
-    else:
-        nPrime = n.dot([[0, 1],
-                        [-1, 0]])
-    return nPrime
-
 def get_circle_3p(p1, p2, p3, arb_intersect=20000):
     """
     Given 3 points,  treat them as defining two chords on a circle,
     intersect them to find the centre,  then calculate the radius
     Thus: circumcircle
     """
+    assert(all([isinstance(x, np.ndarray) for x in [p1, p2, p3]]))
     sortedPoints = sort_coords(np.array([p1,p2,p3]))
     p1 = sortedPoints[0]
     p2 = sortedPoints[1]
     p3 = sortedPoints[2]
     
-    #TODO: assert that p1,2 and 3 are arrays
     arb_height = arb_intersect
     #mid points and norms:
     m1 = get_midpoint(p1, p2)
@@ -263,9 +89,155 @@ def get_circle_3p(p1, p2, p3, arb_intersect=20000):
     else:
         return None
 
+def get_lowest_point_on_circle(centre, radius):
+    """ given the centre of a circle and a radius, get the lowest y point on that circle """
+    #return centre + np.array([np.cos(THREEFOURTHSTWOPI) * radius,
+    #                          np.sin(THREEFOURTHSTWOPI) * radius])
+    return centre - np.array([0, radius])
+
+def inCircle(centre, radius, points):
+    """ Test a set of points to see if they are within a circle's radius """
+    d = get_distance_raw(centre, points)
+    return d < pow(radius, 2)
+
+#------------------------------
+# def interpolation functions
+#------------------------------
+
+def granulate(xys, grains=10, mult=2):
+    """ Given a set of points, duplicate each point and offset each slightly
+    by the direction between the points
+    """
+    assert(isinstance(xys, np.ndarray))
+    assert(len(xys.shape) == 2)
+    directions, dd = getDirections(xys)
+    granulated = None
+    for i, d in enumerate(dd):
+        subGranules = xys[i, :] + (d * directions[i, :]*(np.random.random((grains, 1))) * mult)
+        if granulated is None:
+            granulated = subGranules
+        else:
+            granulated = np.row_stack((granulated, subGranules))
+    return granulated
+
+
+def vary(xys, stepSize, pix):
+    """ 
+    for a given set of points, wiggle them slightly
+    """
+    assert(isinstance(xys, np.ndarray))
+    assert(len(xys.shape) == 2)
+    r = (1.0-2.0 * np.random.random((len(xys), 1)))
+    scale = np.reshape(np.arange(len(xys)).astype('float'), (len(xys), 1))
+    noise = (r*scale*stepSize)
+    a = np.random.random(len(xys))
+    rnd = np.column_stack((np.cos(a), np.sin(a)))
+    rndNoise = rnd * noise
+    rndNoisePix = rndNoise * pix
+    xysPrime = xys + rndNoisePix
+    return xysPrime
+
+def _interpolate(xy, num_points, smoothing=0.2):
+    """ given a set of points, generate values between those points """
+    assert(isinstance(xy, np.ndarray))
+    assert(len(xy.shape) == 2)
+    assert(xy.shape[0] >= 4)
+    assert(xy.shape[1] == 2)
+    splineTuple, splineValues = splprep([xy[:, 0], xy[:, 1]], s=smoothing)
+    interpolatePoints = np.linspace(0, 1, num_points)
+    smoothedXY = np.column_stack(splev(interpolatePoints, splineTuple))
+    return smoothedXY
+
+#------------------------------
+# def direction functions
+#------------------------------
+def getRandomDirections(n=1):
+    """ Choose a direction of cardinal and intercardinal directions """ 
+    dirs = [-1,0,1]
+    result = np.random.choice(dirs, size=n*2, replace=True, p=None).reshape((n,2))
+    return [dx,dy]
+
+
+def getDirections(xys):
+    """ Given a set of points, get the unit direction
+    from each point to the next point
+    """
+    assert(isinstance(xys, np.ndarray))
+    assert(len(xys.shape) == 2)
+    #convert to vectors:
+    #xysPrime.shape = (n, 4)
+    #Leading point first to prevent wrap deformation
+    xysPrime = np.column_stack((xys[1:, :], xys[:-1, :]))
+    dx = xysPrime[:, 2] - xysPrime[:, 0]
+    dy = xysPrime[:, 3] - xysPrime[:, 1]
+    #radians:
+    arc = np.arctan2(dy, dx)
+    directions = np.column_stack([np.cos(arc), np.sin(arc)])
+    #hypotenuse
+    dd = np.sqrt(np.square(dx)+np.square(dy))
+    return (directions, dd)
+
+
+#------------------------------
+# def line functions
+#------------------------------
+def intersect(l1, l2, tolerance=TOLERANCE):
+    """ Get the intersection points of two line segments
+    see: http://ericleong.me/research/circle-line/
+    so l1:(start, end), l2:(start, end)
+    returns np.array([x,y]) of intersection or None
+    """
+    assert(isinstance(l1, np.ndarray))
+    assert(isinstance(l2, np.ndarray))
+    assert(l1.shape == (2,2))
+    assert(l2.shape == (2,2))
+    #The points
+    p0 = l1[0]
+    p1 = l1[1]
+    p2 = l2[0]
+    p3 = l2[1]
+
+    a1 = p1[1] - p0[1]
+    b1 = p0[0] - p1[0]
+    c1b = a1 * p0[0] + b1 * p0[1]
+    
+    a2 = p3[1] - p2[1]
+    b2 = p2[0] - p3[0]
+    c2b = a2*p2[0] + b2*p2[1]
+
+    detb = a1 * b2 - a2 * b1
+    if detb == 0:
+        return None
+
+    xb = ((c1b * b2) - (b1 * c2b)) / detb
+    yb = ((a1 * c2b) - (c1b * a2)) / detb
+    xyb = np.array([xb,yb])
+
+    l1mins = np.min((p0, p1), axis=0) - tolerance
+    l2mins = np.min((p2,p3), axis=0) - tolerance
+    l1maxs = np.max((p0, p1), axis=0) + tolerance
+    l2maxs = np.max((p2,p3), axis=0) + tolerance
+
+    if (l1mins <= xyb).all() and (l2mins <= xyb).all() and \
+       (xyb <= l1maxs).all() and (xyb <= l2maxs).all():
+        return xyb
+    return None
+
+def get_unit_vector(p1, p2):
+    """ Given two points, get the normalized direction """
+    assert(isinstance(p1, np.ndarray))
+    assert(isinstance(p2, np.ndarray))
+    d = get_distance(p1, p2)
+    if np.allclose(d, 0):
+        return np.array([0, 0])
+    n = (p2-p1)
+    normalized = n / d
+    return normalized
 
 def extend_line(p1, p2, m, fromStart=True):
-    """ Extend a line by m units """
+    """ Extend a line by m units 
+    Returns the new end points only
+    """
     n = get_unit_vector(p1, p2)
     if fromStart:
         el = p1 + (n * m)
@@ -273,10 +245,236 @@ def extend_line(p1, p2, m, fromStart=True):
         el = p2 + (n * m)
     return el
 
+def is_point_on_line(p, l):
+    """ Test to see if a point is on a line """
+    assert(isinstance(p, np.ndarray))
+    assert(isinstance(l, np.ndarray))
+    points = p.reshape((-1,2))
+    the_lines = l.reshape((-1,2,2))
+    l_mins = the_lines.min(axis=1)
+    l_maxs = the_lines.max(axis=1)
+
+    in_bounds_xs =  l_mins[:,0] <= points[:,0] <= l_maxs[:,0]
+    in_bounds_ys = l_mins[:,1] <= points[:, 1] <= l_maxs[:,1]
+    
+    if np.allclose((the_lines[:,0,0] - the_lines[:,1,0]), 0):
+        return in_bounds_ys and in_bounds_xs
+    slopes = (the_lines[:,0,1] - the_lines[:,1,1]) / (the_lines[:,0,0] - the_lines[:,1,0])
+    y_intersects = - slopes * the_lines[:,0,0] + the_lines[:,0,1]
+    line_ys = slopes * points[:,0] + y_intersects
+    return np.allclose(line_ys, points[0,1]) and in_bounds_ys and in_bounds_xs
+ 
+def makeHorizontalLines(n=1):
+    """ Utility to Describe a horizontal line as a vector of start and end points  """
+    x = np.random.random((n,2)).sort()
+    y = np.random.random(n).reshape((-1,1))
+    return np.column_stack((x[:,0], y, x[:,1], y))
+
+
+def makeVerticalLines(n=1):
+    """ utility Describe a vertical line as a vector of start and end points """
+    x = random.random(n).reshape((-1,1))
+    y = random.random((n,2)).sort()
+    return np.colum_stack((x, y[:,0], x, y[:,1]))
+
+def sampleAlongLine(xys, t):
+    """ For a set of lines, sample along them len(t) times,
+    with t's distribution
+    """
+    len_t = len(t)
+    lines = xys.reshape((-1,2,2))
+    t_inv = 1 - t
+    fade = np.row_stack((t_inv, t))
+    xs = lines[:,:,0].repeat(len_t).reshape((-1,2,len_t)) * fade
+    ys = lines[:,:,1].repeat(len_t).reshape((-1,2,len_t)) * fade
+    s_xs = xs.sum(axis=1)
+    s_ys = ys.sum(axis=1)
+    paired = np.column_stack((s_xs,s_ys))
+    reshaped = paired.reshape((-1,len_t,2), order='F')
+    return reshaped    
+
+def createLine(xys, t):
+    """ Given a start and end, create t number of points along that line """
+    lin = np.linspace(0, 1, t)
+    line = sampleAlongLine(xys, lin)
+    return line
+
+def bezier1cp(aCb, t, f=None, p=None):
+    """ Given the start, end, and a control point, create t number of points along that bezier
+    t : the number of points to linearly create used to sample along the bezier
+    f : a transform function for the sample points prior to calculate bezier
+    p : an overriding set of arbitrary sample points for calculate bezier
+    """
+    assert(isinstance(aCb, np.ndarray))
+    if p is not None:
+        assert(isinstance(p, np.ndarray))
+        samplePoints = p
+    else:
+        samplePoints = np.linspace(0, 1, t)
+        if f is not None:    
+            assert(callable(f))
+            #f is an easing lookup function
+            samplePoints = f(t)
+    a2C = createLine(aCb[:,:4], t).reshape((-1,4))
+    C2b = createLine(aCb[:,2:], t).reshape((-1,4))
+    out = np.zeros((1,a2C.shape[1],2))
+    for ((i,ac),(j,cb)) in zip(enumerate(a2C),enumerate(C2b)):
+        out = np.row_stack((out,sampleAlongLine(np.column_stack((aC,Cb)), samplePoints)))
+    return out[1:]
+
+def bezier2cp(aCCb, t, f=None, p=None):
+    """ Given a start, end, and two control points along the way, create t number of points along that bezier
+    t : The number of points to sample linearly
+    f : the transform function for the linear sampling
+    p : arbitrary points to use for sampling instead    
+    """
+    assert(isinstance(abCC,np.ndarray))
+    if p is not None:
+        assert(isinstance(p, np.ndarray))
+        samplePoints = p
+    else:
+        samplePoints = np.linspace(0, 1, t)
+        if f is not None:
+            assert(callable(f))
+            samplePoints = f(samplePoints)
+    aC = createLine(aCCb[:,:4], t)
+    CC = createLine(aCCb[:,2:6], t)
+    Cb = createLine(aCCb[:,4:], t)
+
+    f_interp = np.zeros((1,aC.shape[1],2))
+    for ((i,a),(j,b)) in enumerate(aC,CC):
+        first_interp = np.row_stack((f,sampleAlongLine(np.column_stack((a,b)),
+                                                       samplePoints)))
+
+    s_interp = np.zeros((1,CC.shape[1],2))
+    for ((i2,a2),(j2,b2)) in enumerate(CC,Cb):
+        s_interp = np.row_stack((s_interp, sampleAlongLine(np.column_stack((a2,b2)),
+                                                           samplePoints)))
+
+    t_interp = np.zeros((1,f_interp.shape[1],2))
+    for ((i3,a3),(j3,b3)) in enumerate((f_interp[1:],s_interp[1:])):
+        t_interp = np.row_stack((t_interp, sampleAlongLine(np.column_stack((a3,b3)),
+                                                           samplePoints)))
+
+
+    return t_interp[1:]
+
+#------------------------------
+# def distance functions
+#------------------------------
+def checkDistanceFromPoints(point,quadTree):
+    bbox = [point[0] - HALFDELTA,point[1] - HALFDELTA,point[0] + HALFDELTA, point[1] + HALFDELTA]
+    area = quadTree.intersect(bbox)
+    insideCanvas = point[0] > 0 and point[0] < 1.0 and point[1] > 0 and point[1] < 1.0
+    return len(area) == 0 and insideCanvas
+
+def getClosestToFocus(focus, possiblePoints):
+    """ Given a set of points, return the point closest to the focus """
+    ds = get_distance(focus, possiblePoints)
+    m_d = ds.min()
+    i = ds.tolist().index(m_d)
+    return possiblePoints[i]
+
+def get_closest_on_side(refPoint, possiblePoints, left=True):
+    """ 
+    given a reference point and a set of candidates, get the closest 
+    point on either the left or right of that reference
+    """
+    subbed = possiblePoints - refPoint
+    if left:
+        onSide = subbed[:, 0] < 0
+    else:
+        onSide = subbed[:, 0] > 0
+    try:
+        i = onSide.tolist().index(True)
+        return possiblePoints[i]
+    except ValueError as e:
+        return None
+
+def get_distance_raw(p1, p2):
+    """ Get the non-square-root distance for pairs of points """
+    assert(isinstance(p1, np.ndarray))
+    assert(isinstance(p2, np.ndarray))
+    p1 = p1.reshape(-1, 2)
+    p2 = p2.reshape(-1, 2)
+    dSquared = pow(p2-p1, 2)
+    #summed = dSquared[:, 0] + dSquared[:, 1]
+    summed = dSquared.sum(axis=1)
+    return summed
+
+def get_distance(p1, p2):
+    """ Get the square-root distance of pairs of points """
+    assert(isinstance(p1, np.ndarray))
+    assert(isinstance(p2, np.ndarray))
+   
+    summed = get_distance_raw(p1, p2)
+    sqrtd = np.sqrt(summed)
+    return sqrtd
+
+def get_distance_xyxy(x1,y1,x2,y2):
+    """ Utility to get the raw distance of points as separate x's and y's  """
+    return get_distance_raw(np.array([x1,y1]),np.array([x2,y2]))[0]
+
 def get_midpoint(p1, p2):
     """ Given two points, get the point directly between them """
     m = (p1 + p2) / 2
     return m
+
+#------------------------------
+# def rotate functions
+#------------------------------
+
+#TODO: rename for more accuracy
+#should be radians_between_points
+def angle_between_points(a, b):
+    """ takes np.arrays
+        return the radian relation of b to a (source)
+        ie: if > 0: anti-clockwise,  < 0: clockwise
+    """
+    c = b - a
+    return atan2(c[1], c[0])
+
+
+
+def isClockwise(*args, cartesian=True):
+    """ Test whether a set of points are in clockwise order  """
+    #based on stackoverflow.
+    #sum over edges,  if positive: CW. negative: CCW
+    #assumes normal cartesian of y bottom = 0
+    sum = 0
+    p1s = args
+    p2s = list(args[1:])
+    p2s.append(args[0])
+    pairs = zip(p1s, p2s)
+    for p1, p2 in pairs:
+        a = (p2[0]-p1[0]) * (p2[1]+p1[1])
+        sum += a
+    if cartesian:
+        return sum >= 0
+    else:
+        return sum < 0
+
+def isCounterClockwise(a, b, c):
+    assert(all([isinstance(x, np.ndarray) for x in [a,b,c]]))
+    offset_b = b - a
+    offset_c = c - a
+    crossed = np.cross(offset_b, offset_c)
+    return crossed >= 0
+
+def get_bisector(p1, p2, r=False):
+    """ With a normalised line,  rotate 90 degrees,
+    r=True : to the right
+    r=False : to the left
+    """
+    n = get_unit_vector(p1, p2)
+    if r:
+        nPrime = n.dot([[0, -1],
+                        [1, 0]])
+    else:
+        nPrime = n.dot([[0, 1],
+                        [-1, 0]])
+    return nPrime
+
 
 
 
@@ -331,222 +529,44 @@ def rotMatrix(rad):
                      [sin(rad),cos(rad)]])
 
 
-def checksign(a, b):
-    """ Test whether two numbers have the same sign """
-    return math.copysign(a, b) == a
-
-def intersect(l1, l2, tolerance=TOLERANCE):
-    """ Get the intersection points of two line segments
-    so l1:(start, end), l2:(start, end)
-    returns np.array([x,y]) of intersection or None
-    """
-    assert(isinstance(l1, np.ndarray))
-    assert(isinstance(l2, np.ndarray))
-    assert(l1.shape == (2,2))
-    assert(l2.shape == (2,2))
-    #see: http://ericleong.me/research/circle-line/
-    #The points
-    p0 = l1[0]
-    p1 = l1[1]
-    p2 = l2[0]
-    p3 = l2[1]
-
-    a1 = p1[1] - p0[1]
-    b1 = p0[0] - p1[0]
-    c1b = a1 * p0[0] + b1 * p0[1]
-    
-    a2 = p3[1] - p2[1]
-    b2 = p2[0] - p3[0]
-    c2b = a2*p2[0] + b2*p2[1]
-
-    detb = a1 * b2 - a2 * b1
-    
-    if detb == 0:
-        return None
-
-    xb = ((c1b * b2) - (b1 * c2b)) / detb
-    yb = ((a1 * c2b) - (c1b * a2)) / detb
-    xyb = np.array([xb,yb])
-
-    l1mins = np.min((p0, p1), axis=0) - tolerance
-    l2mins = np.min((p2,p3), axis=0) - tolerance
-    l1maxs = np.max((p0, p1), axis=0) + tolerance
-    l2maxs = np.max((p2,p3), axis=0) + tolerance
-
-    if (l1mins <= xyb).all() and (l2mins <= xyb).all() and \
-       (xyb <= l1maxs).all() and (xyb <= l2maxs).all():
-        return xyb
-
-    return None
-    
 
 
-def is_point_on_line(p, l):
-    """ Test to see if a point is on a line """
-    assert(isinstance(p, np.ndarray))
-    assert(isinstance(l, np.ndarray))
-    assert(p.shape == (2,))
-    assert(l.shape == (2,2))
-    the_line = l
-    l_min_y = the_line[:,1].min()
-    l_max_y = the_line[:,1].max()
-    l_min_x = the_line[:,0].min()
-    l_max_x = the_line[:,0].max()
-
-    in_bounds_x =  l_min_x <= p[0] <= l_max_x
-    in_bounds_y = l_min_y <= p[1] <= l_max_y
-    
-    if np.allclose((l[0,0] - l[1,0]), 0):
-        return in_bounds_y and in_bounds_x
-    slope = (l[0,1] - l[1,1]) / (l[0,0] - l[1,0])
-    y_intersect = - slope * l[0,0] + l[0,1]
-    line_y = slope * p[0] + y_intersect
-    return np.allclose(line_y, p[1]) and in_bounds_y and in_bounds_x
         
 
-def random_points(n):
-    """ utility to get n 2d points """
-    return np.random.random(n*2)
-
-def bound_line_in_bbox(line, bbox):
-    #todo: take in line,  intersect with lines of bbox,
-    #replace original line endpoint with intersection point
-    bbl = bbox_to_lines(bbox)
-    intersections = [x for x in [intersect(line, x) for x,y in bbl] if x is not None]
-    if len(intersections) == 0:
-        return [line]
-    return [np.array([line[0], x]) for x in intersections]
-
-def makeHorizontalLine():
-    """ Utility to Describe a horizontal line as a vector of start and end points  """
-    x = random.random()
-    x2 = random.random()
-    y = random.random()
-    if x < x2:
-        return np.array([x, y, x2, y])
-    else:
-        return np.array([x2, y, x, y])
+#------------------------------
+# def point functions
+#------------------------------
+def nodeToPosition(x,y):
+    return [NODE_RECIPROCAL * x, NODE_RECIPROCAL * y]
 
 
-def makeVerticalLine():
-    """ utility Describe a vertical line as a vector of start and end points """
-    x = random.random()
-    y = random.random()
-    y2 = random.random()
-    if y < y2:
-        return np.array([x, y, x, y2])
-    else:
-        return np.array([x, y2, x, y])
+def calculateSinglePoint(point):
+    #only a single point passed in, move in a random direction
+    d = np.array([sin(random()*TWOPI),cos(random()*TWOPI)]) * (2 * DELTA)
+    return point + d
 
-def get_lowest_point_on_circle(centre, radius):
-    """ given the centre of a circle and a radius, get the lowest y point on that circle """
-    #return centre + np.array([np.cos(THREEFOURTHSTWOPI) * radius,
-    #                          np.sin(THREEFOURTHSTWOPI) * radius])
-    return centre - np.array([0, radius])
+def calculateVectorPoint(p1,p2):
+    #passed in a pair of points, move in the direction of the vector
+    #get the direction:
+    vector = p2 - p1
+    mag = np.sqrt(np.sum(np.square(vector)))
+    normalizedVector = vector / mag
+    moveVector = normalizedVector * (2 * DELTA)
+    jiggledVector = moveVector * np.array([sin(random()*BALPI),cos(random()*BALPI)])
+    return p2 + jiggledVector 
 
 def sort_coords(arr):
     """ Sort a list of points by x then y value  """
     ind = np.lexsort((arr[:, 1], arr[:, 0]))
     return arr[ind]
 
-def inCircle(centre, radius, points):
-    """ Test a set of points to see if they are within a circle's radius """
-    d = get_distance_raw(centre, points)
-    return d < pow(radius, 2)
+def random_points(n):
+    """ utility to get n 2d points """
+    return np.random.random(n*2)
 
-def isClockwise(*args, cartesian=True):
-    """ Test whether a set of points are in clockwise order  """
-    #based on stackoverflow.
-    #sum over edges,  if positive: CW. negative: CCW
-    #assumes normal cartesian of y bottom = 0
-    sum = 0
-    p1s = args
-    p2s = list(args[1:])
-    p2s.append(args[0])
-    pairs = zip(p1s, p2s)
-    for p1, p2 in pairs:
-        a = (p2[0]-p1[0]) * (p2[1]+p1[1])
-        sum += a
-    if cartesian:
-        return sum >= 0
-    else:
-        return sum < 0
-
-def isCounterClockwise(a, b, c):
-    assert(all([isinstance(x, np.ndarray) for x in [a,b,c]]))
-    offset_b = b - a
-    offset_c = c - a
-    crossed = np.cross(offset_b, offset_c)
-    return crossed >= 0
-
-
-    
-def getMinRangePair(p1, p2):
-    """ TODO: Can't remember, test this """
-    d1 = get_distance(p1, p2)
-    fp2 = np.flipud(p2)
-    d2 = get_distance(p1, fp2)
-    d1_min = d1.min()
-    d2_min = d2.min()
-    if d1_min < d2_min:
-        i = d1.tolist().index(d1_min)
-        #get the right xs
-        return np.array([p1[i][0], p2[i][0]])
-    else:
-        i = d2.tolist().index(d2_min)
-        return np.array([p1[i][0], fp2[i][0]])
-
-def getClosestToFocus(focus, possiblePoints):
-    """ Given a set of points, return the point closest to the focus """
-    ds = get_distance(focus, possiblePoints)
-    m_d = ds.min()
-    i = ds.tolist().index(m_d)
-    return possiblePoints[i]
-
-def get_closest_on_side(refPoint, possiblePoints, left=True):
-    """ 
-    given a reference point and a set of candidates, get the closest 
-    point on either the left or right of that reference
-    """
-    subbed = possiblePoints - refPoint
-    if left:
-        onSide = subbed[:, 0] < 0
-    else:
-        onSide = subbed[:, 0] > 0
-    try:
-        i = onSide.tolist().index(True)
-        return possiblePoints[i]
-    except ValueError as e:
-        return None
-
-#TODO: rename for more accuracy
-#should be radians_between_points
-def angle_between_points(a, b):
-    """ takes np.arrays
-        return the radian relation of b to a (source)
-        ie: if > 0: anti-clockwise,  < 0: clockwise
-    """
-    c = b - a
-    return atan2(c[1], c[0])
-
-
-def displace_along_line(xys,amnt,num):
-    """ TODO: Can't remember, test """
-    t = np.linspace(0,2*pi,num)
-    rotation = np.column_stack((sin(t),cos(t)))
-    rnd = np.random.random(num)
-    combined = np.column_stack((rotation[:,0] * rnd, rotation[:,1] * rnd))
-    scaled = amnt * combined
-    mod_points = xys + scaled
-    all_points = np.concatenate((xys,mod_points))
-    return all_points
-    
-def clamp(n,minn=0,maxn=1):
-    """ Clamp a number between min and max,
-    could be replaced with np.clip
-    """
-    return max(min(maxn,n),minn)
-
+#------------------------------
+# def bbox functions
+#------------------------------
 def bbox_to_lines(bbox, epsilon=EPSILON):
     """ take in the min and max values of a bbox,
     return back a list of 4 lines with the enum designating their position """
@@ -569,6 +589,14 @@ def bbox_to_lines(bbox, epsilon=EPSILON):
 
     return lines
 
+def bound_line_in_bbox(line, bbox):
+    #todo: take in line,  intersect with lines of bbox,
+    #replace original line endpoint with intersection point
+    bbl = bbox_to_lines(bbox)
+    intersections = [x for x in [intersect(line, x) for x,y in bbl] if x is not None]
+    if len(intersections) == 0:
+        return [line]
+    return [np.array([line[0], x]) for x in intersections]
 
 def calc_bbox_corner(bbox, ies, epsilon=EPSILON):
     assert(isinstance(bbox, np.ndarray))
@@ -621,11 +649,41 @@ def bbox_centre(bbox):
     midPoint = ranges * 0.5
     return midPoint
 
+def makeBBoxFromPoint(point,i):
+    border = HALFDELTA * (1/(i+1))
+    return [point[0] - border, point[1] - border, point[0] + border, point[1] + border]
+
+def checksign(a, b):
+    """ Test whether two numbers have the same sign """
+    return math.copysign(a, b) == a
+
+def getMinRangePair(p1, p2):
+    """ TODO: Can't remember, test this """
+    d1 = get_distance(p1, p2)
+    fp2 = np.flipud(p2)
+    d2 = get_distance(p1, fp2)
+    d1_min = d1.min()
+    d2_min = d2.min()
+    if d1_min < d2_min:
+        i = d1.tolist().index(d1_min)
+        #get the right xs
+        return np.array([p1[i][0], p2[i][0]])
+    else:
+        i = d2.tolist().index(d2_min)
+        return np.array([p1[i][0], fp2[i][0]])
+
+def clamp(n,minn=0,maxn=1):
+    """ Clamp a number between min and max,
+    could be replaced with np.clip
+    """
+    return max(min(maxn,n),minn)
+
 def getRanges(a):
     assert(isinstance(a, np.ndarray))
     assert(a.shape[1] == 2)
     ranges = np.array([a.min(axis=0), a.max(axis=0)])
     return ranges.T
+
 
 #------------------------------
 # def DEPRECATED
