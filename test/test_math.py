@@ -54,12 +54,12 @@ class CUMath_Tests(unittest.TestCase):
 
     #createLine
     def test_createLine(self):
-        line = cumath.createLine(0,0, 0, 1, 10)
-        self.assertTrue(len(line) == 10)
-        self.assertTrue(line[:,0].min() == 0)
-        self.assertTrue(line[:,0].max() == 0)
-        self.assertTrue(line[:,1].min() == 0)
-        self.assertTrue(line[:,1].max() == 1)
+        line = cumath.createLine(np.array([0,0, 0, 1,]), 10)
+        self.assertTrue(line.shape == (1,10,2))
+        self.assertTrue(line[0,:,0].min() == 0)
+        self.assertTrue(line[0,:,0].max() == 0)
+        self.assertTrue(line[0,:,1].min() == 0)
+        self.assertTrue(line[0,:,1].max() == 1)
     
     #bezier1cp
     def test_bezier1cp(self):
