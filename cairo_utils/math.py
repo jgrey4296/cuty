@@ -5,8 +5,6 @@ import logging as root_logger
 import IPython
 from scipy.interpolate import splprep, splev
 import numpy as np
-import numpy.random
-import random
 from .constants import TWOPI, QUARTERPI, EPSILON, TOLERANCE, IntersectEnum
 
 logging = root_logger.getLogger(__name__)
