@@ -1,7 +1,7 @@
 """ 
 Module of different easing functions
-All functions produce xs from -1 - 1,
-and ys from 0 - 1
+All functions take xs from -1 - 1,
+and produce ys from 0 - 1
 """
 import numpy as np
 from enum import Enum
@@ -80,13 +80,21 @@ def pow_max_abs(xs, a, r=None, codomain_e=CODOMAIN.FULL):
     ixs_zero = np.column_stack((np.abs(ixs) * 2 - 1, np.zeros(len(ixs))))
     return 1 - pow(np.max(ixs_zero, axis=1), a)
 
+def sigmoid(xs,a,r=None,codomain_e=CODOMAIN.FULL):
+    """ 1 / (1 + e^(-5 * x)
+    Var a does nothing
+    """
+    ixs = interp(xs, r=r, codomain_e=codomain_e)
+    return 1 / (1 + pow(np.e, -5 * ixs))
 
+    
 ELOOKUP = {
     "pow_abs_curve": pow_abs_curve,
     "pow_cos_pi": pow_cos_pi,
     "pow_abs_sin_pi": pow_abs_sin_pi,
     "pow_min_cos_pi" : pow_min_cos_pi,
-    "pow_max_abs" : pow_max_abs
+    "pow_max_abs" : pow_max_abs,
+    "sigmoid" : sigmoid,
 }
 ENAMES = list(ELOOKUP.keys())
 
