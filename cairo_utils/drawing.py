@@ -46,14 +46,17 @@ def clear_canvas(ctx, colour=BACKGROUND, bbox=None):
     ctx.fill()
     ctx.set_source_rgba(*FRONT)
 
-def drawText(ctx, x, y, string, offset=False):
-    logging.debug("Drawing text: {}, {}, {}".format(string, x, y))
+def drawText(ctx, xy, text, offset=False):
+    logging.debug("Drawing text: {}, {}".format(text, xy))
+    ctx.save()
     if offset:
         offset = random.random() * 0.005
     else:
         offset = 0
+    xy += offset
     ctx.set_source_rgba(*TEXT)
-    ctx.move_to(x+offset, y+offset)
+    ctx.move_to(*xy)
     ctx.scale(1,-1)
-    ctx.show_text(str(string))
+    ctx.show_text(str(text))
     ctx.scale(1,-1)
+    ctx.restore()
