@@ -19,27 +19,51 @@ def constructMatMul(a):
 # def circle functions
 #------------------------------
 
-def displace_around_circle(xys,amnt,num):
+def displace_around_circle(xys,scale,n):
     """ displace the data around a scaled noisy circle """
     #Create a circle:
-    t = np.linspace(0,2*pi,num)
-    rotation = np.column_stack((sin(t),cos(t)))
-    #add some noise:
-    rnd = np.random.random(num)
+    t = np.linspace(0,2*pi,n)
+    rotation = np.column_stack((sin(t),cos(t))).transpose()
+    #create some noise:
+    noise = np.random.random(n)
     #jitter the rotation:
-    combined = np.column_stack((rotation[:,0] * rnd, rotation[:,1] * rnd))
+    jittered = (rotation * noise)
     #control the amount of this noise to apply
-    scaled = amnt * combined
+    scaled = (jittered * scale).transpose()
     #apply the noise to the data
     mod_points = xys + scaled
     return mod_points
 
-def sampleCircle(x, y, radius, numOfSteps):
-    """ take a position and radius,  get a set of random positions on that circle """
-    randI = np.sort(np.random.random(numOfSteps)) * TWOPI
-    xPos = x + (np.cos(randI) * radius)
-    yPos = y + (np.sin(randI) * radius)
-    return np.column_stack((xPos, yPos))
+def sampleCircle(xyrs, n, diameter=True, sort_rads=True, sort_radi=True, rad_amnt=TWOPI):
+    """ 
+    Given circles xy and radius in array shape (i,3)
+    produce n samples for each circle.
+    diameter=True : on the edge boundary
+    diameter=False : up to the edge boundary
+    Returns: np.array.shape = (len(xyrs), n, 2)
+    """
+    #duplicate the points:
+    xyrs_r = xyrs.reshape((-1,1,3)).repeat(n, axis=0).reshape((-1,n,3)).transpose((0,1,2))
+    #get random rotations
+    randI = np.random.random((len(xyrs_r), n))
+    if sort_rads:
+        randI.sort(axis=1)
+    randI_t = randI.transpose()
+    randI_ts = randI_t * rad_amnt
+    #create the circle transform
+    circ = np.array([np.cos(randI_ts), np.sin(randI_ts)])
+    circ_t = circ.transpose((2,1,0))
+    #Add radius:
+    radi = xyrs_r[:,:,2].reshape((len(xyrs_r),n,1))
+    if not diameter:
+        rand_radi = np.random.random(radi.shape)
+        if sort_radi:
+            rand_radi.sort(axis=1)
+        radi *= rand_radi
+    offset = circ_t * radi
+    #apply the transforms
+    result = xyrs_r[:,:,:2] + offset
+    return result
 
 def get_circle_3p(p1, p2, p3, arb_intersect=20000):
     """
@@ -105,24 +129,22 @@ def inCircle(centre, radius, points):
 #------------------------------
 
 def granulate(xys, grains=10, mult=2):
-    """ Given a set of points, duplicate each point and offset each slightly
+    """ Given a set of points, offset each slightly
     by the direction between the points
     """
     assert(isinstance(xys, np.ndarray))
     assert(len(xys.shape) == 2)
     directions, dd = getDirections(xys)
-    granulated = None
+    granulated = np.zeros((1,2))
     for i, d in enumerate(dd):
         subGranules = xys[i, :] + (d * directions[i, :]*(np.random.random((grains, 1))) * mult)
-        if granulated is None:
-            granulated = subGranules
-        else:
-            granulated = np.row_stack((granulated, subGranules))
-    return granulated
+        granulated = np.row_stack((granulated, subGranules))
+    return granulated[1:]
 
 
 def vary(xys, stepSize, pix):
     """ 
+    TODO : investigate
     for a given set of points, wiggle them slightly
     """
     assert(isinstance(xys, np.ndarray))
@@ -155,7 +177,7 @@ def getRandomDirections(n=1):
     """ Choose a direction of cardinal and intercardinal directions """ 
     dirs = [-1,0,1]
     result = np.random.choice(dirs, size=n*2, replace=True, p=None).reshape((n,2))
-    return [dx,dy]
+    return result
 
 
 def getDirections(xys):
@@ -175,7 +197,7 @@ def getDirections(xys):
     directions = np.column_stack([np.cos(arc), np.sin(arc)])
     #hypotenuse
     dd = np.sqrt(np.square(dx)+np.square(dy))
-    return (directions, dd)
+    return np.column_stack(directions,dd)
 
 
 #------------------------------
@@ -281,6 +303,8 @@ def sampleAlongLine(xys, t):
     """ For a set of lines, sample along them len(t) times,
     with t's distribution
     """
+    if not isinstance(t,np.ndarray):
+        t = np.array([t])    
     len_t = len(t)
     lines = xys.reshape((-1,2,2))
     t_inv = 1 - t
@@ -527,11 +551,6 @@ def rotMatrix(rad):
     """ Get a matrix for rotating a point by an amount of radians """
     return np.array([[cos(rad),-sin(rad)],
                      [sin(rad),cos(rad)]])
-
-
-
-
-        
 
 #------------------------------
 # def point functions
