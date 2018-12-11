@@ -19,9 +19,9 @@ class CUMath_Tests(unittest.TestCase):
 
     #----------
     def test_sampleCircle(self):
-        circ = cumath.sampleCircle(0, 0, 1, 1000)
+        circ = cumath.sampleCircle(np.array([0,0,1]), 1000)
         self.assertIsInstance(circ, np.ndarray)
-        self.assertEqual(circ.shape, (1000, 2))
+        self.assertEqual(circ.shape, (1, 1000, 2))
         self.assertTrue(-1 <= circ.min() <= -0.99)
         self.assertTrue(0.99 <= circ.max() <= 1)
 
