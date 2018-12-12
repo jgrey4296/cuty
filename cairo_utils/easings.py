@@ -1,22 +1,23 @@
-""" 
+"""
 Module of different easing functions
 All functions take xs from -1 - 1,
 and produce ys from 0 - 1
 """
-import numpy as np
+#pylint: disable=unused-argument
 from enum import Enum
-import IPython
+import numpy as np
 from .constants import PI
 
 CODOMAIN = Enum("Codomain of the curve", "FULL LEFT RIGHT")
 
 def quantize(xs, r=None, q=5, bins=None):
+    """ Given an array of numbers, quantize into a number of bins """
     if r is None:
         r = [xs.min(), xs.max()]
     if bins is None:
         bins = np.linspace(r[0], r[1], q)
     inds = np.digitize(xs, bins, right=True)
-    return np.array([bins[x] for x in inds])    
+    return np.array([bins[x] for x in inds])
 
 def interp(xs, r=None, codomain_e=CODOMAIN.FULL):
     """ Auto interpolate input to an -1 to 1 scale,
@@ -25,14 +26,14 @@ def interp(xs, r=None, codomain_e=CODOMAIN.FULL):
     if codomain_e == CODOMAIN.LEFT:
         codomain = [-1, 0]
     elif codomain_e == CODOMAIN.RIGHT:
-        codomain = [0, 1]    
+        codomain = [0, 1]
     if r is None:
         r = [xs.min(), xs.max()]
     return np.interp(xs, r, codomain)
 
 def pow_abs_curve(xs, a, r=None, codomain_e=CODOMAIN.FULL):
-    """ 1 - pow(abs(x),a)
-    Var a changes the curve. 
+    """ 1 - pow(abs(x), a)
+    Var a changes the curve.
     0.5: exp tri
     3.5: saturated bell """
     assert(0.5 <= a <= 3.5)
@@ -80,14 +81,15 @@ def pow_max_abs(xs, a, r=None, codomain_e=CODOMAIN.FULL):
     ixs_zero = np.column_stack((np.abs(ixs) * 2 - 1, np.zeros(len(ixs))))
     return 1 - pow(np.max(ixs_zero, axis=1), a)
 
-def sigmoid(xs,a,r=None,codomain_e=CODOMAIN.FULL):
+
+def sigmoid(xs, a, r=None, codomain_e=CODOMAIN.FULL):
     """ 1 / (1 + e^(-5 * x)
     Var a does nothing
     """
     ixs = interp(xs, r=r, codomain_e=codomain_e)
     return 1 / (1 + pow(np.e, -5 * ixs))
 
-    
+
 ELOOKUP = {
     "pow_abs_curve": pow_abs_curve,
     "pow_cos_pi": pow_cos_pi,
@@ -99,6 +101,7 @@ ELOOKUP = {
 ENAMES = list(ELOOKUP.keys())
 
 def lookup(name):
+    """ Lookup a curve function using a given name """
     if isinstance(name, int):
         return ELOOKUP[ENAMES[name]]
     elif name not in ELOOKUP:
