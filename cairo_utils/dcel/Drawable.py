@@ -1,4 +1,6 @@
-from ..drawing import drawRect, drawCircle, clear_canvas, drawText
+""" Provides the basic Drawing Superclass """
+#pylint: disable=no-self-use
+from ..drawing import draw_circle
 
 
 class Drawable:
@@ -8,18 +10,12 @@ class Drawable:
         raise Exception("Drawable Should not be instantiated")
 
     def draw(self, ctx):
+        """ Abstract method that Drawbles implement  """
         raise Exception("Drawble.draw is abstract. Implement it in the calling class")
 
     def draw_point_cloud(self, ctx, xys, rs, colours):
+        """ Draw a collection of points """
         assert(len(xys) == len(rs) == len(colours))
-        for i in range(len(xys)):
+        for (i, a) in enumerate(xys):
             ctx.set_source_rgba(*colours[i])
-            drawCircle(ctx, *xys[i], rs[i])
-
-
-
-
-
-
-
-            
+            draw_circle(ctx, *a, rs[i])
