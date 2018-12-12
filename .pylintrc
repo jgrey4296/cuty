@@ -38,7 +38,7 @@ persistent=yes
 
 # When enabled, pylint would attempt to guess common misconfiguration and emit
 # user-friendly hints instead of false-positive error messages.
-suggestion-mode=yes
+suggestion-mode=no
 
 # Allow loading of arbitrary C extensions. Extensions are imported into the
 # active Python interpreter and may run arbitrary code.
@@ -62,7 +62,6 @@ confidence=
 # --disable=W".
 disable=no-else-return,
 		too-many-instance-attributes,
-		invalid-name,
 		superfluous-parens,
 		print-statement,
         parameter-unpacking,
@@ -195,7 +194,7 @@ argument-naming-style=snake_case
 
 # Regular expression matching correct argument names. Overrides argument-
 # naming-style.
-#argument-rgx=
+argument-rgx=(([a-z_][a-z0-9_]{2,})|(_[a-z0-9_]*)|(__[a-z][a-z0-9_]+__))$|[a-z]+[0-9]?$
 
 # Naming style matching correct attribute names.
 attr-naming-style=snake_case
@@ -255,6 +254,11 @@ good-names=i,
            y,
            r,
            a,
+           t,
+           p1,
+           p2,
+           p3,
+           d,
            _
 
 # Include a hint for the correct naming format with invalid-name.
@@ -299,7 +303,7 @@ variable-naming-style=snake_case
 
 # Regular expression matching correct variable names. Overrides variable-
 # naming-style.
-#variable-rgx=
+variable-rgx=(([a-z_][a-z0-9_]{2,})|(_[a-z0-9_]*)|(__[a-z][a-z0-9_]+__))$|[a-z]+_?[0-9]?(_[a_z])?$
 
 
 [FORMAT]
