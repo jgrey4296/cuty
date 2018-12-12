@@ -1,11 +1,12 @@
-""" Constants used throughout the cairo_utils 
+""" Constants used throughout the cairo_utils
     Mainly some colours, and math shortcuts
 """
-from math import pi
 from enum import Enum
-import numpy as np
+from math import pi
 import logging as root_logger
 import sys
+import numpy as np
+
 
 logging = root_logger.getLogger(__name__)
 
@@ -19,7 +20,7 @@ PI = pi
 TWOPI = 2 * pi
 QUARTERPI = 0.5 * pi
 THREEFOURTHSTWOPI = 3/4 * TWOPI
-EPSILON = max(1e-12,sys.float_info.epsilon)
+EPSILON = max(1e-12, sys.float_info.epsilon)
 D_EPSILON = 1e-6 #EPSILON * 10000000
 TOLERANCE = 0.5
 ALLCLOSE_TOLERANCE = [1e-10, 1e-10]
