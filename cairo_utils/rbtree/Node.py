@@ -1,16 +1,21 @@
+"""
+A Basic Node to use in a Red-Black Tree.
+"""
 from types import FunctionType
 from functools import partial
 import logging as root_logger
 from string import ascii_uppercase
-import IPython
+
 logging = root_logger.getLogger(__name__)
 
 class Node:
     """ The Container for RBTree Data """
     i = 0
-    
-    def __init__(self,value,parent=None,data=None,eqFunc=None):
+
+    def __init__(self, value, parent=None, data=None, eq_func=None):
+        #pylint: disable=invalid-name
         self.id = Node.i
+        #pylint: enable=invalid-name
         Node.i += 1
         #Children:
         self.left = None
@@ -21,9 +26,9 @@ class Node:
         self.red = True
         self.value = value
         self.data = {}
-        self.eqFunc = eqFunc
+        self.eq_func = eq_func
         if data is not None:
-            assert(isinstance(data,dict))
+            assert(isinstance(data, dict))
             self.data.update(data)
 
         #todo: create templates for data.
@@ -38,7 +43,7 @@ class Node:
         if self.value is not None and hasattr(self.value, "id"):
             return self.value.id
         return self.id
-    
+
     def __eq__(self, other):
         assert(other is None or isinstance(other, Node))
         result = False
@@ -48,13 +53,16 @@ class Node:
         return result
 
     def __repr__(self):
+        #pylint: disable=too-many-format-args
         if self.value is not None and hasattr(self.value, "id"):
-            return "({}_{})".format(ascii_uppercase[self.value.id % 26], int(self.value.id/26), self.id)
+            return "({}_{})".format(ascii_uppercase[self.value.id % 26],
+                                    int(self.value.id/26), self.id)
         else:
             return "({}:{})".format(self.value, self.id)
-        
 
-    def getBlackHeight(self,parent=None):
+
+    def get_black_height(self):
+        """ Get the number of black nodes between self and the root """
         current = self
         height = 0
         while current is not None:
@@ -64,18 +72,21 @@ class Node:
         return height
 
     def min(self):
+        """ Get the leftmost node of the tree """
         current = self
         while current.left is not None:
             current = current.left
         return current
 
     def max(self):
+        """ Get the rightmost node of the tree """
         current = self
         while current.right is not None:
             current = current.right
         return current
 
-    def getPredecessor(self):
+    def get_predecessor(self):
+        """ Get the node to the immediate left """
         if self.left is not None:
             return self.left.max()
         if self.parent is not None and not self.parent.on_left(self):
@@ -93,7 +104,8 @@ class Node:
         else:
             return None
 
-    def getSuccessor(self):
+    def get_successor(self):
+        """ Get the node to the immediate right """
         if self.right is not None:
             return self.right.min()
         if self.parent is not None and self.parent.on_left(self):
@@ -109,59 +121,66 @@ class Node:
         else:
             return None
 
-    def getPredecessor_while(self, condition):
+    def get_predecessor_while(self, condition):
+        """ Collect predecessors while the condition is true """
         assert(isinstance(condition, (FunctionType, partial)))
         results = []
-        current = self.getPredecessor()
+        current = self.get_predecessor()
         while current is not None and condition(current):
             results.append(current)
-            current = current.getPredecessor()
+            current = current.get_predecessor()
         return results
-        
 
-    def getSuccessor_while(self, condition):
+
+    def get_successor_while(self, condition):
+        """ Collect successors while the condition is true """
         assert(isinstance(condition, (FunctionType, partial)))
         results = []
-        current = self.getSuccessor()
+        current = self.get_successor()
         while current is not None and condition(current):
             results.append(current)
-            current = current.getSuccessor()
+            current = current.get_successor()
         return results
 
 
-    def getNeighbours_while(self, condition):
+    def get_neighbours_while(self, condition):
+        """ Collect left and right nodes whlie the condition is true """
         results = []
-        results += self.getPredecessor_while(condition)
-        results += self.getSuccessor_while(condition)
+        results += self.get_predecessor_while(condition)
+        results += self.get_successor_while(condition)
         return results
 
-    def isLeaf(self):
+    def is_leaf(self):
+        """ Test if this node has no children """
         return self.left is None and self.right is None
 
     #------------------------------
     # def Basic Update
     #------------------------------
-    
-    def add_left(self,node,force=False):
+
+    def add_left(self, node, force=False):
+        """ Add a node to the immediate left """
         if self == node:
             node = None
-        if self.left == None or force:
+        if self.left is None or force:
             self.link_left(node)
         else:
-            self.getPredecessor().add_right(node)
-        logging.debug("{}: Adding {} to Left".format(self,node))
+            self.get_predecessor().add_right(node)
+        logging.debug("{}: Adding {} to Left".format(self, node))
 
-        
-    def add_right(self,node,force=False):
+
+    def add_right(self, node, force=False):
+        """ Add a node to the immediate right """
         if self == node:
             node = None
-        if self.right == None or force:
+        if self.right is None or force:
             self.link_right(node)
         else:
-            self.getSuccessor().add_left(node)
-        logging.debug("{}: Adding {} to Right".format(self,node))
+            self.get_successor().add_left(node)
+        logging.debug("{}: Adding {} to Right".format(self, node))
 
-    def link_left(self,node):
+    def link_left(self, node):
+        """ Connect the passed in node as a predecessor """
         assert(node is not self)
         if node is not None:
             assert(self.right is not node)
@@ -171,10 +190,11 @@ class Node:
         self.left = node
         if self.left is not None:
             self.left.parent = self
-        logging.debug("{} L-> {}".format(self,node))
+        logging.debug("{} L-> {}".format(self, node))
 
 
-    def link_right(self,node):
+    def link_right(self, node):
+        """ Connect the passed in node as a successor """
         assert(node is not self)
         if node is not None:
             assert(self.parent is not node)
@@ -184,23 +204,23 @@ class Node:
         self.right = node
         if self.right is not None:
             self.right.parent = self
-        logging.debug("{} R-> {}".format(self,node))
+        logging.debug("{} R-> {}".format(self, node))
 
-        
+
     def disconnect_from_parent(self):
+        """ Symmetrically disconnect this node from its parent """
         parent = self.parent
-        if self.parent != None:
+        if self.parent is not None:
             if self.parent.on_left(self):
                 self.parent.left = None
             else:
                 self.parent.right = None
             self.parent = None
-        logging.debug("Disconnecting {} -> {}".format(parent,self))
-
-            
+        logging.debug("Disconnecting {} -> {}".format(parent, self))
 
     def disconnect_left(self):
-        if self.left != None:
+        """ Symmetrically disconnect this node from is predecessor """
+        if self.left is not None:
             node = self.left
             self.left = None
             node.parent = None
@@ -209,7 +229,8 @@ class Node:
         return None
 
     def disconnect_right(self):
-        if self.right != None:
+        """ Symmetrically disconnect this node from is successor """
+        if self.right is not None:
             node = self.right
             self.right = None
             node.parent = None
@@ -218,114 +239,58 @@ class Node:
         return None
 
     def on_left(self, node):
+        """ Test to see if the passed in node is the predecessor """
         assert(isinstance(node, Node))
         return self.left == node
-    
+
     def rotate_right(self):
-        setAsRoot = True
+        """ Trigger a rotation to the right centered on this node """
+        set_as_root = True
         orig_parent = None
         originally_on_left = False
-        newHead = self.left
-        newRight = self
-        newLeft = newHead.right
+        new_head = self.left
+        new_right = self
+        new_left = new_head.right
         if self.parent is not None:
-            setAsRoot = False
+            set_as_root = False
             originally_on_left = self.parent.on_left(self)
             orig_parent = self.parent
-            newRight.disconnect_from_parent()
-        newHead.disconnect_from_parent()
-        if newLeft is not None:
-            newLeft.disconnect_from_parent()
+            new_right.disconnect_from_parent()
+        new_head.disconnect_from_parent()
+        if new_left is not None:
+            new_left.disconnect_from_parent()
 
-        newRight.link_left(newLeft)
-        newHead.link_right(newRight)
+        new_right.link_left(new_left)
+        new_head.link_right(new_right)
         if orig_parent is not None:
             if originally_on_left:
-                orig_parent.link_left(newHead)
+                orig_parent.link_left(new_head)
             else:
-                orig_parent.link_right(newHead)
-        return setAsRoot, newHead
+                orig_parent.link_right(new_head)
+        return set_as_root, new_head
 
     def rotate_left(self):
-        setAsRoot = True
+        """ Trigger a rotation to the left centered on this node """
+        set_as_root = True
         orig_parent = None
         originally_on_left = False
-        newHead = self.right
-        newLeft = self
-        newRight = newHead.left
+        new_head = self.right
+        new_left = self
+        new_right = new_head.left
         if self.parent is not None:
-            setAsRoot = False
+            set_as_root = False
             originally_on_left = self.parent.on_left(self)
             orig_parent = self.parent
-            newLeft.disconnect_from_parent()
-        newHead.disconnect_from_parent()
-        if newRight is not None:
-            newRight.disconnect_from_parent()
+            new_left.disconnect_from_parent()
+        new_head.disconnect_from_parent()
+        if new_right is not None:
+            new_right.disconnect_from_parent()
 
-        newLeft.link_right(newRight)
-        newHead.link_left(newLeft)
+        new_left.link_right(new_right)
+        new_head.link_left(new_left)
         if orig_parent is not None:
             if originally_on_left:
-                orig_parent.link_left(newHead)
+                orig_parent.link_left(new_head)
             else:
-                orig_parent.link_right(newHead)
-        return setAsRoot, newHead
-        
-        
-        
-        
-    
-    #------------------------------
-    # def Deprecated
-    #------------------------------
-    
-    def get_predecessor(self):
-        raise Exception("Deprecated: use getPredecessor")
-
-    def get_successor(self):
-        raise Exception("Deprecated: use getSuccessor")
-
-    def compare_simple(self):
-        raise Exception("Deprecated: use appropriate comparison function in rbtree")
-
-    def intersect(self):
-        raise Exception("Deprecated: use appropriate method in value")
-
-    def update_arcs(self):
-        raise Exception("Deprecated: use rbtree update_values with appropriate lambda")
-
-    def countBlackHeight_null_add(self):
-        raise Exception("Deprecated")
-
-    def print_colour(self):
-        raise Exception("Deprecated: check node.red ")
-
-    def print_blackheight(self):
-        raise Exception("Deprecated")
-
-    def print_tree(self):
-        raise Exception("Deprecated")
-
-    def print_tree_plus(self):
-        raise Exception("Deprecated")
-
-    def getMinValue(self):
-        raise Exception("Deprecated")
-
-    def getMaxValue(self):
-        raise Exception("Deprecated")
-
-    def getMin(self):
-        raise Exception("Deprecated: use .min()")
-
-    def getMax(self):
-        raise Exception("Deprecated: use .max()")
-    
-    def disconnect_hierarchy(self):
-        #return [self.disconnect_left(),self.disconnect_right()]
-        raise Exception("Deprecated")
-
-    def disconnect_sequence(self):
-        # self.disconnect_right()
-        # self.disconnect_left()
-        raise Exception("Deprecated")
+                orig_parent.link_right(new_head)
+        return set_as_root, new_head
