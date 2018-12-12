@@ -25,9 +25,14 @@ D_EPSILON = 1e-6 #EPSILON * 10000000
 TOLERANCE = 0.5
 ALLCLOSE_TOLERANCE = [1e-10, 1e-10]
 
+DELTA = 1 / 100
+HALFDELTA = DELTA * 0.5
+NODE_NUM = 100
+NODE_RECIPROCAL = 1 / NODE_NUM
 
 VERTRAD = 10
 
+#Colours
 TEXT = np.array([0, 1, 1, 1])
 EDGE = np.array([1, 0, 0, 1])
 VERTEX = np.array([1, 0, 1, 1])
