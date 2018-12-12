@@ -1,6 +1,7 @@
 """
 Drawing: provides basic setup and drawing utilities for cairo:
 """
+
 import logging as root_logger
 import cairo
 from .constants import BACKGROUND, TWOPI, FRONT, FONT_SIZE
@@ -17,8 +18,10 @@ def setup_cairo(n=5, font_size=FONT_SIZE, scale=True, cartesian=False, backgroun
     background : The background colour to initialize to
     """
     size = pow(2, n)
+    #pylint: disable=no-member
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
     ctx = cairo.Context(surface)
+    #pylint: enable=no-member
     if cartesian:
         ctx.scale(1, -1)
         ctx.translate(0, -size)
