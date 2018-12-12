@@ -7,6 +7,6 @@ Properties of RBTrees:
 4) If a node is red, it's children are black
 5) All paths from a node to its leaves contain the same number of black nodes
 """
-from .RBTree import RBTree
-from .Node import Node
+from .rbtree import RBTree
+from .node import Node
 from .comparison_functions import Directions
