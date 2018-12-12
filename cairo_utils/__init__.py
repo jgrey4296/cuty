@@ -1,3 +1,9 @@
+"""
+cairo_utils
+Author: John Grey
+
+A Module to simplify use of cairo in python
+"""
 from .Quadratic import Quadratic
 from .Parabola import Parabola
 from .Tree import Tree
@@ -9,5 +15,5 @@ from . import drawing
 from . import math
 from . import easings
 
-_author = "jgrey"
-_version = "0.1.3"
+_AUTHOR = "jgrey"
+_VERSION = "0.1.3"
