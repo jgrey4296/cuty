@@ -3,7 +3,7 @@ Red Black Tree Operations, as translated from Cormen.
 todo: integrate these into the beachline class
 """
 import logging as root_logger
-from .Node import Node
+from .node import Node
 
 logging = root_logger.getLogger(__name__)
 
