@@ -1,6 +1,7 @@
 """
 	Constant strings for data held in face/halfedge/vertex .data fields
 """
+#pylint: disable=line-too-long
 from enum import Enum
 
 FaceE = Enum("Face Data Enum", "FILL TEXT TEXT_OFFSET STROKE CENTROID CEN_RADIUS NULL STARTVERT STARTRAD WIDTH SAMPLE SAMPLE_POST")
