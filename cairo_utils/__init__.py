@@ -9,7 +9,7 @@ from .Parabola import Parabola
 from .Tree import Tree
 from .rbtree.RBTree import RBTree
 from .dcel.dcel import DCEL
-from .make_gif import Make_Gif
+from .make_gif import MakeGif
 
 from . import drawing
 from . import math
