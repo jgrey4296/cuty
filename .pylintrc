@@ -304,7 +304,7 @@ variable-naming-style=snake_case
 
 # Regular expression matching correct variable names. Overrides variable-
 # naming-style.
-variable-rgx=(([a-z_][a-z0-9_]{2,})|(_[a-z0-9_]*)|(__[a-z][a-z0-9_]+__))$|[a-z]+_?[0-9]?(_[a_z])?$
+variable-rgx=(([a-z_][a-z0-9_]{2,})|(_[a-z0-9_]*)|(__[a-z][a-z0-9_]+__))$|[a-z]+_?[0-9]?(_[a_z])?(E(num)?)?$
 
 
 [FORMAT]
