@@ -266,7 +266,7 @@ def get_unit_vector(p1, p2):
     normalized = n / d
     return normalized
 
-def extend_line(p1, p2, m, from_start=True):
+def extend_line(p1, p2, m=1, from_start=True):
     """ Extend a line by m units
     Returns the new end points only
     """
