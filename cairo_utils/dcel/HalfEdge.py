@@ -1,7 +1,6 @@
 """ HalfEdge: The intermediate level datastructure of the dcel """
 #pylint: disable=too-many-arguments
 #pylint: disable=no-self-use
-import sys
 import logging as root_logger
 from math import pi, atan2, degrees
 from itertools import islice, cycle
