@@ -18,7 +18,7 @@ class Parabola:
 
     def __init__(self, fx, fy, d):
         """ Create a parabola with a focus x and y, and a directrix d """
-        #pylint: disable=invalid-name 
+        #pylint: disable=invalid-name
         self.id = Parabola.id
         Parabola.id += 1
         self.vertical_line = True
