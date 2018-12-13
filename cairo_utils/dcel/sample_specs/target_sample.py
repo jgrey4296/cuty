@@ -1,11 +1,12 @@
-import numpy as np
-from ..constants import EdgeE
-from ...math import createLine, bezier1cp, bezier2cp
-from .SampleSpec import SampleSpec
-import cairo_utils.easings as easings
-
+"""
+Provides a sampler that points towards a fixed target
+"""
 import logging as root_logger
-import IPython
+import numpy as np
+from .sample_spec import SampleSpec
+
+
+
 logging = root_logger.getLogger(__name__)
 
 class TargetSample(SampleSpec):
@@ -17,18 +18,17 @@ class TargetSample(SampleSpec):
 
     def secondary_sample(self, core, target, data):
         #for the xys, sample each vec_amnt times, along the vector, to distance
-        easing_1_fn = self.getEasing("easing_1", data)
-        easing_1 = easing_1_data(np.random.random(data["vec_amnt"]))
-        
-        vec_array = np.repeat(data["vector"], data["vec_amnt"]).reshape((2,-1))
+        easing_1_fn = self.get_easing("easing_1", data)
+        easing_1 = easing_1_fn(np.random.random(data["vec_amnt"]))
+
+        vec_array = np.repeat(data["vector"], data["vec_amnt"]).reshape((2, -1))
         vec_array *= data["distance"]
         vec_array *= easing_1
         vec_array = vec_array.T
 
-        sxys = np.zeros((1,data["vec_amnt"],2))
+        sxys = np.zeros((1, data["vec_amnt"], 2))
         for a in core:
             sxys = np.row_stack((sxys, np.array([a + vec_array])))
 
         #primary, secondary
         return sxys[1:]
-
