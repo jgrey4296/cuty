@@ -18,6 +18,7 @@ class Parabola:
 
     def __init__(self, fx, fy, d):
         """ Create a parabola with a focus x and y, and a directrix d """
+        #pylint: disable=invalid-name 
         self.id = Parabola.id
         Parabola.id += 1
         self.vertical_line = True
@@ -91,21 +92,21 @@ class Parabola:
         xys = self(xs)
         return xys
 
-    def calcStandardForm(self, x):
+    def calc_standard_form(self, x):
         """ Get the y value of the parabola at an x position using the standard
-            form equation. Should equal calcVertexForm(x)
+            form equation. Should equal calc_vertex_form(x)
         """
         return (self.sa * pow(x, 2)) + (self.sb * x) + self.sc
 
-    def calcVertexForm(self, x):
+    def calc_vertex_form(self, x):
         """ Get the y value of the parabola at an x position using
-            the vertex form equation. Should equal calcStandardForm(x)
+            the vertex form equation. Should equal calc_standard_form(x)
         """
         return self.va * pow(x + self.vh, 2) + self.vk
 
     def calc(self, x):
         """ For given xs, return an (n, 2) array of xy pairs of the parabola """
-        return np.column_stack((x, self.calcVertexForm(x)))
+        return np.column_stack((x, self.calc_vertex_form(x)))
 
     def __call__(self, x, maximum=MAX):
         """ Shorthand for calculating an the entire parabola """
@@ -114,7 +115,7 @@ class Parabola:
             xs = np.repeat(self.fx, len(ys))
             return np.column_stack((xs, ys))
         else:
-            return np.column_stack((x, self.calcStandardForm(x)))
+            return np.column_stack((x, self.calc_standard_form(x)))
 
     def to_numpy_array(self):
         """ Converts the parabola to a 1d array """
@@ -124,7 +125,7 @@ class Parabola:
             self.sa, self.sb, self.sc
             ])
 
-    def toArray(self):
+    def to_array(self):
         """ Utility method to call to_numpy_array """
         return self.to_numpy_array()
 
@@ -142,7 +143,7 @@ class Parabola:
         return np.array([self.fx, self.fy])
 
     @staticmethod
-    def toStandardForm(a, h, k):
+    def to_standard_form(a, h, k):
         """ Calculate the standard form of the parabola from a vertex form """
         return [
             a,
@@ -151,7 +152,7 @@ class Parabola:
         ]
 
     @staticmethod
-    def toVertexForm(a, b, c):
+    def to_vertex_form(a, b, c):
         """ Calculate the vertex form of the parabola from a standard form """
         return [
             a,
