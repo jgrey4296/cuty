@@ -1,22 +1,23 @@
 """ The highest level data structure in a dcel, apart from the dcel itself """
+#pylint: disable=too-many-arguments
+#pylint: disable=too-many-branches
+#pylint: disable=too-many-statements
+#pylint: disable=too-many-locals
+#pylint: disable=too-many-public-methods
 import logging as root_logger
-import numpy as np
-from numbers import Number
 from itertools import cycle, islice
-from functools import partial, cmp_to_key
-from math import radians
+import numpy as np
 from scipy.spatial import ConvexHull
-import IPython
 
-from ..constants import START, END, SMALL_RADIUS, FACE, EDGE, VERTEX, WIDTH
-from ..drawing import drawRect, drawCircle, clear_canvas, drawText
-from .constants import EditE, FaceE, SampleFormE
-from .Vertex import Vertex
-from .HalfEdge import HalfEdge
-from .Drawable import Drawable
-from ..constants import TWOPI
+from ..math import calc_bbox_corner, within_bbox
 from .. import math as cumath
-from ..math import rotatePoint, calc_bbox_corner, within_bbox
+from ..constants import START, END, SMALL_RADIUS, FACE, VERTEX, WIDTH
+from ..constants import TWOPI
+from ..drawing import draw_circle, clear_canvas, draw_text
+from .constants import EditE, FaceE
+from .vertex import Vertex
+from .halfedge import HalfEdge
+from .drawable import Drawable
 
 logging = root_logger.getLogger(__name__)
 
@@ -27,16 +28,17 @@ class Face(Drawable):
     nextIndex = 0
 
     def __init__(self, site=None, index=None, data=None, dcel=None):
+        super().__init__()
         if site is not None:
-            #site = np.array([0,0])
+            #site = np.array([0, 0])
             assert(isinstance(site, np.ndarray))
         #Site is the voronoi point that the face is built around
         self.site = site
         #Primary list of ccw edges for this face
-        self.edgeList = []
+        self.edge_list = []
         self.coord_list = None
         #mark face for cleanup:
-        self.markedForCleanup = False
+        self.marked_for_cleanup = False
         #Additional Data:
         self.data = {}
         if data is not None:
@@ -45,7 +47,7 @@ class Face(Drawable):
 
         #free vertices to build a convex hull from:
         self.free_vertices = set()
-        
+
         if index is None:
             logging.debug("Creating Face {}".format(Face.nextIndex))
             self.index = Face.nextIndex
@@ -56,17 +58,18 @@ class Face(Drawable):
             self.index = index
             if self.index >= Face.nextIndex:
                 Face.nextIndex = self.index + 1
-                
+
         if self.dcel is not None and self not in self.dcel.faces:
             self.dcel.faces.add(self)
 
-                
+
     def copy(self):
+        """" Create a copy of the entire face """
         with self.dcel:
             #copy the halfedges
-            es = [x.copy() for x in self.edgeList]
+            es = [x.copy() for x in self.edge_list]
             #create a new face
-            f = self.dcel.newFace(edges=es)
+            f = self.dcel.new_face(edges=es)
             #copy the data
             f.data.update(self.data)
             #return it
@@ -83,39 +86,39 @@ class Face(Drawable):
         #TODO: put this into dcel?
         assert(all([isinstance(x, Vertex) for x in verts]))
         #convert to numpy:
-        npPairs = [(x.toArray(),x) for x in verts]
-        hull = ConvexHull([x[0] for x in npPairs])
-        hullVerts = [npPairs[x][1] for x in hull.vertices]
-        discardVerts = set(verts).difference(hullVerts)
-        assert(len(discardVerts.intersection(hullVerts)) == 0)
-        assert(len(discardVerts) + len(hullVerts) == len(verts))
-        return (hullVerts, list(discardVerts))
+        np_pairs = [(x.toArray(), x) for x in verts]
+        hull = ConvexHull([x[0] for x in np_pairs])
+        hull_verts = [np_pairs[x][1] for x in hull.vertices]
+        discard_verts = set(verts).difference(hull_verts)
+        assert(not bool(discard_verts.intersection(hull_verts)))
+        assert(len(discard_verts) + len(hull_verts) == len(verts))
+        return (hull_verts, list(discard_verts))
 
     @staticmethod
     def hull_from_coords(coords):
-        """ Given a set of coordinates, return the hull they would form 
+        """ Given a set of coordinates, return the hull they would form
         DOESN NOT RETURN DISCARDED, as the coords are not vertices yet
         """
         assert(isinstance(coords, np.ndarray))
         assert(coords.shape[1] == 2)
         hull = ConvexHull(coords)
-        hullCoords = np.array([coords[x] for x in hull.vertices])
-        return hullCoords
+        hull_coords = np.array([coords[x] for x in hull.vertices])
+        return hull_coords
 
     #------------------------------
     # def Human Readable Representations
     #------------------------------
-    
-                
+
+
     def __str__(self):
-        return "Face: {}".format(self.getCentroid())
+        return "Face: {}".format(self.get_centroid())
 
     def __repr__(self):
-        edgeList = len(self.edgeList)
-        return "(Face: {}, edgeList: {})".format(self.index, edgeList)        
+        edge_list = len(self.edge_list)
+        return "(Face: {}, edge_list: {})".format(self.index, edge_list)
 
     def draw(self, ctx, clear=False, force_centre=False, text=False, data_override=None):
-        """ Draw a single Face from a dcel. 
+        """ Draw a single Face from a dcel.
         Can be the only thing drawn (clear=True),
         Can be drawn in the centre of the context for debugging (force_centre=True)
         """
@@ -123,70 +126,72 @@ class Face(Drawable):
         if data_override is not None:
             assert(isinstance(data, dict))
             data.update(data_override)
-        
+
         #early exits:
-        if len(self.edgeList) < 2:
+        if len(self.edge_list) < 2:
             return
         #Custom Clear
         if clear:
             clear_canvas(ctx)
 
         #Data Retrieval:
-        lineWidth = WIDTH
-        vertColour = START
-        vertRad = SMALL_RADIUS
-        faceCol = FACE
+        line_wdith = WIDTH
+        vert_colour = START
+        vert_rad = SMALL_RADIUS
+        face_col = FACE
         radius = SMALL_RADIUS
         text_string = "F: {}".format(self.index)
         should_offset_text = FaceE.TEXT_OFFSET in data
-        centroidCol = VERTEX
-        drawCentroid = FaceE.CENTROID in data
-        sampleDescr = None
-    
-        if drawCentroid and isinstance(data[FaceE.CENTROID], (list, np.ndarray)):
-            centroidCol = data[FaceE.CENTROID]
+        centroid_col = VERTEX
+        draw_centroid = FaceE.CENTROID in data
+        sample_descr = None
+
+        if draw_centroid and isinstance(data[FaceE.CENTROID], (list, np.ndarray)):
+            centroid_col = data[FaceE.CENTROID]
         if FaceE.STARTVERT in data and isinstance(data[FaceE.STARTVERT], (list, np.ndarray)):
-            vertColour = data[FaceE.STARTVERT]
+            vert_colour = data[FaceE.STARTVERT]
         if FaceE.STARTRAD in data:
-            vertRad = data[FaceE.STARTRAD]
+            vert_rad = data[FaceE.STARTRAD]
         if FaceE.FILL in data and isinstance(data[FaceE.FILL], (list, np.ndarray)):
-            faceCol = data[FaceE.FILL]
+            face_col = data[FaceE.FILL]
         if FaceE.CEN_RADIUS in data:
             radius = data[FaceE.CEN_RADIUS]
         if FaceE.TEXT in data:
             text_string = data[FaceE.TEXT]
         if FaceE.WIDTH in data:
-            lineWidth = data[FaceE.WIDTH]
+            line_wdith = data[FaceE.WIDTH]
         if FaceE.SAMPLE in data:
-            sampleDescr = data[FaceE.SAMPLE]
+            sample_descr = data[FaceE.SAMPLE]
 
-            
+
         #Centre to context
-        midPoint = (self.dcel.bbox[2:] - self.dcel.bbox[:2]) * 0.5
-        faceCentre = self.getCentroid()
+        mid_point = (self.dcel.bbox[2:] - self.dcel.bbox[:2]) * 0.5
+        face_centre = self.get_centroid()
         if force_centre:
-            invCentre = -faceCentre
-            ctx.translate(*invCentre)
-            ctx.translate(*midPoint)
+            inv_centre = -face_centre
+            ctx.translate(*inv_centre)
+            ctx.translate(*mid_point)
 
-        if sampleDescr is not None:
+        if sample_descr is not None:
             #draw as a sampled line
-            sampleDescr(ctx, self)
-            
+            sample_descr(ctx, self)
+
         if FaceE.NULL in data:
             return
-        
-        ctx.set_line_width(lineWidth)
-        ctx.set_source_rgba(*faceCol)
+
+        ctx.set_line_width(line_wdith)
+        ctx.set_source_rgba(*face_col)
         #Setup Edges:
         initial = True
-        for x in self.getEdges():
+        for x in self.get_edges():
             v1, v2 = x.getVertices()
             assert(v1 is not None)
             assert(v2 is not None)
             logging.debug("Drawing Face {} edge {}".format(self.index, x.index))
-            logging.debug("Drawing Face edge from ({}, {}) to ({}, {})".format(v1.loc[0], v1.loc[1],
-                                                                               v2.loc[0], v2.loc[1]))
+            logging.debug("Drawing Face edge from ({}, {}) to ({}, {})".format(v1.loc[0],
+                                                                               v1.loc[1],
+                                                                               v2.loc[0],
+                                                                               v2.loc[1]))
             if initial:
                 ctx.move_to(*v1.loc)
                 initial = False
@@ -194,10 +199,10 @@ class Face(Drawable):
 
             #todo move this out
             if FaceE.STARTVERT in data:
-                ctx.set_source_rgba(*vertColour)
-                drawCircle(ctx, *v1.loc, vertRad)
+                ctx.set_source_rgba(*vert_colour)
+                draw_circle(ctx, *v1.loc, vert_rad)
 
-            
+
         #****Draw*****
         if FaceE.FILL not in data:
             ctx.stroke()
@@ -208,83 +213,83 @@ class Face(Drawable):
 
         #Drawing the Centroid point
         ctx.set_source_rgba(*END)
-        if drawCentroid:
-            ctx.set_source_rgba(*centroidCol)
-            drawCircle(ctx, *faceCentre, radius)
-        
+        if draw_centroid:
+            ctx.set_source_rgba(*centroid_col)
+            draw_circle(ctx, *face_centre, radius)
+
         #Text Retrieval and drawing
         if text or FaceE.TEXT in data:
-            drawText(ctx, *faceCentre, text_string, offset=should_offset_text)
-        
+            draw_text(ctx, *face_centre, text_string, offset=should_offset_text)
+
         #Reset the forced centre
         if force_centre:
-            ctx.translate(*(midPoint * -1))
-            ctx.translate(*centre)
-    
+            ctx.translate(*(mid_point * -1))
+
     #------------------------------
     # def Exporting
     #------------------------------
-    
-    
+
+
     def _export(self):
         """ Export identifiers rather than objects, to allow reconstruction """
         logging.debug("Exporting face: {}".format(self.index))
-        enumData = {a.name:b for a,b in self.data.items() if a in FaceE}
-        nonEnumData = {a:b for a,b in self.data.items() if a not in FaceE}
+        enum_data = {a.name:b for a, b in self.data.items() if a in FaceE}
+        non_enum_data = {a:b for a, b in self.data.items() if a not in FaceE}
 
         return {
             'i' : self.index,
-            'edges' : [x.index for x in self.edgeList if x is not None],
+            'edges' : [x.index for x in self.edge_list if x is not None],
             'sitex' : self.site[0],
             'sitey' : self.site[1],
-            "enumData" : enumData,
-            "nonEnumData": nonEnumData
+            "enum_data" : enum_data,
+            "non_enum_data": non_enum_data
         }
 
 
-            
+
     def get_bbox(self):
         """ Get a rough bbox of the face """
         #TODO: fix this? its rough
-        vertices = [x.origin for x in self.edgeList]
-        vertexArrays = [x.toArray() for x in vertices if x is not None]
-        if not bool(vertexArrays):
+        vertices = [x.origin for x in self.edge_list]
+        vertex_arrays = [x.toArray() for x in vertices if x is not None]
+        if not bool(vertex_arrays):
             return np.array([[0, 0], [0, 0]])
-        allVertices = np.array([x for x in vertexArrays])
-        bbox = np.array([np.min(allVertices, axis=0),
-                         np.max(allVertices, axis=0)])
+        all_vertices = np.array([x for x in vertex_arrays])
+        bbox = np.array([np.min(all_vertices, axis=0),
+                         np.max(all_vertices, axis=0)])
         logging.debug("Bbox for Face {}  : {}".format(self.index, bbox))
         return bbox
 
-    def markForCleanup(self):
-        self.markedForCleanup = True
-    
+    def mark_for_cleanup(self):
+        """ Schedules the face for cleanup """
+        self.marked_for_cleanup = True
+
     #------------------------------
     # def centroids
     #------------------------------
 
-    def getCentroid(self):
+    def get_centroid(self):
         """ Get the user defined 'centre' of the face """
         if self.site is not None:
             return self.site.copy()
         else:
-            return self.getAvgCentroid()
+            return self.get_avg_centroid()
 
-    
-    def getAvgCentroid(self):
+
+    def get_avg_centroid(self):
         """ Get the averaged centre point of the face from the vertices of the edges """
-        k = len(self.edgeList)
-        coords = np.array([x.origin.loc for x in self.edgeList])
+        k = len(self.edge_list)
+        coords = np.array([x.origin.loc for x in self.edge_list])
         norm_coord = np.sum(coords, axis=0) / k
         if self.site is None:
             self.site = norm_coord
         return norm_coord
 
-    def getCentroidFromBBox(self):
+    def get_centroid_from_bbox(self):
         """ Alternate Centroid, the centre point of the bbox for the face"""
         bbox = self.get_bbox()
-        difference = bbox[1,:] - bbox[0,:]
-        centre = bbox[0,:] + (difference * 0.5)
+        difference = bbox[1, :] - bbox[0, :]
+        centre = bbox[0, :] + (difference * 0.5)
         if self.site is None:
             self.site = centre
         return centre
@@ -293,16 +298,17 @@ class Face(Drawable):
     #------------------------------
     # def edge access
     #------------------------------
-            
-    def getEdges(self):
+
+    def get_edges(self):
         """ Return a copy of the edgelist for this face """
-        return self.edgeList.copy()
+        return self.edge_list.copy()
 
     def add_edges(self, edges):
+        """ Add a list of edges to the face """
         assert(isinstance(edges, list))
         for x in edges:
             self.add_edge(x)
-    
+
     def add_edge(self, edge):
         """ Add a constructed edge to the face """
         assert(isinstance(edge, HalfEdge))
@@ -312,54 +318,50 @@ class Face(Drawable):
             edge.face.remove_edge(edge)
         self.coord_list = None
         edge.face = self
-        if edge not in self.edgeList:
-            self.edgeList.append(edge)
-        edge.markedForCleanup = False
+        if edge not in self.edge_list:
+            self.edge_list.append(edge)
+        edge.marked_for_cleanup = False
 
     def remove_edge(self, edge):
         """ Remove an edge from this face, if the edge has this face
         registered, remove that too """
         assert(isinstance(edge, HalfEdge))
         #todo: should the edge be connecting next to prev here?
-        if not bool(self.edgeList):
+        if not bool(self.edge_list):
             return
-        if edge in self.edgeList:
-            self.edgeList.remove(edge)
+        if edge in self.edge_list:
+            self.edge_list.remove(edge)
         if edge.face is self:
             edge.face = None
         if edge.twin is None or edge.twin.face is None:
-            edge.markForCleanup()
-        
+            edge.mark_for_cleanup()
+
     def sort_edges(self):
         """ Order the edges clockwise, by starting point, ie: graham scan """
         logging.debug("Sorting edges")
-        centre = self.getCentroid()
+        centre = self.get_centroid()
         #verify all edges are ccw
-        edges = self.edgeList.copy()
+        edges = self.edge_list.copy()
         for x in edges:
             if not x.he_ccw(centre):
                 x.swapFaces()
 
-        try:
-            assert(all([x.he_ccw(centre) for x in self.edgeList]))
-        except AssertionError as e:
-            IPython.embed(simple_prompt=True)
-
-        # withDegrees = [(x.degrees(centre), x) for x in self.edgeList]
+        assert(all([x.he_ccw(centre) for x in self.edge_list]))
+        # withDegrees = [(x.degrees(centre), x) for x in self.edge_list]
         # withDegrees.sort()
-        # self.edgeList = [hedge for (deg,hedge) in withDegrees]
-        self.edgeList.sort()
+        # self.edge_list = [hedge for (deg, hedge) in withDegrees]
+        self.edge_list.sort()
 
     def has_edges(self):
         """ Check if its a null face or has actual edges """
-        return bool(self.edgeList)
+        return bool(self.edge_list)
 
 
     #------------------------------
     # def modifiers
     #------------------------------
-    
-        
+
+
     def subdivide(self, edge, ratio=None, angle=0):
         """ Bisect / Divide a face in half by creating a new line
         on the ratio point of the edge, at the angle specified, until it intersects
@@ -371,77 +373,77 @@ class Face(Drawable):
         if ratio is None:
             ratio = 0.5
         assert(isinstance(edge, HalfEdge))
-        assert(edge in self.edgeList)
+        assert(edge in self.edge_list)
         assert(0 <= ratio <= 1)
         assert(-90 <= angle <= 90)
         #split the edge
-        newPoint, newEdge = edge.split_by_ratio(ratio)
+        new_point, new_edge = edge.split_by_ratio(ratio)
 
         #get the bisecting vector
-        asCoords = edge.toArray()
-        bisector = cumath.get_bisector(asCoords[0], asCoords[1])
+        as_coords = edge.toArray()
+        bisector = cumath.get_bisector(as_coords[0], as_coords[1])
         #get the coords of an extended line
-        extended_end = cumath.extend_line(newPoint.toArray(), bisector, 1000)
-        el_coords = np.row_stack((newPoint.toArray(), extended_end))
+        extended_end = cumath.extend_line(new_point.toArray(), bisector, 1000)
+        el_coords = np.row_stack((new_point.toArray(), extended_end))
 
         #intersect with coords of edges
         intersection = None
-        oppEdge = None
-        for he in self.edgeList:
-            if he in [edge, newEdge]:
+        opp_edge = None
+        for he in self.edge_list:
+            if he in [edge, new_edge]:
                 continue
             he_coords = he.toArray()
             intersection = cumath.intersect(el_coords, he_coords)
             if intersection is not None:
-                oppEdge = he
+                opp_edge = he
                 break
         assert(intersection is not None)
-        assert(oppEdge is not None)
+        assert(opp_edge is not None)
         #split that line at the intersection
-        newOppPoint, newOppEdge = oppEdge.split(intersection)
+        new_opp_point, new_opp_edge = opp_edge.split(intersection)
 
         #create the other face
-        newFace = self.dcel.newFace()
-        
+        new_face = self.dcel.new_face()
+
         #create the subdividing edge:
-        dividingEdge = self.dcel.newEdge(newPoint, newOppPoint,
-                                         face=self,
-                                         twinFace=newFace,
-                                         edata=edge.data,
-                                         vdata=edge.origin.data)
-        dividingEdge.addPrev(edge, force=True)
-        dividingEdge.addNext(newOppEdge, force=True)
-        dividingEdge.twin.addPrev(oppEdge, force=True)
-        dividingEdge.twin.addNext(newEdge, force=True)
+        dividing_edge = self.dcel.new_edge(new_point, new_opp_point,
+                                           face=self,
+                                           twinFace=new_face,
+                                           edata=edge.data,
+                                           vdata=edge.origin.data)
+        dividing_edge.addPrev(edge, force=True)
+        dividing_edge.addNext(new_opp_edge, force=True)
+        dividing_edge.twin.addPrev(opp_edge, force=True)
+        dividing_edge.twin.addNext(new_edge, force=True)
 
-        #divide the edges into newOppEdge -> edge,  newEdge -> oppEdge
-        newFace_Edge_Group = []
-        originalFace_Edge_Update = []
+        #divide the edges into new_opp_edge -> edge, new_edge -> opp_edge
+        new_face_edge_group = []
+        original_face_edge_update = []
 
-        current = newOppEdge
+        current = new_opp_edge
         while current != edge:
             assert(current.next is not None)
-            originalFace_Edge_Update.append(current)
+            original_face_edge_update.append(current)
             current = current.next
-        originalFace_Edge_Update.append(current)
-        originalFace_Edge_Update.append(dividingEdge)
-        
-        current = newEdge
-        while current != oppEdge:
+        original_face_edge_update.append(current)
+        original_face_edge_update.append(dividing_edge)
+
+        current = new_edge
+        while current != opp_edge:
             assert(current.next is not None)
-            newFace_Edge_Group.append(current)
-            current.face = newFace
+            new_face_edge_group.append(current)
+            current.face = new_face
             current = current.next
-        newFace_Edge_Group.append(current)
-        current.face = newFace
-        newFace_Edge_Group.append(dividingEdge.twin)        
-        
+        new_face_edge_group.append(current)
+        current.face = new_face
+        new_face_edge_group.append(dividing_edge.twin)
+
         #update the two faces edgelists
-        self.edgeList = originalFace_Edge_Update
-        newFace.edgeList = newFace_Edge_Group
+        self.edge_list = original_face_edge_update
+        new_face.edge_list = new_face_edge_group
 
         #return both
-        return (self, newFace)
+        return (self, new_face)
 
     @staticmethod
     def merge_faces(*args):
@@ -453,51 +455,52 @@ class Face(Drawable):
         all_verts = set()
         for f in args:
             all_verts.update(f.get_all_vertices())
-        newFace = dc.newFace()
+        new_face = dc.new_face()
         #then build the convex hull
         hull, discarded = Face.hull_from_vertices(all_verts)
-        for s,e in zip(hull, islice(cycle(hull),1, None)):
+        for s, e in zip(hull, islice(cycle(hull), 1, None)):
             #create an edge
-            newEdge = dc.newEdge(s,e, face=newFace)
+            dc.new_edge(s, e, face=new_face)
         #link the edges
-        dc.linkEdgesTogether(newFace.edgeList, loop=True)
+        dc.linkEdgesTogether(new_face.edge_list, loop=True)
         #return the face
-        return (newFace, discarded)
-        
+        return (new_face, discarded)
+
     def translate_edge(self, transform, e=None, i=None, candidates=None, force=False):
-        assert(e is None or e in self.edgeList)
-        assert(i is None or 0 <= i < len(self.edgeList))
+        """ move an edge of the face """
+        assert(e is None or e in self.edge_list)
+        assert(i is None or 0 <= i < len(self.edge_list))
         assert(not (e is None and i is None))
         assert(isinstance(transform, np.ndarray))
-        assert(transform.shape == (2,))
+        assert(transform.shape == (2, ))
         if i is None:
-            i = self.edgeList.index(e)    
+            i = self.edge_list.index(e)
 
         if not force and self.has_constraints(candidates):
-            copied, edit_e = self.copy().translate_edge(transform, i=i, force=True)
+            copied, _ = self.copy().translate_edge(transform, i=i, force=True)
             return (copied, EditE.NEW)
 
-        self.edgeList[i].translate(transform, force=True)
+        self.edge_list[i].translate(transform, force=True)
         return (self, EditE.MODIFIED)
-        
+
 
     def scale(self, amnt=None, target=None, vert_weights=None, edge_weights=None,
               force=False, candidates=None):
         """ Scale an entire face by amnt,
         or scale by vertex/edge normal weights """
         if not force and self.has_constraints(candidates):
-            facePrime, edit_type = self.copy().scale(amnt=amnt, target=target,
-                                                     vert_weights=vert_weights,
-                                                     edge_weights=edge_weights,
-                                                     force=True)
-            return (facePrime, EditE.NEW)
+            face_prime, _ = self.copy().scale(amnt=amnt, target=target,
+                                              vert_weights=vert_weights,
+                                              edge_weights=edge_weights,
+                                              force=True)
+            return (face_prime, EditE.NEW)
 
         if target is None:
-            target = self.getCentroidFromBBox()
+            target = self.get_centroid_from_bbox()
         if amnt is None:
-            amnt = np.ndarray([1,1])
+            amnt = np.ndarray([1, 1])
         assert(isinstance(amnt, np.ndarray))
-        assert(amnt.shape == (2,))
+        assert(amnt.shape == (2, ))
         if vert_weights is not None:
             assert(isinstance(vert_weights, np.ndarray))
         if edge_weights is not None:
@@ -510,9 +513,9 @@ class Face(Drawable):
             loc *= amnt
             loc += target
             vert.translate(loc, abs=True, force=True)
-            
+
         return (self, EditE.MODIFIED)
-        
+
 
     def cut_out(self, candidates=None, force=False):
         """ Cut the Face out from its verts and halfedges that comprise it,
@@ -527,15 +530,15 @@ class Face(Drawable):
         """ copy and rotate the entire face by rotating each point """
         assert(-TWOPI <= rads <= TWOPI)
         if not force and self.has_constraints(candidates):
-            facePrime, edit_e = self.copy().rotate(rads, target=target, force=True)
-            return (facePrime, EditE.NEW)
-            
-        if target is None:
-            target = self.getCentroidFromBBox()
-        assert(isinstance(target, np.ndarray))
-        assert(target.shape == (2,))
+            face_prime, _ = self.copy().rotate(rads, target=target, force=True)
+            return (face_prime, EditE.NEW)
 
-        for l in self.edgeList:
+        if target is None:
+            target = self.get_centroid_from_bbox()
+        assert(isinstance(target, np.ndarray))
+        assert(target.shape == (2, ))
+
+        for l in self.edge_list:
             l.rotate(c=target, r=rads, candidates=candidates, force=True)
         return (self, EditE.MODIFIED)
 
@@ -544,47 +547,46 @@ class Face(Drawable):
         """ Constrain the vertices and edges of a face to be within a circle """
         if not force and self.has_constraints(candidates):
             logging.debug("Face: Constraining a copy")
-            facePrime, edit_type = self.copy().constrain_to_circle(centre, radius, force=True)
-            return (facePrime, EditE.NEW)
+            face_prime, _ = self.copy().constrain_to_circle(centre, radius, force=True)
+            return (face_prime, EditE.NEW)
 
         logging.debug("Face: Constraining edges")
-        #constrain each edge            
-        edges = self.edgeList.copy()        
+        #constrain each edge
+        edges = self.edge_list.copy()
         for e in edges:
             logging.debug("HE: {}".format(e))
             eprime, edit_e = e.constrain_to_circle(centre, radius, force=True)
             logging.debug("Result: {}".format(eprime))
             assert(edit_e == EditE.MODIFIED)
-            assert(eprime in self.edgeList)
-            if eprime.markedForCleanup:
-                self.edgeList.remove(eprime)
+            assert(eprime in self.edge_list)
+            if eprime.marked_for_cleanup:
+                self.edge_list.remove(eprime)
 
         return (self, EditE.MODIFIED)
 
     #todo: possibly add a shrink/expand to circle method
-
     def constrain_to_bbox(self, bbox, candidates=None, force=False):
+        """ Given a bbox, ensure all edges of the face are within """
         if not force and self.has_constraints(candidates):
-            facePrime, edit_type = self.copy().constrain_to_bbox(bbox, force=True)
-            return (facePrime, EditE.NEW)
-            
-        edges = self.edgeList.copy()
+            face_prime, _ = self.copy().constrain_to_bbox(bbox, force=True)
+            return (face_prime, EditE.NEW)
+
+        edges = self.edge_list.copy()
 
         for edge in edges:
             if edge.outside(bbox):
                 self.remove_edge(edge)
                 continue
-
-            eprime, edit_e = edge.constrain_to_bbox(bbox, candidates=candidates, force=True)
+            edge.constrain_to_bbox(bbox, candidates=candidates, force=True)
 
         return (self, EditE.MODIFIED)
 
 
-            
+
     #------------------------------
     # def Vertex access
     #------------------------------
-        
+
     def add_vertex(self, vert):
         """ Add a vertex, then recalculate the convex hull """
         assert(isinstance(vert, Vertex))
@@ -595,7 +597,7 @@ class Face(Drawable):
         """ Get all vertices of the face. both free and in halfedges """
         all_verts = set()
         all_verts.update(self.free_vertices)
-        for e in self.edgeList:
+        for e in self.edge_list:
             all_verts.update(e.getVertices())
         return all_verts
 
@@ -611,65 +613,65 @@ class Face(Drawable):
     #------------------------------
     # def verification
     #------------------------------
-        
+
     def fixup(self, bbox=None):
         """ Verify and enforce correct designations of
         edge ordering, next/prev settings, and face settings """
         assert(bbox is not None)
-        if not bool(self.edgeList):
-            self.markForCleanup()
+        if not bool(self.edge_list):
+            self.mark_for_cleanup()
             return []
-        if len(self.edgeList) < 2:
+        if len(self.edge_list) < 2:
             return []
 
-        for e in self.edgeList:
+        for e in self.edge_list:
             self.add_edge(e)
 
         altered = False
-        centre = self.getCentroid()
-        avgCentre = self.getAvgCentroid()
-        if not within_bbox(centre, bbox) and within_bbox(avgCentre, bbox):
+        centre = self.get_centroid()
+        avg_centre = self.get_avg_centroid()
+        if not within_bbox(centre, bbox) and within_bbox(avg_centre, bbox):
             altered = True
-            self.site = avgCentre
-            
+            self.site = avg_centre
+
         self.sort_edges()
-        
+
         inferred_edges = []
-        edges = self.edgeList.copy()
+        edges = self.edge_list.copy()
         prev = edges[-1]
         for e in edges:
             #enforce next and prev
             if e.prev is not prev:
                 e.addPrev(prev, force=True)
             #if verts don't align AND they intersect the border of the bbox on separate edges:
-            dontAlign = not prev.connections_align(e)
-            if dontAlign:
+            dont_align = not prev.connections_align(e)
+            if dont_align:
                 logging.debug("connections don't align")
-                newEdge = self.dcel.newEdge(e.prev.twin.origin,
-                                            e.origin,
-                                            edata=e.data,
-                                            vdata=e.origin.data)
-                newEdge.face = self
-                newEdge.addPrev(e.prev, force=True)
-                newEdge.addNext(e, force=True)
-                #insert that new edge into the edgeList
-                index = self.edgeList.index(e)
-                self.edgeList.insert(index, newEdge)
-                inferred_edges.append(newEdge)
+                new_edge = self.dcel.new_edge(e.prev.twin.origin,
+                                              e.origin,
+                                              edata=e.data,
+                                              vdata=e.origin.data)
+                new_edge.face = self
+                new_edge.addPrev(e.prev, force=True)
+                new_edge.addNext(e, force=True)
+                #insert that new edge into the edge_list
+                index = self.edge_list.index(e)
+                self.edge_list.insert(index, new_edge)
+                inferred_edges.append(new_edge)
 
-                #if the newEdge connects two different sides, split it and
+                #if the new_edge connects two different sides, split it and
                 #force the middle vertex to the corner
-                nib = newEdge.intersects_bbox(bbox)
-                edgeEs = set([ev for (coord, ev) in nib])
-                if len(nib) == 2 and len(edgeEs) > 1:
-                    newPoint, newEdge2 = newEdge.split_by_ratio(0.5, face_update=False)
-                    newEdge2.face = self
-                    self.edgeList.insert(index+1, newEdge2)
-                    # if newEdge.twin.face is not None:
-                    #     newEdge.twin.face.add_edge(newEdge2.twin)
-                    
-                    moveToCoord = calc_bbox_corner(bbox, edgeEs)
-                    newPoint.translate(moveToCoord, abs=True, force=True)
+                nib = new_edge.intersects_bbox(bbox)
+                edge_es = set([ev for (coord, ev) in nib])
+                if len(nib) == 2 and len(edge_es) > 1:
+                    new_point, new_edge2 = new_edge.split_by_ratio(0.5, face_update=False)
+                    new_edge2.face = self
+                    self.edge_list.insert(index+1, new_edge2)
+                    # if new_edge.twin.face is not None:
+                    #     new_edge.twin.face.add_edge(new_edge2.twin)
+
+                    move_to_coord = calc_bbox_corner(bbox, edge_es)
+                    new_point.translate(move_to_coord, abs=True, force=True)
 
             prev = e
 
@@ -677,29 +679,23 @@ class Face(Drawable):
 
         if altered:
             self.site = centre
-        
+
         return inferred_edges
 
-    def has_constraints(self, candidateSet=None):
+    def has_constraints(self, candidate_set=None):
         """ Tests whether the face's component edges and vertices are claimed by
-        anything other than the face's own halfedges and their twins, and any passed in 
+        anything other than the face's own halfedges and their twins, and any passed in
         candidates """
-        if candidateSet is None:
-            candidateSet = set()
-        candidatesPlusSelf = candidateSet.union([self], self.edgeList, [x.twin for x in self.edgeList if x.twin is not None])
-        return any([x.has_constraints(candidatesPlusSelf) for x in self.edgeList])
+        if candidate_set is None:
+            candidate_set = set()
+        candidates_plus_self = candidate_set.union([self],
+                                                   self.edge_list,
+                                                   [x.twin for x in self.edge_list
+                                                    if x.twin is not None])
+        return any([x.has_constraints(candidates_plus_self) for x in self.edge_list])
 
     def are_points_within(self, points):
+        """ TODO: check whether a set of vertices are within the faces boundaries """
         assert(isinstance(points, np.ndarray))
         #see https://stackoverflow.com/questions/217578
         raise Exception("Unimplemented: are_points_within")
-    
-        
-    #------------------------------
-    # def deprecated
-    #------------------------------
-    
-    
-    def __getCentroid(self):
-        """ An iterative construction of the centroid """
-        raise Exception("Deprecated: use getavgcentroid or getcentroidfrombbox")
