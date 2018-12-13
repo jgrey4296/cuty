@@ -231,7 +231,7 @@ class-naming-style=PascalCase
 
 # Regular expression matching correct constant names. Overrides const-naming-
 # style.
-const-rgx=^logging$|^_AUTHOR$|^_VERSION$|^[A-Z_]+$|^.*?E[num]?$|^Directions$
+const-rgx=^logging$|^_AUTHOR$|^_VERSION$|^[A-Z_]+$|^.*?E(num)?$|^Directions$
 
 # Minimum line length for functions/classes that require docstrings, shorter
 # ones are exempt.
