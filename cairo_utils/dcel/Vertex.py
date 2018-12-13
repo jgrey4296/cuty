@@ -1,21 +1,19 @@
 """ Vertex: The lowest level data structure in a dcel """
-import sys
-import IPython
-from numbers import Number
+#pylint: disable=too-many-arguments
 import logging as root_logger
 import numpy as np
 
-from .constants import EditE, VertE, SampleE, SampleFormE
+from .constants import EditE, VertE
 from ..constants import TWOPI, D_EPSILON, TOLERANCE, VERTEX, VERTRAD, ALLCLOSE_TOLERANCE
-from ..math import inCircle, rotatePoint
-from ..drawing import drawRect, drawText, clear_canvas, drawCircle
-from .Drawable import Drawable
+from ..math import in_circle, rotate_point
+from ..drawing import draw_circle
+from .drawable import Drawable
 
 logging = root_logger.getLogger(__name__)
 
 class Vertex(Drawable):
     """ A Simple vertex for two dimensions.
-    Has a pair of coordinates, and stores the edges associated with it. 
+    Has a pair of coordinates, and stores the edges associated with it.
     """
 
     nextIndex = 0
@@ -23,27 +21,28 @@ class Vertex(Drawable):
     def __init__(self, loc, edges=None, index=None, data=None, dcel=None, active=None):
         assert(isinstance(loc, np.ndarray))
         assert(edges is None or isinstance(edges, list))
-
+        super().__init__()
         self.loc = loc
         #The edges this vertex is part of:
-        self.halfEdges = set()
+        self.half_edges = set()
         if edges is not None:
-            self.halfEdges.update(edges)
+            self.half_edges.update(edges)
         #Custom data of the vertex:
         self.data = {}
         if data is not None:
             self.data.update(data)
         #Reference back to the dcel
         self.dcel = dcel
-        self.markedForCleanup = False
-        
+        self.marked_for_cleanup = False
+
         self.active = True
         if active is not None:
             assert(isinstance(active, bool))
             self.active = active
-        
+
         if index is None:
-            logging.debug("Creating vertex {} at: {:.3f} {:.3f}".format(Vertex.nextIndex, loc[0], loc[1]))
+            logging.debug("Creating vertex {} at: {:.3f} {:.3f}".format(Vertex.nextIndex,
+                                                                        loc[0], loc[1]))
             self.index = Vertex.nextIndex
             Vertex.nextIndex += 1
         else:
@@ -57,64 +56,67 @@ class Vertex(Drawable):
             self.dcel.vertices.add(self)
             self.dcel.vertex_quad_tree.insert(item=self, bbox=self.bbox())
 
-                
-    
-    def copy(self):
-        """ Create an isolated copy of this vertex. Doesn't copy halfedge connections, 
-        but does copy data """
-        newVert = self.dcel.newVertex(self.loc, data=self.data.copy())
-        return newVert
 
-    def markForCleanup(self):
-        self.markedForCleanup = True
+
+    def copy(self):
+        """ Create an isolated copy of this vertex. Doesn't copy halfedge connections,
+        but does copy data """
+        new_vert = self.dcel.new_vertex(self.loc, data=self.data.copy())
+        return new_vert
+
+    def mark_for_cleanup(self):
+        """ Schedule this object to be deleted on the next pass """
+        self.marked_for_cleanup = True
 
     #------------------------------
     # def exporting
     #------------------------------
-    
+
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
         logging.debug("Exporting Vertex: {}".format(self.index))
-        enumData = {a.name:b for a,b in self.data.items() if a in VertE}
-        nonEnumData = {a:b for a,b in self.data.items() if a not in VertE}
-        
+        enum_data = {a.name:b for a, b in self.data.items() if a in VertE}
+        non_enum_data = {a:b for a, b in self.data.items() if a not in VertE}
+
         return {
             'i': self.index,
             'x': self.loc[0],
             'y': self.loc[1],
-            'halfEdges' : [x.index for x in self.halfEdges],
-            "enumData" : enumData,
-            "nonEnumData": nonEnumData,
+            'half_edges' : [x.index for x in self.half_edges],
+            "enum_data" : enum_data,
+            "non_enum_data": non_enum_data,
             "active" : self.active
         }
 
     #------------------------------
     # def Human Readable Representations
     #------------------------------
-    
+
     # def __str__(self):
-    #     return "({:.3f},{:.3f})".format(self.loc[0], self.loc[1])
+    #     return "({:.3f}, {:.3f})".format(self.loc[0], self.loc[1])
 
     def __repr__(self):
-        edges = [x.index for x in self.halfEdges]
-        edges += [x.twin.index for x in self.halfEdges]
+        edges = [x.index for x in self.half_edges]
+        edges += [x.twin.index for x in self.half_edges]
         return "(V: {}, edges: {}, ({:.3f}, {:.3f}))".format(self.index, edges,
-                                                           self.loc[0], self.loc[1])
+                                                             self.loc[0], self.loc[1])
 
 
     #------------------------------
     # def activation
     #------------------------------
     def activate(self):
+        """ Activates the object, so it is drawn """
         self.active = True
 
     def deactivate(self):
+        """ Removes the object from being drawn """
         self.active = False
 
     #------------------------------
     # def bboxes
     #------------------------------
-        
+
     def bbox(self, e=D_EPSILON):
         """ Create a minimal bbox for the vertex,
         for dcel to find overlapping vertices using a quadtree  """
@@ -122,7 +124,8 @@ class Vertex(Drawable):
 
     @staticmethod
     def free_bbox(loc, e=D_EPSILON):
-        """ Static method utility to create a bbox. used for quad_tree checking without creating the vertex """
+        """ Static method utility to create a bbox.
+        used for quad_tree checking without creating the vertex """
         assert(isinstance(loc, np.ndarray))
         loc = loc.astype(np.float64)
         return np.array([loc - e, loc + e]).flatten()
@@ -130,17 +133,17 @@ class Vertex(Drawable):
     #------------------------------
     #def queries
     #------------------------------
+    def is_edgeless(self):
+        """ asks whether a vertext has no registered halfedges  """
+        return not bool(self.half_edges)
 
-    def isEdgeless(self):
-        return len(self.halfEdges) == 0
-    
-    def has_constraints(self, candidateSet=None):
+    def has_constraints(self, candidate_set=None):
         """ if a vertex is used by more than  """
-        if candidateSet is None:
-            candidateSet = set()
-        assert(isinstance(candidateSet, set))
-        return bool(self.halfEdges.difference(candidateSet))
-    
+        if candidate_set is None:
+            candidate_set = set()
+        assert(isinstance(candidate_set, set))
+        return bool(self.half_edges.difference(candidate_set))
+
     def get_nearby_vertices(self, e=D_EPSILON):
         """ Utility method to get nearby vertices through the dcel reference "",
         returns the list of matches *including* self """
@@ -148,100 +151,101 @@ class Vertex(Drawable):
         return self.dcel.vertex_quad_tree.intersect(self.bbox(e=e))
 
     def within(self, bbox, tolerance=TOLERANCE):
-        """ Check the vertex is within [x,y,x2,y2] """
+        """ Check the vertex is within [x, y, x2, y2] """
         assert(isinstance(bbox, np.ndarray))
         assert(len(bbox) == 4)
-        modBbox = bbox + np.array([-tolerance, -tolerance, tolerance, tolerance])
-        inXBounds = bbox[0] < self.loc[0] and self.loc[0] < bbox[2]
-        inYBounds = bbox[1] < self.loc[1] and self.loc[1] < bbox[3]
-        return inXBounds and inYBounds
+        mod_bbox = bbox + np.array([-tolerance, -tolerance, tolerance, tolerance])
+        in_x_bounds = mod_bbox[0] < self.loc[0] and self.loc[0] < mod_bbox[2]
+        in_y_bounds = mod_bbox[1] < self.loc[1] and self.loc[1] < mod_bbox[3]
+        return in_x_bounds and in_y_bounds
 
     def within_circle(self, centre, radius):
         """ Check the vertex is within the radius boundary of a point """
-        return inCircle(centre, radius, self.toArray())[0]
-    
+        return in_circle(centre, radius, self.to_array())[0]
+
     def outside(self, bbox):
-        """ Check the vertex is entirely outside of the bbox [x,y,x2,y2] """
+        """ Check the vertex is entirely outside of the bbox [x, y, x2, y2] """
         return not self.within(bbox)
 
     def __lt__(self, other):
         """ Sorting top to bottom, left to right """
         assert(isinstance(other, Vertex))
-        if np.allclose(self.loc[1], other.loc[1], atol=ALLCLOSE_TOLERANCE[0], rtol=ALLCLOSE_TOLERANCE[1]):
+        if np.allclose(self.loc[1], other.loc[1],
+                       atol=ALLCLOSE_TOLERANCE[0],
+                       rtol=ALLCLOSE_TOLERANCE[1]):
             return self.loc[0] < other.loc[0]
         else:
             return self.loc[1] > other.loc[1]
 
-    
+
     #------------------------------
     # def HalfEdge Access and Registration
     #------------------------------
 
-    def registerHalfEdge(self, he):
+    def register_half_edge(self, he):
         """ register a halfedge as using this vertex
         will add the vertex into the first open slot of the halfedge
         """
         #Don't assert isinstance, as that would require importing halfedge
-        assert(hasattr(he,'index'))
-        self.halfEdges.add(he)
+        assert(hasattr(he, 'index'))
+        self.half_edges.add(he)
         logging.debug("Registered v{} to e{}".format(self.index, he.index))
 
-    def unregisterHalfEdge(self, he):
+    def unregister_half_edge(self, he):
         """ Remove a halfedge from the list that uses this vertex,
-        also removes the vertex from the halfEdges' slot
+        also removes the vertex from the half_edges' slot
         """
-        assert(hasattr(he,'index'))
-        if he in self.halfEdges:
-            self.halfEdges.remove(he)
-        logging.debug("Remaining edges: {}".format(len(self.halfEdges)))
+        assert(hasattr(he, 'index'))
+        if he in self.half_edges:
+            self.half_edges.remove(he)
+        logging.debug("Remaining edges: {}".format(len(self.half_edges)))
 
     def get_sorted_edges(self):
         """ return all half-edges that this vertex starts,
         sorted by angle. always relative to unit vector (right) """
-        opp_hedges = {x.twin.origin : x for x in self.halfEdges}
+        opp_hedges = {x.twin.origin : x for x in self.half_edges}
         verts = opp_hedges.keys()
         sorted_verts = self.dcel.orderVertices(self.loc, verts)
         return [opp_hedges[x] for x in sorted_verts]
-        
+
     #------------------------------
     # def Coordinate access
     #------------------------------
-    def toArray(self):
+    def to_array(self):
         """ Convert the Vertex's coords to a simple numpy array """
         return self.loc
 
     #------------------------------
     # Def Modifiers
     #------------------------------
-    
-    def extend_line_to(self, dir=None, len=None, rad=None, target=None, edge_data=None):
+    def extend_line_to(self, direction=None, length=None, rad=None, target=None, edge_data=None):
         """ create a line extending out from this vertex  """
-        #TODO: calc target from dir, len, rad
+        #TODO: calc target from direction, len, rad
         if target is None:
             raise Exception("Target is None")
         assert(isinstance(target, np.ndarray))
         assert(self.dcel is not None)
-        newEdge = self.dcel.createEdge(self.toArray(),
-                                     target,
-                                     vdata=self.data,
-                                     edata=edge_data)
+        new_edge = self.dcel.createEdge(self.to_array(),
+                                        target,
+                                        vdata=self.data,
+                                        edata=edge_data)
 
         #make the edge have faces:
-        self.registerHalfEdge(newEdge)
-        return newEdge
+        self.register_half_edge(new_edge)
+        return new_edge
 
 
-    def translate(self, dir, d=1, abs=False, candidates=None, force=False):
+    def translate(self, direction, d=1, absolute=False, candidates=None, force=False):
         """ Move the vertex by the vector dir, scaled by distance d,
-        if abs is true, just move to the specified point"""
-        assert(isinstance(dir, np.ndarray))
-        assert(dir.shape == (2,))
-        if not abs:
-            target = self.toArray() + (dir * d)
+        if absolute is true, just move to the specified point"""
+        assert(isinstance(direction, np.ndarray))
+        assert(direction.shape == (2, ))
+        if not absolute:
+            target = self.to_array() + (direction * d)
         else:
-            target = dir
+            target = direction
         if not force and self.has_constraints(candidates):
-            return (self.dcel.newVertex(target), EditE.NEW)
+            return (self.dcel.new_vertex(target), EditE.NEW)
         else:
             self.loc = target
             return (self, EditE.MODIFIED)
@@ -249,42 +253,37 @@ class Vertex(Drawable):
     def rotate(self, c=None, r=0, candidates=None, force=False):
         """ Rotate the point around a target """
         assert(isinstance(c, np.ndarray))
-        assert(c.shape == (2,))
+        assert(c.shape == (2, ))
         assert(-TWOPI <= r <= TWOPI)
-        newLoc = rotatePoint(self.toArray(), cen=c, rads=r)
+        new_loc = rotate_point(self.to_array(), cen=c, rads=r)
         if not force and self.has_constraints(candidates):
-            return (self.dcel.newVertex(newLoc), EditE.NEW)
+            return (self.dcel.new_vertex(new_loc), EditE.NEW)
         else:
-            self.loc = newLoc
+            self.loc = new_loc
             return (self, EditE.MODIFIED)
 
     def draw(self, ctx, data_override=None):
         data = self.data.copy()
         if data_override is not None:
             data.update(data_override)
-        
-        vertCol = VERTEX
-        vertRad = VERTRAD
-        sampleDescr = None
-        
+
+        vert_col = VERTEX
+        vert_rad = VERTRAD
+        sample_description = None
+
         if VertE.STROKE in data and isinstance(data[VertE.STROKE], (list, np.ndarray)):
-            vertCol = data[VertE.STROKE]
+            vert_col = data[VertE.STROKE]
         if VertE.RADIUS in data:
-            vertRad = data[VertE.RADIUS]
+            vert_rad = data[VertE.RADIUS]
         if VertE.SAMPLE in data:
-            sampleDescr = data[VertE.SAMPLE]
+            sample_description = data[VertE.SAMPLE]
 
-        if sampleDescr is not None:
+        if sample_description is not None:
             #draw as a sampled line
-            sampleDescr(ctx, self)
-            
+            sample_description(ctx, self)
+
         if VertE.NULL in data:
-            return 
+            return
 
-        ctx.set_source_rgba(*vertCol)
-        drawCircle(ctx, *self.loc, vertRad)
-
-
-    
-        
-        
+        ctx.set_source_rgba(*vert_col)
+        draw_circle(ctx, *self.loc, vert_rad)
