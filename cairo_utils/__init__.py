@@ -4,10 +4,10 @@ Author: John Grey
 
 A Module to simplify use of cairo in python
 """
-from .Quadratic import Quadratic
-from .Parabola import Parabola
-from .Tree import Tree
-from .rbtree.RBTree import RBTree
+from .quadratic import Quadratic
+from .parabola import Parabola
+from .tree import Tree
+from .rbtree.rbtree import RBTree
 from .dcel.dcel import DCEL
 from .make_gif import MakeGif
 
