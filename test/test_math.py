@@ -18,8 +18,8 @@ class CUMath_Tests(unittest.TestCase):
         return 1
 
     #----------
-    def test_sampleCircle(self):
-        circ = cumath.sampleCircle(np.array([0,0,1]), 1000)
+    def test_sample_circle(self):
+        circ = cumath.sample_circle(np.array([0,0,0,TWOPI,1,1]), 1000)
         self.assertIsInstance(circ, np.ndarray)
         self.assertEqual(circ.shape, (1, 1000, 2))
         self.assertTrue(-1 <= circ.min() <= -0.99)
@@ -52,9 +52,9 @@ class CUMath_Tests(unittest.TestCase):
     def test_sampleAlongLine(self):
         return
 
-    #createLine
-    def test_createLine(self):
-        line = cumath.createLine(np.array([0,0, 0, 1,]), 10)
+    #create_line
+    def test_create_line(self):
+        line = cumath.create_line(np.array([0,0, 0, 1,]), 10)
         self.assertTrue(line.shape == (1,10,2))
         self.assertTrue(line[0,:,0].min() == 0)
         self.assertTrue(line[0,:,0].max() == 0)
@@ -105,9 +105,9 @@ class CUMath_Tests(unittest.TestCase):
         return
     
     #rotate_point
-    def test_rotatePoint(self):
+    def test_rotate_point(self):
         a = np.array([1,0])
-        result = cumath.rotatePoint(a, rads=math.radians(90))
+        result = cumath.rotate_point(a, rads=math.radians(90))
         self.assertTrue(np.allclose(result, np.array([0,1])))
 
     
@@ -213,16 +213,16 @@ class CUMath_Tests(unittest.TestCase):
     def test_sort_coords(self):
         return
     
-    #inCircle
-    def test_inCircle(self):
+    #in_circle
+    def test_in_circle(self):
         a = np.array([1,0])
-        result = cumath.inCircle(np.array([0,0]), 1, a)
+        result = cumath.in_circle(np.array([0,0]), 1, a)
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (1,))
         
-    def test_inCircle_multi(self):
+    def test_in_circle_multi(self):
         a = np.array([[1,1],[0,1]])
-        result = cumath.inCircle(np.array([0,0]), 1, a)
+        result = cumath.in_circle(np.array([0,0]), 1, a)
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (2,))
 
