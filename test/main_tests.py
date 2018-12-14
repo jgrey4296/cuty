@@ -13,16 +13,16 @@ class Cairo_Util_Tests(unittest.TestCase):
     #----------
     #use testcase snippets
     def test_author(self):
-        self.assertEqual(utils._author, "jgrey")
+        self.assertEqual(utils._AUTHOR, "jgrey")
 
     #Test for specific constants?
     def test_main_loads(self):
-        self.assertTrue(hasattr(utils, 'Quadratic'))
-        self.assertTrue(hasattr(utils, 'Parabola'))
-        self.assertTrue(hasattr(utils, 'Tree'))
-        self.assertTrue(hasattr(utils, 'RBTree'))
-        self.assertTrue(hasattr(utils, 'DCEL'))
-        self.assertTrue(hasattr(utils, 'Make_Gif'))
+        self.assertTrue(hasattr(utils, 'quadratic'))
+        self.assertTrue(hasattr(utils, 'parabola'))
+        self.assertTrue(hasattr(utils, 'tree'))
+        self.assertTrue(hasattr(utils, 'rbtree'))
+        self.assertTrue(hasattr(utils, 'dcel'))
+        self.assertTrue(hasattr(utils, 'make_gif'))
         self.assertTrue(hasattr(utils, 'math'))
         
         
