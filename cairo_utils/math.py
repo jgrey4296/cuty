@@ -43,32 +43,30 @@ def displace_around_circle(xys, scale, n):
 
 def sample_circle(xyrs, n, sort_rads=True, sort_radi=True):
     """
-    Given circles xy and radius in array shape (i, 3)
+    Given array of np.array([x, y, radian_min, radian_max, radius_min, radius_max])
     produce n samples for each circle.
-    diameter=True : on the edge boundary
-    diameter=False : up to the edge boundary
     Returns: np.array.shape = (len(xyrs), n, 2)
     """
     #pylint: disable=too-many-locals
     #duplicate the points:
-    xyrs_r = xyrs((-1, 1, 5)).repeat(n, axis=1)
+    xyrs_r = xyrs.reshape((-1, 1, 6)).repeat(n, axis=1)
     #get random rotations
     rand_i = np.random.random((xyrs_r.shape[0], n))
     if sort_rads:
         rand_i.sort(axis=1)
-    rand_i_t = rand_i.transpose()
+    rand_i_t = rand_i
     #scale by passed in range
-    rand_i_ts = (xyrs[0, :, 3] - xyrs[0, :, 2]) * rand_i_t + xyrs[0, :, 2]
+    rand_i_ts = (xyrs_r[:, :, 3] - xyrs_r[:, :, 2]) * rand_i_t + xyrs_r[:, :, 2]
     #create the circle transform
     circ = np.array([np.cos(rand_i_ts), np.sin(rand_i_ts)])
-    circ_t = circ.transpose((2, 1, 0))
+    circ_t = circ.transpose((1, 2, 0))
     #Add radius:
     rand_radi = np.random.random((xyrs_r.shape[0], n))
     if sort_radi:
         rand_radi.sort(axis=1)
-    radi_t = rand_radi.transpose()
-    radi = (xyrs[0, :, 4] - xyrs[0, :, 5]) * radi_t + xyrs[0, :, 5]
-    offset = circ_t * radi
+    radi_t = rand_radi
+    radi = (xyrs_r[:, :, 5] - xyrs_r[:, :, 4]) * radi_t + xyrs_r[:, :, 4]
+    offset = np.column_stack((circ_t[:,:,0] * radi, circ_t[:,:,1] * radi)).reshape((-1,n,2))
     #apply the transforms
     result = xyrs_r[:, :, :2] + offset
     return result
@@ -314,17 +312,21 @@ def sample_along_lines(xys, t):
     with t's distribution
     """
     if not isinstance(t, np.ndarray):
-        t = np.array([[t]])
-    sample_points = t.reshape((-1, t.shape[-2], t.shape[-1]))
-    num_points = sample_points.shape[1]
-    sample_inv = 1 - sample_points
-    fade = np.row_stack((sample_inv, sample_points))
+        raise Exception("sample_along_lines not given proper sample points")
+    s_points = t
+    s_invert = (1 - s_points)
+    num_points = s_points.shape[0]
+    fade = np.vstack((s_invert,s_points))
     lines = xys.reshape((-1, 2, 2))
-    xs = lines[:, :, 0].repeat(num_points).reshape((-1, 2, num_points)) * fade
-    ys = lines[:, :, 1].repeat(num_points).reshape((-1, 2, num_points)) * fade
-    s_xs = xs.sum(axis=1)
-    s_ys = ys.sum(axis=1)
-    paired = np.column_stack((s_xs, s_ys))
+    xs = lines[:, :, 0]
+    ys = lines[:, :, 1]
+    xsr = xs.repeat(num_points).reshape((-1, 2, num_points))
+    ysr = ys.repeat(num_points).reshape((-1, 2, num_points))
+    xsrf = xsr * fade
+    ysrf = ysr * fade
+    s_xs = xsrf.sum(axis=1)
+    s_ys = ysrf.sum(axis=1)
+    paired = np.hstack((s_xs, s_ys))
     reshaped = paired.reshape((-1, num_points, 2), order='F')
     return reshaped
 
@@ -533,9 +535,9 @@ def rotate_point(p, cen=None, rads=None, rad_min=-QUARTERPI, rad_max=QUARTERPI):
     if rads is None:
         use_radians = random_radian(min_v=rad_min, max_v=rad_max)
         if isinstance(use_rads, np.ndarray):
-            use_rads = use_rads[0]
+            use_radians = use_rads[0]
     else:
-        use_rads = rads
+        use_radians = rads
     #apply to 1d slices, this allows multiple points to be
     #passed into the function together,
     #without messing up the rotation matmul
