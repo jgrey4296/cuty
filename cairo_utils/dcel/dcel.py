@@ -71,7 +71,7 @@ class DCEL:
                                                         len(flattened_vertices),
                                                         len(self.vertices))
 
-        infinite_edges = [x for x in self.half_edges if x.isInfinite()]
+        infinite_edges = [x for x in self.half_edges if x.is_infinite()]
         infinite_edge_description = "Infinite Edges: num: {}".format(len(infinite_edges))
 
         complete_edges = set()
@@ -81,19 +81,19 @@ class DCEL:
 
         complete_edge_description = "Complete Edges: num: {}".format(len(complete_edges))
 
-        edgeless_vertices = [x for x in self.vertices if x.isEdgeless()]
+        edgeless_vertices = [x for x in self.vertices if x.is_edgeless()]
         edgeless_vertices_description = "Edgeless vertices: num: {}".format(len(edgeless_vertices))
 
-        edge_count_for_faces = [str(len(f.edgeList)) for f in self.faces]
+        edge_count_for_faces = [str(len(f.edge_list)) for f in self.faces]
         edge_count_for_faces_description = \
                 "Edge Counts for Faces: {}".format("-".join(edge_count_for_faces))
 
         purge_verts = "Verts to Purge: {}".format(len([x for x in self.vertices
-                                                       if x.markedForCleanup]))
+                                                       if x.marked_for_cleanup]))
         purge_edges = "Hedges to Purge: {}".format(len([x for x in self.half_edges
-                                                        if x.markedForCleanup]))
+                                                        if x.marked_for_cleanup]))
         purge_faces = "Faces to Purge: {}".format(len([x for x in self.faces
-                                                       if x.markedForCleanup]))
+                                                       if x.marked_for_cleanup]))
 
         return "\n".join(["---- DCEL Description: ",
                           vertices_description,
@@ -147,8 +147,8 @@ class DCEL:
         logging.info("Re-Creating Vertices: {}".format(len(data['vertices'])))
         for v_data in data['vertices']:
             combined_data = {}
-            combined_data.update({VertE.__members__[a] : b for a, b in v_data['enumData'].items()})
-            combined_data.update(v_data['nonEnumData'])
+            combined_data.update({VertE.__members__[a] : b for a, b in v_data['enum_data'].items()})
+            combined_data.update(v_data['non_enum_data'])
 
             new_vert = Vertex(np.array([v_data['x'], v_data['y']]),
                               index=v_data['i'], data=combined_data,
@@ -160,8 +160,8 @@ class DCEL:
         logging.info("Re-Creating HalfEdges: {}".format(len(data['half_edges'])))
         for e_data in data['half_edges']:
             combined_data = {}
-            combined_data.update({EdgeE.__members__[a] : b for a, b in e_data['enumData'].items()})
-            combined_data.update(e_data['nonEnumData'])
+            combined_data.update({EdgeE.__members__[a] : b for a, b in e_data['enum_data'].items()})
+            combined_data.update(e_data['non_enum_data'])
             new_edge = HalfEdge(index=e_data['i'], data=combined_data, dcel=self)
             logging.debug("Re-created Edge: {}".format(new_edge.index))
             local_edges[new_edge.index] = DataPair(new_edge.index, new_edge, e_data)
@@ -170,8 +170,8 @@ class DCEL:
         logging.info("Re-Creating Faces: {}".format(len(data['faces'])))
         for f_data in data['faces']:
             combined_data = {}
-            combined_data.update({FaceE.__members__[a] : b for a, b in f_data['enumData'].items()})
-            combined_data.update(f_data['nonEnumData'])
+            combined_data.update({FaceE.__members__[a] : b for a, b in f_data['enum_data'].items()})
+            combined_data.update(f_data['non_enum_data'])
             new_face = Face(site=np.array([f_data['sitex'], f_data['sitey']]), index=f_data['i'],
                             data=combined_data, dcel=self)
             logging.debug("Re-created face: {}".format(new_face.index))
@@ -209,7 +209,7 @@ class DCEL:
         try:
             #connect faces to their edges
             for face in local_faces.values():
-                face.obj.edgeList = [local_edges[x].obj for x in face.data['edges']]
+                face.obj.edge_list = [local_edges[x].obj for x in face.data['edges']]
         except Exception:
             logging.warning("Import Error for face")
 
@@ -301,24 +301,24 @@ class DCEL:
         logging.debug("Purging Edge: {}".format(target.index))
         target_update = set()
 
-        target.connectNextToPrev()
+        target.connect_next_to_prev()
         vert = target.origin
         target.origin = None
         if vert is not None:
-            vert.unregisterHalfEdge(target)
-            if vert.isEdgeless():
-                vert.markForCleanup()
+            vert.unregister_half_edge(target)
+            if vert.is_edgeless():
+                vert.mark_for_cleanup()
                 target_update.add(vert)
 
         if target.face is not None:
             face = target.face
             face.remove_edge(target)
             if not face.has_edges():
-                face.markForCleanup()
+                face.mark_for_cleanup()
                 target_update.add(face)
 
         if target.twin is not None:
-            target.twin.markForCleanup()
+            target.twin.mark_for_cleanup()
             target_update.add(target.twin)
             target.twin.twin = None
             target.twin = None
@@ -339,8 +339,8 @@ class DCEL:
         for edge in half_edges:
             assert(edge.origin == target)
             edge.origin = None
-            target.unregisterHalfEdge(edge)
-            edge.markForCleanup()
+            target.unregister_half_edge(edge)
+            edge.mark_for_cleanup()
             target_update.add(edge)
 
         self.vertices.remove(target)
@@ -353,10 +353,10 @@ class DCEL:
         assert(isinstance(target, Face))
         logging.debug("Purging Face: {}".format(target.index))
         target_update = set()
-        edges = target.getEdges()
+        edges = target.get_edges()
         for edge in edges:
             target.remove_edge(edge)
-            edge.markForCleanup()
+            edge.mark_for_cleanup()
             target_update.add(edge)
         self.faces.remove(target)
         return target_update
@@ -367,10 +367,10 @@ class DCEL:
         if targets is None:
             #populate the targets:
             targets = set([])
-            targets = targets.union([x for x in self.vertices if x.markedForCleanup])
-            targets = targets.union([x for x in self.half_edges if x.markedForCleanup
-                                     or x.isInfinite()])
-            targets = targets.union([x for x in self.faces if x.markedForCleanup
+            targets = targets.union([x for x in self.vertices if x.marked_for_cleanup])
+            targets = targets.union([x for x in self.half_edges if x.marked_for_cleanup
+                                     or x.is_infinite()])
+            targets = targets.union([x for x in self.faces if x.marked_for_cleanup
                                      or not x.has_edges()])
 
         else:
@@ -594,14 +594,14 @@ class DCEL:
         while bool(all_edges):
             current = all_edges.pop(0)
             assert(current.index not in processed)
-            if current.getLength_sq() > l:
+            if current.get_length_sq() > l:
                 _, new_edge = current.split_by_ratio(r=0.5)
-                if new_edge.getLength_sq() > l:
+                if new_edge.get_length_sq() > l:
                     all_edges.append(new_edge)
                 else:
                     processed.add(new_edge.index)
 
-            if current.getLength_sq() > l:
+            if current.get_length_sq() > l:
                 all_edges.append(current)
             else:
                 processed.add(current.index)
@@ -625,7 +625,7 @@ class DCEL:
         hedges = self.half_edges.copy()
         for he in hedges:
             logging.debug("Constraining Hedge: {}".format(he))
-            if he.face is not None or he.markedForCleanup:
+            if he.face is not None or he.marked_for_cleanup:
                 continue
             he.constrain_to_circle(centre, radius, candidates=candidates, force=force)
 
@@ -633,10 +633,10 @@ class DCEL:
         vertices = self.vertices.copy()
         for v in vertices:
             logging.debug("Constraining Vertex: {}".format(v))
-            if not v.isEdgeless():
+            if not v.is_edgeless():
                 continue
             if not v.within_circle(centre, radius):
-                v.markForCleanup()
+                v.mark_for_cleanup()
 
 
     def constrain_to_bbox(self, bbox, candidates=None, force=False):
@@ -653,7 +653,7 @@ class DCEL:
         hedges = self.half_edges.copy()
         for he in hedges:
             logging.debug("Constraining Hedge: {}".format(he))
-            if he.face is not None or he.markedForCleanup:
+            if he.face is not None or he.marked_for_cleanup:
                 continue
             he.constrain_to_bbox(bbox, candidates=candidates, force=force)
 
@@ -661,10 +661,10 @@ class DCEL:
         vertices = self.vertices.copy()
         for v in vertices:
             logging.debug("Constraining Vertex: {}".format(v))
-            if not v.isEdgeless():
+            if not v.is_edgeless():
                 continue
             if not v.within(bbox):
-                v.markForCleanup()
+                v.mark_for_cleanup()
 
 
 
@@ -742,7 +742,7 @@ class DCEL:
 
         face_edges = set()
         for f in self.faces:
-            face_edges.update([x.index for x in f.edgeList])
+            face_edges.update([x.index for x in f.edge_list])
 
         #differences:
         vert_hedge_diff = vert_hedges.difference(reg_hedges)
