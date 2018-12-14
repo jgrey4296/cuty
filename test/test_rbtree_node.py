@@ -3,7 +3,7 @@ import logging
 import IPython
 from test_context import cairo_utils as utils
 from cairo_utils import rbtree
-from cairo_utils.rbtree import ComparisonFunctions as CompFuncs
+from cairo_utils.rbtree import comparison_functions as CompFuncs
 from cairo_utils.rbtree import Node
 
 
@@ -31,19 +31,19 @@ class RBTree_Tests(unittest.TestCase):
         self.assertFalse(self.n == other2)
 
     def test_blackheight(self):
-        self.assertEqual(self.n.getBlackHeight(), 0)
+        self.assertEqual(self.n.get_black_height(), 0)
 
     def test_blackheight_2(self):
         n1 = Node(1)
         n2 = Node(2, n1)
         n3 = Node(3, n2)
-        self.assertEqual(n3.getBlackHeight(), 0)
+        self.assertEqual(n3.get_black_height(), 0)
         n3.red = False
-        self.assertEqual(n3.getBlackHeight(), 1)
+        self.assertEqual(n3.get_black_height(), 1)
         n2.red = False
-        self.assertEqual(n3.getBlackHeight(), 2)
+        self.assertEqual(n3.get_black_height(), 2)
         n1.red = False
-        self.assertEqual(n3.getBlackHeight(), 3)
+        self.assertEqual(n3.get_black_height(), 3)
     
     def test_link_left(self):
         n1 = Node(2)
@@ -99,20 +99,20 @@ class RBTree_Tests(unittest.TestCase):
 
     def test_get_predecessor_None(self):
         n1 = Node(2)
-        self.assertIsNone(n1.getPredecessor())
+        self.assertIsNone(n1.get_predecessor())
 
     def test_get_predecessor_basic(self):
         n1 = Node(2)
         n2 = Node(3)
         n1.add_left(n2)
-        self.assertEqual(n1.getPredecessor(), n2)
-        self.assertIsNone(n2.getPredecessor())
+        self.assertEqual(n1.get_predecessor(), n2)
+        self.assertIsNone(n2.get_predecessor())
         
     def test_get_predecessor_basic_2(self):
         n1 = Node(2)
         n2 = Node(3)
         n1.add_right(n2)
-        self.assertEqual(n2.getPredecessor(), n1)
+        self.assertEqual(n2.get_predecessor(), n1)
 
     def test_get_predecessor(self):
         n1 = Node(2)
@@ -120,23 +120,23 @@ class RBTree_Tests(unittest.TestCase):
         n3 = Node(4)
         n1.add_right(n2)
         n2.add_left(n3)
-        self.assertEqual(n3.getPredecessor(), n1)
+        self.assertEqual(n3.get_predecessor(), n1)
 
     def test_get_successor_None(self):
         n1 = Node(2)
-        self.assertIsNone(n1.getSuccessor())
+        self.assertIsNone(n1.get_successor())
 
     def test_get_successor_basic(self):
         n1 = Node(2)
         n2 = Node(3)
         n1.add_left(n2)
-        self.assertEqual(n2.getSuccessor(), n1)
+        self.assertEqual(n2.get_successor(), n1)
 
     def test_get_successor_basic_2(self):
         n1 = Node(2)
         n2 = Node(3)
         n1.add_right(n2)
-        self.assertEqual(n1.getSuccessor(), n2)
+        self.assertEqual(n1.get_successor(), n2)
 
     def test_get_successor(self):
         n1 = Node(2)
@@ -144,7 +144,7 @@ class RBTree_Tests(unittest.TestCase):
         n3 = Node(4)
         n1.add_left(n2)
         n2.add_right(n3)
-        self.assertEqual(n3.getSuccessor(), n1)
+        self.assertEqual(n3.get_successor(), n1)
 
     #test getPred/Succ_while
 
@@ -245,20 +245,20 @@ class RBTree_Tests(unittest.TestCase):
         n1.add_left(n2)
         n1.add_right(n3)
         n3.add_left(n4)
-        succresults = n2.getSuccessor_while(lambda x: True)
+        succresults = n2.get_successor_while(lambda x: True)
         self.assertEqual(succresults, [n1,n4,n3])
-        predresults = n3.getPredecessor_while(lambda x: True)
+        predresults = n3.get_predecessor_while(lambda x: True)
         self.assertEqual(predresults, [n4,n1,n2])
-        neighbours = n1.getNeighbours_while(lambda x: True)
+        neighbours = n1.get_neighbours_while(lambda x: True)
         self.assertEqual(neighbours, [n2,n4,n3])
 
     def test_is_leaf(self):
         n1 = Node(2)
-        self.assertTrue(n1.isLeaf())
+        self.assertTrue(n1.is_leaf())
         n1.add_left(Node(34))
-        self.assertFalse(n1.isLeaf())
+        self.assertFalse(n1.is_leaf())
         n1.add_right(Node(5))
-        self.assertFalse(n1.isLeaf())
+        self.assertFalse(n1.is_leaf())
         
     #----------
         

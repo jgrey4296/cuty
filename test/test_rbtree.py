@@ -3,7 +3,7 @@ import logging
 import IPython
 from test_context import cairo_utils as utils
 from cairo_utils import rbtree
-from cairo_utils.rbtree import ComparisonFunctions as CompFuncs
+from cairo_utils.rbtree import comparison_functions as CompFuncs
 
 
 class RBTree_Tests(unittest.TestCase):
@@ -58,8 +58,8 @@ class RBTree_Tests(unittest.TestCase):
         ma = self.t.max()
         self.assertIsInstance(mi, rbtree.Node)
         self.assertIsInstance(ma, rbtree.Node)
-        self.assertEqual(mi.value, 8)
-        self.assertEqual(ma.value, 1)
+        self.assertEqual(mi.value, 1)
+        self.assertEqual(ma.value, 8)
         
     #delete
     def test_delete(self):
