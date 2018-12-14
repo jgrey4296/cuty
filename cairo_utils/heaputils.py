@@ -35,7 +35,7 @@ def pop_while_same(heap):
 
     collected = (first_vert, [first_edge])
     count = 1
-    while bool(heap) and heap[0].ord == first_vert:
+    while bool(heap) and heap[0].ordinal == first_vert:
         data = heapq.heappop(heap).data
         if data is not None:
             collected[1].append(data)
