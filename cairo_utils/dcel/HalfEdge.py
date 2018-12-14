@@ -34,7 +34,6 @@ class HalfEdge(Drawable):
     def __init__(self, origin=None, twin=None, index=None, data=None, dcel=None):
         assert(origin is None or isinstance(origin, Vertex))
         assert(twin is None or isinstance(twin, HalfEdge))
-        super().__init__()
         self.origin = origin
         self.twin = twin
         self.length_sq = -1
@@ -58,7 +57,7 @@ class HalfEdge(Drawable):
 
         #register the halfedge with the vertex
         if origin is not None:
-            self.origin.registerHalfEdge(self)
+            self.origin.register_half_edge(self)
 
         #Additional:
         self.marked_for_cleanup = False
@@ -68,8 +67,8 @@ class HalfEdge(Drawable):
         self.data = {}
         if data is not None:
             self.data.update(data)
-        if self.dcel is not None and self not in self.dcel.halfEdges:
-            self.dcel.halfEdges.add(self)
+        if self.dcel is not None and self not in self.dcel.half_edges:
+            self.dcel.half_edges.add(self)
 
     def eq_verts(self, other):
         """ Test whether two halfedges share vertices """
@@ -312,11 +311,11 @@ class HalfEdge(Drawable):
         #update the twin
         self.twin.origin = new_point
         #update registrations:
-        end.unregisterHalfEdge(self)
-        new_point.registerHalfEdge(self)
-        new_point.registerHalfEdge(self.twin)
-        end.unregisterHalfEdge(self.twin)
-        end.registerHalfEdge(new_edge.twin)
+        end.unregister_half_edge(self)
+        new_point.register_half_edge(self)
+        new_point.register_half_edge(self.twin)
+        end.unregister_half_edge(self.twin)
+        end.register_half_edge(new_edge.twin)
         #recalculate length
         self.get_length_sq(force=True)
         self.twin.get_length_sq(force=True)
@@ -348,7 +347,7 @@ class HalfEdge(Drawable):
             target = direction
 
         if not force and self.has_constraints(candidates):
-            return (self.dcel.createEdge(target[0],
+            return (self.dcel.create_edge(target[0],
                                          target[1],
                                          edata=self.data,
                                          vdata=self.origin.data), EditE.NEW)
@@ -411,13 +410,13 @@ class HalfEdge(Drawable):
         rotated_coords = rotate_point(as_array, cen=c, rads=r)
 
         if not force and self.has_constraints(candidates):
-            return (self.dcel.createEdge(rotated_coords[0],
+            return (self.dcel.create_edge(rotated_coords[0],
                                          rotated_coords[1],
                                          edata=self.data,
                                          vdata=self.origin.data), EditE.NEW)
         else:
-            _, edit1 = self.origin.translate(rotated_coords[0], abs=True, force=True)
-            _, edit2 = self.twin.origin.translate(rotated_coords[1], abs=True, force=True)
+            _, edit1 = self.origin.translate(rotated_coords[0], absolute=True, force=True)
+            _, edit2 = self.twin.origin.translate(rotated_coords[1], absolute=True, force=True)
             assert(edit1 == edit2)
             assert(edit1 == EditE.MODIFIED)
             return (self, EditE.MODIFIED)
@@ -634,7 +633,7 @@ class HalfEdge(Drawable):
         return crossed
 
     def __lt__(self, other):
-        return HalfEdge.compare_edges(self.face.getCentroid(), self, other)
+        return HalfEdge.compare_edges(self.face.get_centroid(), self, other)
 
 
     def he_ccw(self, centre):
@@ -714,10 +713,10 @@ class HalfEdge(Drawable):
         """ Infer faces by side on a vertex,
         leftmost means to fix on the right instead """
         extended_from = originator
-        all_twins = [x.twin.origin for x in self.origin.halfEdges]
-        edge_lookup = {x.twin.origin : x.twin for x in self.origin.halfEdges}
+        all_twins = [x.twin.origin for x in self.origin.half_edges]
+        edge_lookup = {x.twin.origin : x.twin for x in self.origin.half_edges}
         assert(extended_from.origin in all_twins)
-        ordered = self.dcel.orderVertices(self.origin.loc, all_twins)
+        ordered = self.dcel.order_vertices(self.origin.loc, all_twins)
         extended_index = ordered.index(extended_from.origin)
         zipped = zip(islice(cycle(ordered), extended_index, len(ordered) + extended_index),
                      islice(cycle(ordered), extended_index+1, len(ordered) + extended_index + 1))
@@ -729,10 +728,10 @@ class HalfEdge(Drawable):
             a_edge.twin.add_prev(b_edge, force=True)
 
         if self.prev.face is None:
-            new_face = self.dcel.newFace()
+            new_face = self.dcel.new_face()
             new_face.add_edge(self.prev)
         if originator.twin.face is None:
-            orig_twin_face = self.dcel.newFace()
+            orig_twin_face = self.dcel.new_face()
             orig_twin_face.add_edge(originator.twin)
 
 
@@ -741,7 +740,7 @@ class HalfEdge(Drawable):
         if originator.twin in f2_sequence:
             originator.twin.face.add_edge(self.twin)
         else:
-            twin_face = self.dcel.newFace()
+            twin_face = self.dcel.new_face()
             for e in f2_sequence:
                 self.prev.face.remove_edge(e)
                 twin_face.add_edge(e)
@@ -848,10 +847,10 @@ class HalfEdge(Drawable):
         assert(isinstance(vertex, Vertex))
         if self.origin is None:
             self.origin = vertex
-            self.origin.registerHalfEdge(self)
+            self.origin.register_half_edge(self)
         elif self.twin.origin is None:
             self.twin.origin = vertex
-            self.twin.origin.registerHalfEdge(self.twin)
+            self.twin.origin.register_half_edge(self.twin)
         else:
             raise Exception("trying to add a vertex to a full edge")
 
@@ -866,18 +865,18 @@ class HalfEdge(Drawable):
 
         if v1 is not None:
             logging.debug("Clearing vertex {} from edge {}".format(v1.index, self.index))
-            v1.unregisterHalfEdge(self)
+            v1.unregister_half_edge(self)
         if v2 is not None:
             logging.debug("Clearing vertex {} from edge {}".format(v2.index, self.twin.index))
-            v2.unregisterHalfEdge(self.twin)
+            v2.unregister_half_edge(self.twin)
 
 
     def replace_vertex(self, new_vert):
         """ Replace the vertex of this halfedge with a new one, unregistering the old """
         assert(isinstance(new_vert, Vertex))
-        self.origin.unregisterHalfEdge(self)
+        self.origin.unregister_half_edge(self)
         self.origin = new_vert
-        self.origin.registerHalfEdge(self)
+        self.origin.register_half_edge(self)
 
 
     def get_vertices(self):
