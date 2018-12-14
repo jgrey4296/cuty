@@ -3,7 +3,7 @@ Provides the Parabola Class, mainly used for Voronoi calculation
 """
 import logging as root_logger
 import numpy as np
-from .Quadratic import Quadratic as Q
+from .quadratic import Quadratic as Q
 
 logging = root_logger.getLogger(__name__)
 MAX = 5000
