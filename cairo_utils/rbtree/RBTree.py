@@ -80,7 +80,7 @@ class RBTree:
                 raise Exception("This shouldn't happen")
             found.add(current)
             chain.append(current)
-            current = current.getSuccessor()
+            current = current.get_successor()
         return chain
 
     def get_successor_triple(self, node):
@@ -88,9 +88,9 @@ class RBTree:
         if node is None:
             return None
         a = node
-        b = a.getSuccessor()
+        b = a.get_successor()
         if b is not None:
-            c = b.getSuccessor()
+            c = b.get_successor()
             if c is not None:
                 return (a, b, c)
         return None
