@@ -21,7 +21,6 @@ class Vertex(Drawable):
     def __init__(self, loc, edges=None, index=None, data=None, dcel=None, active=None):
         assert(isinstance(loc, np.ndarray))
         assert(edges is None or isinstance(edges, list))
-        super().__init__()
         self.loc = loc
         #The edges this vertex is part of:
         self.half_edges = set()
@@ -205,7 +204,7 @@ class Vertex(Drawable):
         sorted by angle. always relative to unit vector (right) """
         opp_hedges = {x.twin.origin : x for x in self.half_edges}
         verts = opp_hedges.keys()
-        sorted_verts = self.dcel.orderVertices(self.loc, verts)
+        sorted_verts = self.dcel.order_vertices(self.loc, verts)
         return [opp_hedges[x] for x in sorted_verts]
 
     #------------------------------
@@ -225,7 +224,7 @@ class Vertex(Drawable):
             raise Exception("Target is None")
         assert(isinstance(target, np.ndarray))
         assert(self.dcel is not None)
-        new_edge = self.dcel.createEdge(self.to_array(),
+        new_edge = self.dcel.create_edge(self.to_array(),
                                         target,
                                         vdata=self.data,
                                         edata=edge_data)
