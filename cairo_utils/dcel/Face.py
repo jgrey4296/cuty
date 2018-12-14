@@ -28,7 +28,6 @@ class Face(Drawable):
     nextIndex = 0
 
     def __init__(self, site=None, index=None, data=None, dcel=None):
-        super().__init__()
         if site is not None:
             #site = np.array([0, 0])
             assert(isinstance(site, np.ndarray))
@@ -86,7 +85,7 @@ class Face(Drawable):
         #TODO: put this into dcel?
         assert(all([isinstance(x, Vertex) for x in verts]))
         #convert to numpy:
-        np_pairs = [(x.toArray(), x) for x in verts]
+        np_pairs = [(x.to_array(), x) for x in verts]
         hull = ConvexHull([x[0] for x in np_pairs])
         hull_verts = [np_pairs[x][1] for x in hull.vertices]
         discard_verts = set(verts).difference(hull_verts)
@@ -184,7 +183,7 @@ class Face(Drawable):
         #Setup Edges:
         initial = True
         for x in self.get_edges():
-            v1, v2 = x.getVertices()
+            v1, v2 = x.get_vertices()
             assert(v1 is not None)
             assert(v2 is not None)
             logging.debug("Drawing Face {} edge {}".format(self.index, x.index))
@@ -251,7 +250,7 @@ class Face(Drawable):
         """ Get a rough bbox of the face """
         #TODO: fix this? its rough
         vertices = [x.origin for x in self.edge_list]
-        vertex_arrays = [x.toArray() for x in vertices if x is not None]
+        vertex_arrays = [x.to_array() for x in vertices if x is not None]
         if not bool(vertex_arrays):
             return np.array([[0, 0], [0, 0]])
         all_vertices = np.array([x for x in vertex_arrays])
@@ -380,11 +379,11 @@ class Face(Drawable):
         new_point, new_edge = edge.split_by_ratio(ratio)
 
         #get the bisecting vector
-        as_coords = edge.toArray()
+        as_coords = edge.to_array()
         bisector = cumath.get_bisector(as_coords[0], as_coords[1])
         #get the coords of an extended line
-        extended_end = cumath.extend_line(new_point.toArray(), bisector, 1000)
-        el_coords = np.row_stack((new_point.toArray(), extended_end))
+        extended_end = cumath.extend_line(new_point.to_array(), bisector, 1000)
+        el_coords = np.row_stack((new_point.to_array(), extended_end))
 
         #intersect with coords of edges
         intersection = None
@@ -392,7 +391,7 @@ class Face(Drawable):
         for he in self.edge_list:
             if he in [edge, new_edge]:
                 continue
-            he_coords = he.toArray()
+            he_coords = he.to_array()
             intersection = cumath.intersect(el_coords, he_coords)
             if intersection is not None:
                 opp_edge = he
@@ -408,13 +407,13 @@ class Face(Drawable):
         #create the subdividing edge:
         dividing_edge = self.dcel.new_edge(new_point, new_opp_point,
                                            face=self,
-                                           twinFace=new_face,
+                                           twin_face=new_face,
                                            edata=edge.data,
                                            vdata=edge.origin.data)
-        dividing_edge.addPrev(edge, force=True)
-        dividing_edge.addNext(new_opp_edge, force=True)
-        dividing_edge.twin.addPrev(opp_edge, force=True)
-        dividing_edge.twin.addNext(new_edge, force=True)
+        dividing_edge.add_prev(edge, force=True)
+        dividing_edge.add_next(new_opp_edge, force=True)
+        dividing_edge.twin.add_prev(opp_edge, force=True)
+        dividing_edge.twin.add_next(new_edge, force=True)
 
         #divide the edges into new_opp_edge -> edge, new_edge -> opp_edge
         new_face_edge_group = []
@@ -462,7 +461,7 @@ class Face(Drawable):
             #create an edge
             dc.new_edge(s, e, face=new_face)
         #link the edges
-        dc.linkEdgesTogether(new_face.edge_list, loop=True)
+        dc.link_edges_together(new_face.edge_list, loop=True)
         #return the face
         return (new_face, discarded)
 
@@ -512,7 +511,7 @@ class Face(Drawable):
             loc -= target
             loc *= amnt
             loc += target
-            vert.translate(loc, abs=True, force=True)
+            vert.translate(loc, absolute=True, force=True)
 
         return (self, EditE.MODIFIED)
 
@@ -598,14 +597,14 @@ class Face(Drawable):
         all_verts = set()
         all_verts.update(self.free_vertices)
         for e in self.edge_list:
-            all_verts.update(e.getVertices())
+            all_verts.update(e.get_vertices())
         return all_verts
 
     def get_all_coords(self):
         """ Get the sequence of coordinates for the edges """
         if self.coord_list is not None:
             return self.coord_list
-        all_coords = np.array([x.toArray() for x in self.get_all_vertices()])
+        all_coords = np.array([x.to_array() for x in self.get_all_vertices()])
         self.coord_list = Face.hull_from_coords(all_coords)
         return self.coord_list
 
@@ -642,7 +641,7 @@ class Face(Drawable):
         for e in edges:
             #enforce next and prev
             if e.prev is not prev:
-                e.addPrev(prev, force=True)
+                e.add_prev(prev, force=True)
             #if verts don't align AND they intersect the border of the bbox on separate edges:
             dont_align = not prev.connections_align(e)
             if dont_align:
@@ -652,8 +651,8 @@ class Face(Drawable):
                                               edata=e.data,
                                               vdata=e.origin.data)
                 new_edge.face = self
-                new_edge.addPrev(e.prev, force=True)
-                new_edge.addNext(e, force=True)
+                new_edge.add_prev(e.prev, force=True)
+                new_edge.add_next(e, force=True)
                 #insert that new edge into the edge_list
                 index = self.edge_list.index(e)
                 self.edge_list.insert(index, new_edge)
@@ -671,7 +670,7 @@ class Face(Drawable):
                     #     new_edge.twin.face.add_edge(new_edge2.twin)
 
                     move_to_coord = calc_bbox_corner(bbox, edge_es)
-                    new_point.translate(move_to_coord, abs=True, force=True)
+                    new_point.translate(move_to_coord, absolute=True, force=True)
 
             prev = e
 
