@@ -8,13 +8,17 @@ from .constants import BACKGROUND, TWOPI, FRONT, FONT_SIZE
 
 logging = root_logger.getLogger(__name__)
 
-def setup_cairo(n=5, font_size=FONT_SIZE, scale=True, cartesian=False, background=BACKGROUND):
+def setup_cairo(n=5,
+                font_size=FONT_SIZE,
+                scale=True,
+                cartesian=False,
+                background=BACKGROUND):
     """
     Utility a Cairo surface and context
     n : the pow2 size of the surface
     font_size
     scale : True for coords of -1 to 1
-    cartesian : True for (0,0) being in the bottom left
+    cartesian : True for (0,0) being in the bottom left, instead of top right
     background : The background colour to initialize to
     """
     size = pow(2, n)
@@ -48,23 +52,46 @@ def draw_rect(ctx, xyxys, fill=True):
     Takes the context and a (n,4) array
     """
     #ctx.set_source_rgba(*FRONT)
-    for a in xyxys:
-        ctx.rectangle(*a)
+    f = lambda : ctx.stroke()
     if fill:
-        ctx.fill()
-    else:
-        ctx.stroke()
+        f = lambda: ctx.fill()
+    c = lambda x: None
+    if len(xyrs[0]) > 6:
+        c = lambda x: ctx.set_source_rgba(*x[3:])
+
+    for a in xyxys:
+        c(a)
+        ctx.rectangle(*a[:3])
+        f()
 
 def draw_circle(ctx, xyrs, fill=True):
     """ Draw simple circles
     Takes context,
     """
-    for a in xyrs:
-        ctx.arc(*a, 0, TWOPI)
+    f = lambda c: c.stroke()
     if fill:
-        ctx.fill()
-    else:
-        ctx.stroke()
+        f = lambda c: c.fill()
+    col = lambda c, x: None
+    if len(xyrs[0]) > 6:
+        col = lambda c, x: c.set_source_rgba(*x[3:])
+
+    for a in xyrs:
+        col(ctx, a)
+        ctx.arc(*a[:3], 0, TWOPI)
+        f(ctx)
+
+
+def draw_text(ctx, xy, text):
+    """ Utility to simplify drawing text
+    Takes context, position, text
+    """
+    logging.debug("Drawing text: {}, {}".format(text, xy))
+    ctx.save()
+    ctx.move_to(*xy)
+    ctx.scale(1, -1)
+    ctx.show_text(str(text))
+    ctx.scale(1, -1)
+    ctx.restore()
 
 def clear_canvas(ctx, colour=BACKGROUND, bbox=None):
     """ Clear a rectangle of a context using particular colour
@@ -78,15 +105,3 @@ def clear_canvas(ctx, colour=BACKGROUND, bbox=None):
         ctx.rectangle(*bbox)
     ctx.fill()
     ctx.set_source_rgba(*FRONT)
-
-def draw_text(ctx, xy, text):
-    """ Utility to simplify drawing text
-    Takes context, position, text
-    """
-    logging.debug("Drawing text: {}, {}".format(text, xy))
-    ctx.save()
-    ctx.move_to(*xy)
-    ctx.scale(1, -1)
-    ctx.show_text(str(text))
-    ctx.scale(1, -1)
-    ctx.restore()
