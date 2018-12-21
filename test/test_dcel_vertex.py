@@ -6,9 +6,6 @@ from test_context import cairo_utils as utils
 from cairo_utils import dcel
 from cairo_utils.dcel.constants import EditE
 import IPython
-#https://ipython.readthedocs.io/en/stable/config/options/terminal.html
-#IPython.embed(simple_prompt=True)
-#in shell: ipython --simple-prompty --matplotlib
 
 class DCEL_VERTEX_Tests(unittest.TestCase):
     def setUp(self):

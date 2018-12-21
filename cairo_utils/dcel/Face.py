@@ -9,8 +9,8 @@ from itertools import cycle, islice
 import numpy as np
 from scipy.spatial import ConvexHull
 
-from ..math import calc_bbox_corner, within_bbox
-from .. import math as cumath
+from ..umath import calc_bbox_corner, within_bbox
+from .. import umath as cumath
 from ..constants import START, END, SMALL_RADIUS, FACE, VERTEX, WIDTH
 from ..constants import TWOPI
 from ..drawing import draw_circle, clear_canvas, draw_text

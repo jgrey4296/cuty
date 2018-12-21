@@ -6,7 +6,7 @@ import numpy as np
 import cairo_utils.easings as easings
 from ...constants import SMALL_RADIUS, VERTEX
 from ..constants import EdgeE
-from ...math import create_line, bezier1cp, bezier2cp, get_distance
+from ...umath import create_line, bezier1cp, bezier2cp, get_distance
 from ...drawing import draw_circle
 from .. import Face, HalfEdge, Vertex
 

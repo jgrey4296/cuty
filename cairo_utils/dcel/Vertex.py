@@ -5,7 +5,7 @@ import numpy as np
 
 from .constants import EditE, VertE
 from ..constants import TWOPI, D_EPSILON, TOLERANCE, VERTEX, VERTRAD, ALLCLOSE_TOLERANCE
-from ..math import in_circle, rotate_point
+from ..umath import in_circle, rotate_point
 from ..drawing import draw_circle
 from .drawable import Drawable
 

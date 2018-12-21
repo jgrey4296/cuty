@@ -5,8 +5,6 @@ import logging as root_logger
 import numpy as np
 from .sample_spec import SampleSpec
 
-
-
 logging = root_logger.getLogger(__name__)
 
 class TargetSample(SampleSpec):

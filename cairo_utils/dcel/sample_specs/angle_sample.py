@@ -3,7 +3,7 @@ Provides a sampler set at a specific angle
 """
 import logging as root_logger
 import numpy as np
-from ...math import rotation_matrix, random_radian
+from ...umath import rotation_matrix, random_radian
 from .sample_spec import SampleSpec
 
 logging = root_logger.getLogger(__name__)

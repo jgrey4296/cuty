@@ -7,7 +7,7 @@ from math import radians
 from itertools import islice, cycle
 from test_context import cairo_utils as utils
 from cairo_utils import dcel
-from cairo_utils.math import get_distance_raw
+from cairo_utils.umath import get_distance_raw
 from cairo_utils.dcel.constants import EditE
 
 class DCEL_FACE_Tests(unittest.TestCase):

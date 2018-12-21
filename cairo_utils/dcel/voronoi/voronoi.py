@@ -15,7 +15,7 @@ from cairo_utils import rbtree
 from cairo_utils.rbtree.comparison_functions import arc_comparison, Directions, arc_equality
 
 from cairo_utils.dcel import DCEL, HalfEdge
-from cairo_utils.math import get_distance_raw, bound_line_in_bbox, isClockwise, bbox_centre
+from cairo_utils.umath import get_distance_raw, bound_line_in_bbox, isClockwise, bbox_centre
 
 from .events import SiteEvent, CircleEvent, VEvent, CIRCLE_EVENTS
 from .voronoi_drawing import Voronoi_Debug

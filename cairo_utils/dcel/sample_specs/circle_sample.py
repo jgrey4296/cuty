@@ -3,7 +3,7 @@ Provides a sampler operating in a random circle
 """
 import logging as root_logger
 import numpy as np
-from ...math import random_radian, rotation_matrix
+from ...umath import random_radian, rotation_matrix
 from .sample_spec import SampleSpec
 
 logging = root_logger.getLogger(__name__)

@@ -5,9 +5,9 @@ import logging as root_logger
 from math import pi, atan2, degrees
 from itertools import islice, cycle
 import numpy as np
-from ..math import in_circle, intersect, sample_along_lines
-from ..math import get_unit_vector, extend_line, rotate_point, is_point_on_line
-from ..math import get_distance_raw, bbox_to_lines, get_midpoint, get_ranges
+from ..umath import in_circle, intersect, sample_along_lines
+from ..umath import get_unit_vector, extend_line, rotate_point, is_point_on_line
+from ..umath import get_distance_raw, bbox_to_lines, get_midpoint, get_ranges
 from ..constants import TWOPI, EPSILON, TOLERANCE
 from ..constants import START, END, EDGE, D_EPSILON
 from ..drawing import draw_circle, clear_canvas, draw_text

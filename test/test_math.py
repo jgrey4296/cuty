@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import IPython
 from test_context import cairo_utils as utils
-from cairo_utils import math as cumath
+from cairo_utils import umath as cumath
 from cairo_utils.constants import IntersectEnum as IE
 from cairo_utils.constants import TWOPI
 import math

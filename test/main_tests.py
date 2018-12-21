@@ -23,9 +23,9 @@ class Cairo_Util_Tests(unittest.TestCase):
         self.assertTrue(hasattr(utils, 'rbtree'))
         self.assertTrue(hasattr(utils, 'dcel'))
         self.assertTrue(hasattr(utils, 'make_gif'))
-        self.assertTrue(hasattr(utils, 'math'))
-        
-        
+        self.assertTrue(hasattr(utils, 'umath'))
+
+
 if __name__ == "__main__":
       #use python $filename to use this logging setup
       LOGLEVEL = logging.INFO

@@ -12,7 +12,7 @@ from .dcel.dcel import DCEL
 from .make_gif import MakeGif
 
 from . import drawing
-from . import math
+from . import umath
 from . import easings
 
 _AUTHOR = "jgrey"

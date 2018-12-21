@@ -6,7 +6,7 @@ from random import shuffle
 from math import radians
 from test_context import cairo_utils as utils
 from cairo_utils import dcel
-from cairo_utils.math import get_distance_raw
+from cairo_utils.umath import get_distance_raw
 
 
 class DCEL_ACTUAL_Tests(unittest.TestCase):
@@ -28,7 +28,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         """ Check the dcel can have a custom bbox instead of default """
         dc = dcel.DCEL(bbox=np.array([20,30, 80, 100]))
         self.assertTrue((dc.bbox == np.array([20, 30, 80, 100])).all())
-        
+
     def test_frontier(self):
         """ Check there is a frontier to the dcel """
         self.assertEqual(len(self.dc.frontier), 0)
@@ -36,12 +36,12 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertEqual(len(self.dc.frontier), 4)
         self.dc.reset_frontier()
         self.assertEqual(len(self.dc.frontier), 0)
-        
+
     def test_copy_empty(self):
         """ Check base case copy of dcel """
         dc = self.dc.copy()
         self.assertIsInstance(dc, dcel.DCEL)
-        
+
     def test_quad_tree(self):
         """ Check the dcel has a quad tree """
         self.assertEqual(self.dc.vertex_quad_tree.countmembers(), 0)
@@ -61,7 +61,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertEqual(len(self.dc.quad_tree_stack), 0)
 
     #todo: context manager where you pass in vertices for the quad tree stack
-        
+
     def test_context_manager_exception(self):
         """ Check exceptions don't break the context """
         with self.assertRaises(Exception):
@@ -71,7 +71,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
             self.assertTrue(len(self.dc.quad_tree_stack) == 0)
         self.assertTrue(len(self.dc.quad_tree_stack) == 0)
 
-        
+
     def test_vertex_creation(self):
         """ check vertices can be created through the dcel """
         self.assertEqual(len(self.dc.vertices), 0)
@@ -128,7 +128,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertEqual(len(self.dc.vertices), 3)
         self.assertEqual(len(self.dc.half_edges), 6)
         self.assertIsInstance(path, list)
-        
+
 
     def test_edge_linking(self):
         """ Check that the dcel can link a set of edges into a sequence """
@@ -155,7 +155,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertTrue(e1.next == e2)
         self.assertTrue(e2.next == e3)
         self.assertTrue(e3.next == e1)
-        
+
     def test_edge_linking_fail(self):
         """ Check the linking of edges can fail on bad links """
         #create a number of edges, that share vertices
@@ -182,7 +182,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         for a,b in zip(verts, reordered_verts):
             self.assertTrue(a==b)
 
-        
+
     def test_circle_constrain_vertices(self):
         v1 = self.dc.new_vertex(np.array([0,0]))
         v2 = self.dc.new_vertex(np.array([2,0]))
@@ -191,7 +191,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.dc.constrain_to_circle(np.array([0,0]), 1.0)
         self.assertFalse(v1.marked_for_cleanup)
         self.assertTrue(all([x.marked_for_cleanup for x in [v2, v3, v4]]))
-        
+
 
     def test_circle_constrain_faces(self):
         central_loc = np.array([10,0])
@@ -215,7 +215,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertFalse(np.allclose(e1.twin.origin.to_array(), np.array([1,0])))
         self.assertTrue(np.allclose(e1.twin.origin.to_array(), np.array([0.5,0])))
         self.assertTrue(originalVertex_indices == set([x.index for x in e1.get_vertices()]))
-        
+
     def test_circle_constrain_no_op(self):
         e1 = self.dc.create_edge(np.array([0,0]), np.array([0.3,0]))
         originalVertex_indices = [x.index for x in e1.get_vertices()]
@@ -224,7 +224,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.dc.constrain_to_circle(np.array([0,0]), 0.5)
         self.assertTrue(np.allclose(e1.twin.origin.to_array(), np.array([0.3,0])))
         self.assertTrue(originalVertex_indices == [x.index for x in e1.get_vertices()])
-        
+
     def test_circle_constrain_mark_out_of_bounds(self):
         e1 = self.dc.create_edge(np.array([2,2]), np.array([2,3]))
         #create edges, constrain to within a radius
@@ -289,7 +289,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertFalse(e in self.dc.half_edges)
         self.assertFalse(e_twin in self.dc.half_edges)
         self.assertTrue(v3 in self.dc.vertices)
-        
+
 
     def test_purge_faces(self):
         f = self.dc.new_face(coords=np.array([[0,0],[0,1],[1,0]]))
@@ -309,8 +309,8 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertEqual(len(self.dc.vertices), 3)
         self.assertEqual(len(self.dc.half_edges), 6)
         self.assertEqual(len(self.dc.faces), 1)
-                                
-        
+
+
     def test_export_vertices(self):
         self.dc.new_vertex(np.array([0,0]))
         self.dc.new_vertex(np.array([1,1]))
@@ -319,7 +319,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertEqual(len(exportedData['vertices']), 2)
         for x in exportedData['vertices']:
             self.assertTrue(all([y in x for y in ['i','x','y','half_edges','enum_data','non_enum_data','active']]))
-        
+
     def test_export_half_edges(self):
         self.dc.create_edge(np.array([0,0]), np.array([1,1]))
         self.dc.create_edge(np.array([2,2]), np.array([3,3]))
@@ -330,7 +330,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertEqual(len(exportedData['half_edges']), 4)
         for x in exportedData['half_edges']:
             self.assertTrue(all([y in x for y in ['i','origin','twin','face','next','prev','enum_data', 'non_enum_data']]))
-        
+
 
     def test_export_faces(self):
         self.dc.new_face(np.array([0,0]))
@@ -340,7 +340,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         self.assertEqual(len(exportedData['faces']), 2)
         for x in exportedData['faces']:
             self.assertTrue(all([y in x for y in ['i','edges','sitex','sitey','enum_data', 'non_enum_data']]))
-        
+
 
     def test_import_vertices(self):
         testData = {
@@ -350,12 +350,12 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
              'non_enum_data': {}, 'active':False }],
             'half_edges' : [],
             'faces' : [],
-            'bbox' : np.array([0,0,10,10])           
+            'bbox' : np.array([0,0,10,10])
         }
         self.dc.import_data(testData)
         self.assertEqual(len(self.dc.vertices), 2)
         self.assertEqual(set([5,10]), set([x.index for x in self.dc.vertices]))
-        
+
 
     def test_import_half_edges(self):
         testData = {
@@ -365,7 +365,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
                            'non_enum_data': {}, 'active':False }],
             'half_edges' : [],
             'faces' : [],
-            'bbox' : np.array([0,0,10,10])           
+            'bbox' : np.array([0,0,10,10])
         }
         self.dc.import_data(testData)
         self.assertEqual(len(self.dc.vertices), 2)
@@ -379,13 +379,13 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
                            'non_enum_data': {}, 'active':False }],
             'half_edges' : [],
             'faces' : [],
-            'bbox' : np.array([0,0,10,10])           
+            'bbox' : np.array([0,0,10,10])
         }
         self.dc.import_data(testData)
         self.assertEqual(len(self.dc.vertices), 2)
         self.assertEqual(set([5,10]), set([x.index for x in self.dc.vertices]))
 
-    
+
     def test_save_load(self):
         self.dc.new_face()
         self.dc.new_face(np.array([1,1]))
@@ -396,7 +396,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         newDCEL = dcel.DCEL.loadfile("dcel_actual_save_test")
         self.assertEqual(len(newDCEL.vertices), 4)
         self.assertEqual(len(newDCEL.half_edges), 4)
-        self.assertEqual(len(newDCEL.faces), 2)        
+        self.assertEqual(len(newDCEL.faces), 2)
 
     def test_force_edge_lengths(self):
         e = self.dc.create_edge(np.array([0,0]), np.array([10,0]))
@@ -450,7 +450,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         i3 = [x for x in results if np.allclose(x.vertex.loc, np.array([0.5,0.25]))][0]
         self.assertTrue(e1.twin in i3.contain)
         self.assertTrue(e3 in i3.contain)
-        
+
     def test_intersect_half_edges_no_intersections(self):
         #create
         e1 = self.dc.create_edge(np.array([0,0]), np.array([1,0]))
@@ -460,7 +460,7 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         results = self.dc.intersect_half_edges()
         #verify
         self.assertEqual(len(results), 0)
-        
+
     def test_intersect_half_edges_endpoints(self):
         e1 = self.dc.create_edge(np.array([0,0]), np.array([1,0]))
         e2 = self.dc.create_edge(np.array([1,0]), np.array([1,1]))
@@ -472,13 +472,13 @@ class DCEL_ACTUAL_Tests(unittest.TestCase):
         v1 = self.dc.create_edge(np.array([0,0]), np.array([0,2000]))
         v2 = self.dc.create_edge(np.array([1000,0]), np.array([1000,2000]))
         v3 = self.dc.create_edge(np.array([2000,0]), np.array([2000,2000]))
-        
+
         h1 = self.dc.create_edge(np.array([0,2000]), np.array([2000,2000]))
         results = self.dc.intersect_half_edges(edge_set=set([v1,v2,v3,h1]))
         self.assertEqual(len(results), 3)
-        
-        
-        
+
+
+
 if __name__ == "__main__":
       #use python $filename to use this logging setup
       LOGLEVEL = logging.INFO

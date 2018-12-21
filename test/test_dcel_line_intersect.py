@@ -6,7 +6,7 @@ from random import shuffle
 from math import radians
 from test_context import cairo_utils as utils
 from cairo_utils import dcel
-from cairo_utils.math import get_distance_raw
+from cairo_utils.umath import get_distance_raw
 import cairo_utils.dcel.line_intersector as li
 from cairo_utils.rbtree import Directions
 
