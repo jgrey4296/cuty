@@ -42,6 +42,7 @@ def write_to_png(surface, filename, i=None):
     filename : Does not need file type postfix
     i : optional numeric
     """
+    logging.info("Drawing To File")
     if i:
         surface.write_to_png("{}_{}.png".format(filename, i))
     else:
@@ -56,7 +57,7 @@ def draw_rect(ctx, xyxys, fill=True):
     if fill:
         f = lambda: ctx.fill()
     c = lambda x: None
-    if len(xyrs[0]) > 6:
+    if len(xyrs[0]) == 7:
         c = lambda x: ctx.set_source_rgba(*x[3:])
 
     for a in xyxys:
@@ -72,7 +73,7 @@ def draw_circle(ctx, xyrs, fill=True):
     if fill:
         f = lambda c: c.fill()
     col = lambda c, x: None
-    if len(xyrs[0]) > 6:
+    if len(xyrs[0]) == 7:
         col = lambda c, x: c.set_source_rgba(*x[3:])
 
     for a in xyrs:
