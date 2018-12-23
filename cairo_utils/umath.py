@@ -2,6 +2,7 @@
 Math Utilities
 TODO: Refactor into submodules
 """
+import IPython
 import logging as root_logger
 from functools import partial
 from math import atan2, copysign
@@ -66,10 +67,12 @@ def sample_circle(xyrs, n, sort_rads=True, sort_radi=True):
         rand_radi.sort(axis=1)
     radi_t = rand_radi
     radi = (xyrs_r[:, :, 5] - xyrs_r[:, :, 4]) * radi_t + xyrs_r[:, :, 4]
-    offset = np.column_stack((circ_t[:,:,0] * radi, circ_t[:,:,1] * radi)).reshape((-1,n,2))
+    radi_stacked = np.stack((radi, radi)).reshape((-1,n,2))
+    offset = circ_t * radi_stacked
     #apply the transforms
-    result = xyrs_r[:, :, :2] + offset
-    return result
+    transformed = xyrs_r[:, :, :2] + offset
+    flattened = transformed.reshape((-1, 2))
+    return flattened
 
 def get_circle_3p(p1, p2, p3, arb_intersect=20000):
     """
@@ -316,8 +319,9 @@ def sample_along_lines(xys, t):
     s_points = t
     s_invert = (1 - s_points)
     num_points = s_points.shape[0]
+
     fade = np.vstack((s_invert,s_points))
-    lines = xys.reshape((-1, 2, 2))
+    lines = xys[:,:4].reshape((-1, 2, 2))
     xs = lines[:, :, 0]
     ys = lines[:, :, 1]
     xsr = xs.repeat(num_points).reshape((-1, 2, num_points))
@@ -327,7 +331,8 @@ def sample_along_lines(xys, t):
     s_xs = xsrf.sum(axis=1)
     s_ys = ysrf.sum(axis=1)
     paired = np.hstack((s_xs, s_ys))
-    reshaped = paired.reshape((-1, num_points, 2), order='F')
+    reshaped = paired.reshape((-1, num_points, 2), order='F').reshape((-1,2))
+
     return reshaped
 
 def create_line(xys, t):
@@ -355,9 +360,14 @@ def bezier1cp(a_cp_b, t, f=None, p=None):
             sample_points = f(t)
     a_cp = create_line(a_cp_b[:, :4], t).reshape((-1, 4))
     cp_b = create_line(a_cp_b[:, 2:], t).reshape((-1, 4))
-    out = np.zeros((1, a_cp.shape[1], 2))
+
+    out = np.zeros((a_cp.shape[1], 2))
     for ((i, ac), (j, cb)) in zip(enumerate(a_cp), enumerate(cp_b)):
-        out = np.row_stack((out, sample_along_lines(np.column_stack((ac, cb)), sample_points)))
+        out = np.row_stack((out,
+                            sample_along_lines(np.column_stack((ac, cb)),
+                                               sample_points)
+                            ))
+
     return out[1:]
 
 def bezier2cp(a_cpcp_b, n=None, p=None, f=None):
@@ -385,20 +395,21 @@ def bezier2cp(a_cpcp_b, n=None, p=None, f=None):
     cp_cp = create_line(a_cpcp_b[:, 2:6], len(sample_points))
     cp_b = create_line(a_cpcp_b[:, 4:], len(sample_points))
 
-    f_interp = np.zeros((1, a_cp.shape[1], 2))
+    f_interp = np.zeros((1, 2))
     for ((i, a), (j, b)) in zip(enumerate(a_cp), enumerate(cp_cp)):
-        f = np.row_stack((f_interp, sample_along_lines(np.column_stack((a, b)),
-                                                       sample_points)))
+        f_interp = np.row_stack((f_interp, sample_along_lines(np.column_stack((a, b)),
+                                                              sample_points)))
 
-    s_interp = np.zeros((1, cp_cp.shape[1], 2))
+    s_interp = np.zeros((1, 2))
     for ((i2, a2), (j2, b2)) in zip(enumerate(cp_cp), enumerate(cp_b)):
         s_interp = np.row_stack((s_interp, sample_along_lines(np.column_stack((a2, b2)),
                                                               sample_points)))
 
-    t_interp = np.zeros((1, f_interp.shape[1], 2))
+    t_interp = np.zeros((1, 2))
     for ((i3, a3), (j3, b3)) in zip(enumerate(f_interp[1:]), enumerate(s_interp[1:])):
         t_interp = np.row_stack((t_interp, sample_along_lines(np.column_stack((a3, b3)),
                                                               sample_points)))
+
 
 
     return t_interp[1:]
@@ -732,6 +743,28 @@ def get_ranges(a):
     assert(a.shape[1] == 2)
     ranges = np.array([a.min(axis=0), a.max(axis=0)])
     return ranges.T
+
+#------------------------------
+# def SAMPLING WRAPPER
+#------------------------------
+def sample_wrapper(func, data, samp_sig_or_count, radius, colours):
+    """ A Wrapper for sample_circle, sample_along_lines,
+    bezier1cp and bezier2cp
+    Takes the function, applies the data and samp_sig_or_count to it,
+    then duplicates the radius and colours to the appropriate count,
+    and combines
+    """
+    assert(callable(func))
+    sampled = func(data, samp_sig_or_count)
+    repeat_amnt = samp_sig_or_count
+    if isinstance(samp_sig_or_count, np.ndarray):
+        repeat_amnt = len(samp_sig_or_count)
+
+    radius_size = len(data) * repeat_amnt
+    repeated_radius = np.repeat(radius, radius_size).reshape((radius_size, 1))
+    repeated_colours = np.repeat(colours, repeat_amnt, axis=0)
+    combined = np.column_stack((sampled, repeated_radius, repeated_colours))
+    return combined
 
 
 #------------------------------
