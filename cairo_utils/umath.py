@@ -358,17 +358,18 @@ def bezier1cp(a_cp_b, t, f=None, p=None):
             assert(callable(f))
             #f is an easing lookup function
             sample_points = f(t)
-    a_cp = create_line(a_cp_b[:, :4], t).reshape((-1, 4))
-    cp_b = create_line(a_cp_b[:, 2:], t).reshape((-1, 4))
 
-    out = np.zeros((a_cp.shape[1], 2))
-    for ((i, ac), (j, cb)) in zip(enumerate(a_cp), enumerate(cp_b)):
-        out = np.row_stack((out,
-                            sample_along_lines(np.column_stack((ac, cb)),
-                                               sample_points)
-                            ))
+    len_samples = len(sample_points)
+    quadratic_matrix = np.array([[[1,0,0],[-2,2,0],[1,-2,1]]])
+    t_matrix = lambda x: np.array([1, x,  pow(x,2)])
 
-    return out[1:]
+    points = a_cp_b.reshape((-1,3,2))
+    results = np.zeros((len(a_cp_b),1,2))
+    for t in sample_points:
+        t_mul_mat = t_matrix(t) @ quadratic_matrix
+        t_lines = t_mul_mat @ points
+        results = np.hstack((results, t_lines.reshape(-1,1,2)))
+    return results[:,1:,:].reshape((-1,2))
 
 def bezier2cp(a_cpcp_b, n=None, p=None, f=None):
     """ Given a start, end, and two control points along the way,
@@ -376,6 +377,8 @@ def bezier2cp(a_cpcp_b, n=None, p=None, f=None):
     n : The number of points to sample linearly
     f : the transform function for the linear sampling
     p : arbitrary points to use for sampling instead
+    Matrix Multiplication algorithm from:
+    https://pomax.github.io/bezierinfo/#decasteljau
     """
     #pylint: disable=too-many-locals
     #pylint: disable=unused-variable
@@ -392,32 +395,16 @@ def bezier2cp(a_cpcp_b, n=None, p=None, f=None):
         sample_points = f(sample_points)
 
     len_samples = len(sample_points)
-    reshaped = a_cpcp_b.reshape((-1,4,2))
-    xs = reshaped[:,:,0]
-    ys = reshaped[:,:,1]
+    cubic_matrix = np.array([[1,0,0,0],[-3,3,0,0],[3,-6,3,0],[-1,3,-3,1]])
+    t_matrix = lambda x: np.array([1, x,  pow(x,2), pow(x,3)])
 
-    xs_r = xs.repeat(len_samples, axis=0).reshape((-1,len_samples,4))
-    ys_r = ys.repeat(len_samples, axis=0).reshape((-1,len_samples,4))
-
-    #make sample signals
-    segment_length = int(len_samples / 3)
-    makeup = np.zeros(len_samples - (segment_length * 3))
-    base = np.linspace(0,1,segment_length)
-    rev = base[::-1]
-    zero = np.zeros(segment_length)
-    stacked_signals = np.column_stack((np.hstack((rev,zero,zero,makeup)),
-                                       np.hstack((base,rev,zero,makeup)),
-                                       np.hstack((makeup,zero,base,rev)),
-                                       np.hstack((makeup,zero,zero,base))))
-    signal_xs = xs_r * stacked_signals
-    summed_xs = signal_xs.sum(axis=2)
-
-    signal_ys = ys_r * stacked_signals
-    summed_ys = signal_ys.sum(axis=2)
-
-    final_xys = np.dstack((summed_xs, summed_ys)).reshape((-1,2))
-    IPython.embed(simple_prompt=True)
-    return final_xys
+    points = a_cpcp_b.reshape((-1,4,2))
+    results = np.zeros((len(a_cpcp_b),1,2))
+    for t in sample_points:
+        t_mul_mat = t_matrix(t) @ cubic_matrix
+        t_lines = t_mul_mat @ points
+        results = np.hstack((results, t_lines.reshape(-1,1,2)))
+    return results[:,1:,:].reshape((-1,2))
 
 #------------------------------
 # def distance functions
