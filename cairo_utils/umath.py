@@ -391,28 +391,33 @@ def bezier2cp(a_cpcp_b, n=None, p=None, f=None):
         assert(callable(f))
         sample_points = f(sample_points)
 
-    a_cp = create_line(a_cpcp_b[:, :4], len(sample_points))
-    cp_cp = create_line(a_cpcp_b[:, 2:6], len(sample_points))
-    cp_b = create_line(a_cpcp_b[:, 4:], len(sample_points))
+    len_samples = len(sample_points)
+    reshaped = a_cpcp_b.reshape((-1,4,2))
+    xs = reshaped[:,:,0]
+    ys = reshaped[:,:,1]
 
-    f_interp = np.zeros((1, 2))
-    for ((i, a), (j, b)) in zip(enumerate(a_cp), enumerate(cp_cp)):
-        f_interp = np.row_stack((f_interp, sample_along_lines(np.column_stack((a, b)),
-                                                              sample_points)))
+    xs_r = xs.repeat(len_samples, axis=0).reshape((-1,len_samples,4))
+    ys_r = ys.repeat(len_samples, axis=0).reshape((-1,len_samples,4))
 
-    s_interp = np.zeros((1, 2))
-    for ((i2, a2), (j2, b2)) in zip(enumerate(cp_cp), enumerate(cp_b)):
-        s_interp = np.row_stack((s_interp, sample_along_lines(np.column_stack((a2, b2)),
-                                                              sample_points)))
+    #make sample signals
+    segment_length = int(len_samples / 3)
+    makeup = np.zeros(len_samples - (segment_length * 3))
+    base = np.linspace(0,1,segment_length)
+    rev = base[::-1]
+    zero = np.zeros(segment_length)
+    stacked_signals = np.column_stack((np.hstack((rev,zero,zero,makeup)),
+                                       np.hstack((base,rev,zero,makeup)),
+                                       np.hstack((makeup,zero,base,rev)),
+                                       np.hstack((makeup,zero,zero,base))))
+    signal_xs = xs_r * stacked_signals
+    summed_xs = signal_xs.sum(axis=2)
 
-    t_interp = np.zeros((1, 2))
-    for ((i3, a3), (j3, b3)) in zip(enumerate(f_interp[1:]), enumerate(s_interp[1:])):
-        t_interp = np.row_stack((t_interp, sample_along_lines(np.column_stack((a3, b3)),
-                                                              sample_points)))
+    signal_ys = ys_r * stacked_signals
+    summed_ys = signal_ys.sum(axis=2)
 
-
-
-    return t_interp[1:]
+    final_xys = np.dstack((summed_xs, summed_ys)).reshape((-1,2))
+    IPython.embed(simple_prompt=True)
+    return final_xys
 
 #------------------------------
 # def distance functions
