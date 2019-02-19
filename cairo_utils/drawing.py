@@ -53,17 +53,18 @@ def draw_rect(ctx, xyxys, fill=True):
     Takes the context and a (n,4) array
     """
     #ctx.set_source_rgba(*FRONT)
-    f = lambda : ctx.stroke()
+    f = lambda c: c.stroke()
     if fill:
-        f = lambda: ctx.fill()
-    c = lambda x: None
-    if len(xyrs[0]) == 7:
-        c = lambda x: ctx.set_source_rgba(*x[3:])
+        f = lambda c: c.fill()
+    c = lambda c, x: None
+    if len(xyxys[0]) == 7:
+        c = lambda c, x: c.set_source_rgba(*x[-4:])
+    q = lambda xyr: [*xyr, xyr[-1]]
 
     for a in xyxys:
-        c(a)
-        ctx.rectangle(*a[:3])
-        f()
+        c(ctx, a)
+        ctx.rectangle(*q(a[:3]))
+        f(ctx)
 
 def draw_circle(ctx, xyrs, fill=True):
     """ Draw simple circles
@@ -74,7 +75,7 @@ def draw_circle(ctx, xyrs, fill=True):
         f = lambda c: c.fill()
     col = lambda c, x: None
     if len(xyrs[0]) == 7:
-        col = lambda c, x: c.set_source_rgba(*x[3:])
+        col = lambda c, x: c.set_source_rgba(*x[-4:])
 
     for a in xyrs:
         col(ctx, a)
