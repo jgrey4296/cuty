@@ -12,6 +12,7 @@ from scipy.interpolate import splprep, splev
 
 from .constants import TWOPI, QUARTERPI, EPSILON, TOLERANCE
 from .constants import IntersectEnum, DELTA, HALFDELTA, NODE_RECIPROCAL
+from .constants import SAMPLE_DATA_LEN, LINE_DATA_LEN, BEZIER_DATA_LEN, CIRCLE_DATA_LEN
 
 
 logging = root_logger.getLogger(__name__)
@@ -42,15 +43,15 @@ def displace_around_circle(xys, scale, n):
     mod_points = xys + scaled
     return mod_points
 
-def sample_circle(xyrs, n, sort_rads=True, sort_radi=True):
+def sample_circle(xyrs, n, sort_rads=True, sort_radi=True, easing=None):
     """
     Given array of np.array([x, y, radian_min, radian_max, radius_min, radius_max])
     produce n samples for each circle.
-    Returns: np.array.shape = (len(xyrs), n, 2)
+    Returns: np.array.shape = (n, 2)
     """
     #pylint: disable=too-many-locals
     #duplicate the points:
-    xyrs_r = xyrs.reshape((-1, 1, 6)).repeat(n, axis=1)
+    xyrs_r = xyrs.reshape((-1, 1, CIRCLE_DATA_LEN)).repeat(n, axis=1)
     #get random rotations
     rand_i = np.random.random((xyrs_r.shape[0], n))
     if sort_rads:
@@ -199,14 +200,15 @@ def get_directions(xys):
     #convert to vectors:
     #xysPrime.shape = (n, 4)
     #Leading point first to prevent wrap deformation
-    xys_prime = np.column_stack((xys[1:, :], xys[:-1, :]))
-    dx = xys_prime[:, 2] - xys_prime[:, 0]
-    dy = xys_prime[:, 3] - xys_prime[:, 1]
+    # xys_prime = np.column_stack((xys[1:, :], xys[:-1, :]))
+    # dx = xys_prime[:, 2] - xys_prime[:, 0]
+    # dy = xys_prime[:, 3] - xys_prime[:, 1]
+    ds = xys[:-1] - xys[1:]
     #radians:
-    arc = np.arctan2(dy, dx)
+    arc = np.arctan2(ds[:,1], ds[:,0])
     directions = np.column_stack([np.cos(arc), np.sin(arc)])
     #hypotenuse
-    hypos = np.sqrt(np.square(dx)+np.square(dy))
+    hypos = np.sqrt(np.square(ds[:,0])+np.square(ds[:,1]))
     return np.column_stack((directions, hypos))
 
 
@@ -310,18 +312,20 @@ def make_vertical_lines(n=1):
     y = np.random.random((n, 2)).sort()
     return np.column_stack((x, y[:, 0], x, y[:, 1]))
 
-def sample_along_lines(xys, t):
+def sample_along_lines(xys, n, easing=None, override=None):
     """ For a set of lines, sample along them len(t) times,
     with t's distribution
     """
-    if not isinstance(t, np.ndarray):
-        raise Exception("sample_along_lines not given proper sample points")
+    t = np.linspace(0,1,n)
+    if override is not None:
+        t = override
+    if easing is not None:
+        t = easing(t)
     s_points = t
     s_invert = (1 - s_points)
     num_points = s_points.shape[0]
-
     fade = np.vstack((s_invert,s_points))
-    lines = xys[:,:4].reshape((-1, 2, 2))
+    lines = xys.reshape((-1, 2, 2))
     xs = lines[:, :, 0]
     ys = lines[:, :, 1]
     xsr = xs.repeat(num_points).reshape((-1, 2, num_points))
@@ -335,10 +339,9 @@ def sample_along_lines(xys, t):
 
     return reshaped
 
-def create_line(xys, t):
+def create_line(xys, n, easing=None):
     """ Given a start and end, create t number of points along that line """
-    lin = np.linspace(0, 1, t)
-    line = sample_along_lines(xys, lin)
+    line = sample_along_lines(xys.reshape((-1,LINE_DATA_LEN)), n, easing=easing)
     return line
 
 def bezier1cp(a_cp_b, t, f=None, p=None):
@@ -371,7 +374,7 @@ def bezier1cp(a_cp_b, t, f=None, p=None):
         results = np.hstack((results, t_lines.reshape(-1,1,2)))
     return results[:,1:,:].reshape((-1,2))
 
-def bezier2cp(a_cpcp_b, n=None, p=None, f=None):
+def bezier2cp(a_cpcp_b, n=None, p=None, easing=None):
     """ Given a start, end, and two control points along the way,
     create n number of points along that bezier
     n : The number of points to sample linearly
@@ -390,9 +393,9 @@ def bezier2cp(a_cpcp_b, n=None, p=None, f=None):
         sample_points = np.linspace(0, 1, n)
     else:
         raise Exception("Neither arbitrary points or n given")
-    if f is not None:
-        assert(callable(f))
-        sample_points = f(sample_points)
+    if easing is not None:
+        assert(callable(easing))
+        sample_points = easing(sample_points)
 
     len_samples = len(sample_points)
     cubic_matrix = np.array([[1,0,0,0],[-3,3,0,0],[3,-6,3,0],[-1,3,-3,1]])
@@ -739,7 +742,7 @@ def get_ranges(a):
 #------------------------------
 # def SAMPLING WRAPPER
 #------------------------------
-def sample_wrapper(func, data, samp_sig_or_count, radius, colours):
+def sample_wrapper(func, data, n, radius, colour, easing=None):
     """ A Wrapper for sample_circle, sample_along_lines,
     bezier1cp and bezier2cp
     Takes the function, applies the data and samp_sig_or_count to it,
@@ -747,14 +750,10 @@ def sample_wrapper(func, data, samp_sig_or_count, radius, colours):
     and combines
     """
     assert(callable(func))
-    sampled = func(data, samp_sig_or_count)
-    repeat_amnt = samp_sig_or_count
-    if isinstance(samp_sig_or_count, np.ndarray):
-        repeat_amnt = len(samp_sig_or_count)
-
-    radius_size = len(data) * repeat_amnt
+    sampled = func(data, n, easing=easing)
+    radius_size = len(data) * n
     repeated_radius = np.repeat(radius, radius_size).reshape((radius_size, 1))
-    repeated_colours = np.repeat(colours, repeat_amnt, axis=0)
+    repeated_colours = np.repeat(colour.reshape((-1,4)), len(sampled), axis=0)
     combined = np.column_stack((sampled, repeated_radius, repeated_colours))
     return combined
 
