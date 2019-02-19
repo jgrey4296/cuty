@@ -43,3 +43,16 @@ BACKGROUND = np.array([0, 0, 0, 1])
 FRONT = np.array([0.8, 0.1, 0.71, ALPHA])
 
 IntersectEnum = Enum("BBox Intersect Edge", "VLEFT VRIGHT HTOP HBOTTOM")
+
+#The number of items in a sample
+# Currently: [x,y, rad, r,g,b,a]
+SAMPLE_DATA_LEN = 7
+#Data Required for a line:
+LINE_DATA_LEN = 4
+#Data required for a bezier:
+BEZIER_DATA_LEN = 8
+#Data required for a circle:
+CIRCLE_DATA_LEN = 6
+#COLOUR SIZE
+COLOUR_SIZE = 4
+
