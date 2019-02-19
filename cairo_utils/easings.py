@@ -89,6 +89,35 @@ def sigmoid(xs, a, r=None, codomain_e=CODOMAIN.FULL):
     ixs = interp(xs, r=r, codomain_e=codomain_e)
     return 1 / (1 + pow(np.e, -5 * ixs))
 
+def linear(xs, a, r=None, codomain_e=CODOMAIN.FULL):
+    """ A linear easing: x = y """
+    ixs = interp(xs, r=r, codomain_e=codomain_e)
+    return ixs
+
+def static(xs, a, r=None, codomain_e=CODOMAIN.FULL):
+    """ No matter the values passed in return an array of 1's """
+    return np.ones(xs.shape)
+
+def soft_knee(i, threshold, ratio, knee):
+    # A Simple soft_knee compression curve
+    # Source: https://se.mathworks.com/help/audio/ref/compressor-class.html
+    # Input: np.array, Threshold, Ratio, Knee width
+    kneeStart, kneeEnd = (threshold - knee/2, threshold + knee/2)
+    under = i < kneeStart
+    over = kneeEnd < i
+    inKnee = np.invert(under) * np.invert(over)
+
+    k_f = (1/ratio - 1)
+    intermediate = (i - kneeEnd)
+    intermediate_pow = pow(intermediate,2)
+    k_div_amnt = 2 * knee
+    k_mod = (k_f * intermediate_pow) / k_div_amnt
+    k_red = i + k_mod
+
+    over_red = threshold + ((i - threshold)) / ratio
+
+    return (i * under) + (k_red * inKnee) + (i * over_red)
+
 
 ELOOKUP = {
     "pow_abs_curve": pow_abs_curve,
@@ -97,6 +126,9 @@ ELOOKUP = {
     "pow_min_cos_pi" : pow_min_cos_pi,
     "pow_max_abs" : pow_max_abs,
     "sigmoid" : sigmoid,
+    "linear"  : linear,
+    "static"  : static,
+    "soft_knee" : soft_knee
 }
 ENAMES = list(ELOOKUP.keys())
 
