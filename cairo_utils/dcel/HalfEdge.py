@@ -334,7 +334,7 @@ class HalfEdge(Drawable):
     def split_by_ratio(self, r=0.5, face_update=True):
         """ Split an edge by a ratio of 0.0 - 1.0 : start - end.
         defaults to 0.5, the middle """
-        point = sample_along_lines((self.to_array().flatten()), np.array([r]))[0]
+        point = sample_along_lines((self.to_array().flatten()), 1, override=np.array([r]))
         return self.split(point[0], face_update=face_update)
 
     def translate(self, direction, d=1, absolute=False, candidates=None, force=False):
