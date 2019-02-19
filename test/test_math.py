@@ -13,7 +13,7 @@ class CUMath_Tests(unittest.TestCase):
 
     def setUp(self):
         return 1
-    
+
     def tearDown(self):
         return 1
 
@@ -21,7 +21,7 @@ class CUMath_Tests(unittest.TestCase):
     def test_sample_circle(self):
         circ = cumath.sample_circle(np.array([0,0,0,TWOPI,1,1]), 1000)
         self.assertIsInstance(circ, np.ndarray)
-        self.assertEqual(circ.shape, (1, 1000, 2))
+        self.assertEqual(circ.shape, (1000, 2))
         self.assertTrue(-1 <= circ.min() <= -0.99)
         self.assertTrue(0.99 <= circ.max() <= 1)
 
@@ -34,20 +34,20 @@ class CUMath_Tests(unittest.TestCase):
         self.assertEqual(i_arr.shape, (100, 2))
         self.assertTrue((i_arr >= 0).all())
         self.assertTrue((i_arr <= 1).all())
-        
-    
+
+
     #gerDirections
     def test_getDirections(self):
-        return                           
+        return
 
     #granulate
     def test_granulate(self):
         return
-    
+
     #vary
     def test_vary(self):
         return
-    
+
     #sampleAlongLine
     def test_sampleAlongLine(self):
         return
@@ -55,23 +55,19 @@ class CUMath_Tests(unittest.TestCase):
     #create_line
     def test_create_line(self):
         line = cumath.create_line(np.array([0,0, 0, 1,]), 10)
-        self.assertTrue(line.shape == (1,10,2))
-        self.assertTrue(line[0,:,0].min() == 0)
-        self.assertTrue(line[0,:,0].max() == 0)
-        self.assertTrue(line[0,:,1].min() == 0)
-        self.assertTrue(line[0,:,1].max() == 1)
-    
+        self.assertTrue(line.shape == (10,2))
+
     #bezier1cp
     def test_bezier1cp(self):
         return
-    
+
     #bezier2cp
     def test_bezier2cp(self):
         return
-    
+
     def test_get_distances(self):
         return
-    
+
     #get_normal
     def test_get_normal(self):
         return
@@ -82,7 +78,7 @@ class CUMath_Tests(unittest.TestCase):
         b = np.array([1,0])
         bisec = cumath.get_bisector(a,b)
         self.assertTrue(np.allclose(bisec, np.array([0,1])))
-    
+
     #get_circle_3p
     def test_get_circle_3p(self):
         for i in range(100):
@@ -94,35 +90,35 @@ class CUMath_Tests(unittest.TestCase):
             self.assertTrue(np.allclose(radius, np.array([1])))
             self.assertTrue(np.allclose(centre, np.array([0,0])))
 
-        
-    
+
+
     #extend_line
     def test_extend_line(self):
         return
-    
+
     #get_midpoint
     def test_get_midpoint(self):
         return
-    
+
     #rotate_point
     def test_rotate_point(self):
         a = np.array([1,0])
         result = cumath.rotate_point(a, rads=math.radians(90))
         self.assertTrue(np.allclose(result, np.array([0,1])))
 
-    
+
     #randomRad
     def test_randomRad(self):
         return
-    
+
     #rotMatrix
     def test_rotMatrix(self):
         return
-    
+
     #checksign
     def test_checksign(self):
         return
-    
+
     #intersect
     def test_intersect(self):
         """ Check two simple lines intersect """
@@ -171,7 +167,7 @@ class CUMath_Tests(unittest.TestCase):
         l2 = np.array([[-0.5,-0.5],[-0.5,0.5]])
         intersections = cumath.intersect(l1, l2, tolerance=0)
         self.assertIsNone(intersections)
-        
+
     #is_point_on_line
     def test_is_point_on_line(self):
         """ Test whether points lie on a line or not """
@@ -185,73 +181,73 @@ class CUMath_Tests(unittest.TestCase):
 
         p3 = np.array([1.5, 1.5])
         self.assertFalse(cumath.is_point_on_line(p3, l2))
-    
+
         p4 = np.array([-1.5, -1.5])
         self.assertFalse(cumath.is_point_on_line(p4, l2))
-        
+
     #random_points
     def test_random_points(self):
         return
-    
+
     #bound_line_in_bbox
     def test_bound_line_in_bbox(self):
         return
-    
+
     #makeHorizontalLine
     def test_makeHorizontalLine(self):
         return
-    
+
     #makeVerticalLine
     def test_makeVerticalLine(self):
         return
-    
+
     #get_lowest_point_on_circle
     def test_get_lowest_point_on_circle(self):
         return
-    
+
     #sort_coords
     def test_sort_coords(self):
         return
-    
+
     #in_circle
     def test_in_circle(self):
         a = np.array([1,0])
         result = cumath.in_circle(np.array([0,0]), 1, a)
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (1,))
-        
+
     def test_in_circle_multi(self):
         a = np.array([[1,1],[0,1]])
         result = cumath.in_circle(np.array([0,0]), 1, a)
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (2,))
 
-        
-    
+
+
     #isClockwise
     def test_isClockwise(self):
         return
-    
+
     #getMinRangePair
     def test_getMinRangePair(self):
         return
-    
+
     #getClosestToFocus
     def test_getClosestToFocus(self):
         return
-    
+
     #get_closests_on_side
     def test_get_closest_on_side(self):
         return
-    
+
     #angle_between_points
     def test_get_angle_between_points(self):
         return
-    
+
     #displace_along_line
     def test_displace_along_line(self):
         return
-    
+
     #clamp
     def test_clamp(self):
         return
@@ -266,10 +262,10 @@ class CUMath_Tests(unittest.TestCase):
         self.assertTrue((lines[1] == np.array([1,4,3,4])).all())
         self.assertTrue((lines[2] == np.array([1,2,1,4])).all())
         self.assertTrue((lines[3] == np.array([3,2,3,4])).all())
-                        
-        
-    
-          
+
+
+
+
 if __name__ == "__main__":
       #use python $filename to use this logging setup
       LOGLEVEL = logging.INFO
