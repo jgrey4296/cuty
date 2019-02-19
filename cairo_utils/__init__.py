@@ -14,6 +14,7 @@ from .make_gif import MakeGif
 from . import drawing
 from . import umath
 from . import easings
+from . import heightmap
 
 _AUTHOR = "jgrey"
 _VERSION = "0.1.3"
