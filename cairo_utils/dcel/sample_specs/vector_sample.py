@@ -14,7 +14,7 @@ class VectorSample(SampleSpec):
         super().__init__(data, post_function)
         #setup default values
 
-    def secondary_sample(self, core, target, data):
+    def secondary_sample(self, core, target, data, random=None):
         """ for the xys, sample each vec_amnt times,
         along the vector, to distance
         """
@@ -23,8 +23,10 @@ class VectorSample(SampleSpec):
         assert("sample_amnt" in data)
         assert("vec_amnt" in data)
 
+        if random is None:
+            random = np.random.random
         easing_1_fn = self.get_easing("easing_1", data)
-        easing_1 = easing_1_fn(np.random.random(data["vec_amnt"]))
+        easing_1 = easing_1_fn(random(data["vec_amnt"]))
 
         vec_array = np.repeat(data["vector"], data["vec_amnt"]).reshape((2, -1))
         vec_array *= data["distance"]

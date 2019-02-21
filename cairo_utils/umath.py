@@ -27,14 +27,16 @@ def construct_matrix_multiplier(a):
 # def circle functions
 #------------------------------
 
-def displace_around_circle(xys, scale, n):
+def displace_around_circle(xys, scale, n, random=None):
     """ displace the data around a scaled noisy circle """
     #pylint: disable=invalid-name
     #Create a circle:
+    if random is None:
+        random = np.random.random
     t = np.linspace(0, 2*pi, n)
     rotation = np.column_stack((sin(t), cos(t))).transpose()
     #create some noise:
-    noise = np.random.random(n)
+    noise = random(n)
     #jitter the rotation:
     jittered = (rotation * noise)
     #control the amount of this noise to apply
@@ -43,32 +45,36 @@ def displace_around_circle(xys, scale, n):
     mod_points = xys + scaled
     return mod_points
 
-def sample_circle(xyrs, n, sort_rads=True, sort_radi=True, easing=None):
+def sample_circle(xyrs, n, sort_rads=True, sort_radi=True, easing=None, random=None):
     """
     Given array of np.array([x, y, radian_min, radian_max, radius_min, radius_max])
     produce n samples for each circle.
+    random is a function of 1 param: size
     Returns: np.array.shape = (n, 2)
     """
     #pylint: disable=too-many-locals
     #duplicate the points:
+    if random is None:
+        random = np.random.random
+
     xyrs_r = xyrs.reshape((-1, 1, CIRCLE_DATA_LEN)).repeat(n, axis=1)
     #get random rotations
-    rand_i = np.random.random((xyrs_r.shape[0], n))
+    rand_i = random((xyrs_r.shape[0], n))
     if sort_rads:
         rand_i.sort(axis=1)
     rand_i_t = rand_i
     #scale by passed in range
-    rand_i_ts = (xyrs_r[:, :, 3] - xyrs_r[:, :, 2]) * rand_i_t + xyrs_r[:, :, 2]
+    rand_i_ts = ((xyrs_r[:, :, 3] - xyrs_r[:, :, 2]) * rand_i_t) + xyrs_r[:, :, 2]
     #create the circle transform
     circ = np.array([np.cos(rand_i_ts), np.sin(rand_i_ts)])
     circ_t = circ.transpose((1, 2, 0))
     #Add radius:
-    rand_radi = np.random.random((xyrs_r.shape[0], n))
+    rand_radi = random((xyrs_r.shape[0], n))
     if sort_radi:
         rand_radi.sort(axis=1)
     radi_t = rand_radi
-    radi = (xyrs_r[:, :, 5] - xyrs_r[:, :, 4]) * radi_t + xyrs_r[:, :, 4]
-    radi_stacked = np.stack((radi, radi)).reshape((-1,n,2))
+    radi = ((xyrs_r[:, :, 5] - xyrs_r[:, :, 4]) * radi_t) + xyrs_r[:, :, 4]
+    radi_stacked = np.array([radi, radi]).reshape((-1,n,2))
     offset = circ_t * radi_stacked
     #apply the transforms
     transformed = xyrs_r[:, :, :2] + offset
@@ -139,31 +145,35 @@ def in_circle(centre, radius, points):
 # def interpolation functions
 #------------------------------
 
-def granulate(xys, grains=10, mult=2):
+def granulate(xys, grains=10, mult=2, random=None):
     """ Given a set of points, offset each slightly
     by the direction between the points
     """
     assert(isinstance(xys, np.ndarray))
     assert(len(xys.shape) == 2)
+    if random is None:
+        random = np.random.random
     directions, hypos = get_directions(xys)
     granulated = np.zeros((1, 2))
     for i, d in enumerate(hypos):
-        sub_granules = xys[i, :] + (d * directions[i, :]*(np.random.random((grains, 1))) * mult)
+        sub_granules = xys[i, :] + (d * directions[i, :]*(random((grains, 1))) * mult)
         granulated = np.row_stack((granulated, sub_granules))
     return granulated[1:]
 
 
-def vary(xys, step_size, pix):
+def vary(xys, step_size, pix, random=None):
     """
     FIXME : investigate
     for a given set of points, wiggle them slightly
     """
     assert(isinstance(xys, np.ndarray))
     assert(len(xys.shape) == 2)
-    r = (1.0-2.0 * np.random.random((len(xys), 1)))
+    if random is None:
+        random = np.random.random
+    r = (1.0-2.0 * random((len(xys), 1)))
     scale = np.reshape(np.arange(len(xys)).astype('float'), (len(xys), 1))
     noise = (r* scale * step_size)
-    a = np.random.random(len(xys))
+    a = random(len(xys))
     rnd = np.column_stack((np.cos(a), np.sin(a)))
     rnd_noise = rnd * noise
     rnd_noise_pix = rnd_noise * pix
@@ -184,10 +194,12 @@ def _interpolate(xy, num_points, smoothing=0.2):
 #------------------------------
 # def direction functions
 #------------------------------
-def get_random_directions(n=1):
+def get_random_directions(n=1, random=None):
     """ Choose a direction of cardinal and intercardinal directions """
     dirs = [-1, 0, 1]
-    result = np.random.choice(dirs, size=n*2, replace=True, p=None).reshape((n, 2))
+    if random is None:
+        random = lambda a, x: np.random.choice(a, size=x*2, replace=True, p=None)
+    result = random(dirs, n).reshape((n, 2))
     return result
 
 
@@ -299,17 +311,21 @@ def is_point_on_line(p, l):
     line_ys = slopes * points[:, 0] + y_intersects
     return np.allclose(line_ys, points[0, 1]) and in_bounds_ys and in_bounds_xs
 
-def make_horizontal_lines(n=1):
+def make_horizontal_lines(n=1, random=None):
     """ Utility to Describe a horizontal line as a vector of start and end points  """
-    x = np.random.random((n, 2)).sort()
-    y = np.random.random(n).reshape((-1, 1))
+    if random is None:
+        random = np.random.random
+    x = random((n, 2)).sort()
+    y = random(n).reshape((-1, 1))
     return np.column_stack((x[:, 0], y, x[:, 1], y))
 
 
-def make_vertical_lines(n=1):
+def make_vertical_lines(n=1, random=None):
     """ utility Describe a vertical line as a vector of start and end points """
-    x = np.random.random(n).reshape((-1, 1))
-    y = np.random.random((n, 2)).sort()
+    if random is None:
+        random =np.random.random
+    x = random(n).reshape((-1, 1))
+    y = random((n, 2)).sort()
     return np.column_stack((x, y[:, 0], x, y[:, 1]))
 
 def sample_along_lines(xys, n, easing=None, override=None):
@@ -531,7 +547,7 @@ def get_bisector(p1, p2, r=False):
 
 
 
-def rotate_point(p, cen=None, rads=None, rad_min=-QUARTERPI, rad_max=QUARTERPI):
+def rotate_point(p, cen=None, rads=None, rad_min=-QUARTERPI, rad_max=QUARTERPI, random=None):
     """ Given a point, rotate it around a centre point by either radians,
     or within a range of radians
     """
@@ -539,7 +555,7 @@ def rotate_point(p, cen=None, rads=None, rad_min=-QUARTERPI, rad_max=QUARTERPI):
     if cen is None:
         cen = np.array([0, 0])
     if rads is None:
-        use_radians = random_radian(min_v=rad_min, max_v=rad_max)
+        use_radians = random_radian(min_v=rad_min, max_v=rad_max, random=random)
         if isinstance(use_rads, np.ndarray):
             use_radians = use_rads[0]
     else:
@@ -572,9 +588,11 @@ def __rotate_point_obsolete(p, cen, rads):
     return un_centered
 
 
-def random_radian(min_v=-TWOPI, max_v=TWOPI, shape=(1, )):
+def random_radian(min_v=-TWOPI, max_v=TWOPI, shape=(1,), random=None):
     """ Get a random value within the range of radians -2pi -> 2pi """
-    return min_v + (np.random.random(shape) * (max_v-min_v))
+    if random is None:
+        random = np.random.random
+    return min_v + (random(shape) * (max_v-min_v))
 
 def rotation_matrix(rad):
     """ Get a matrix for rotating a point by an amount of radians """
@@ -589,16 +607,20 @@ def node_to_position(x, y):
     return [NODE_RECIPROCAL * x, NODE_RECIPROCAL * y]
 
 
-def calculate_single_point(points, d=DELTA):
+def calculate_single_point(points, d=DELTA, random=None):
     """ points passed in, move in a random direction """
-    arr = np.random.random((points.shape[0], 2)) * TWOPI
+    if random is None:
+        random = np.random.random
+    arr = random((points.shape[0], 2)) * TWOPI
     delta = np.array([sin(arr[:, 0]), cos(arr[:, 1])]) * (2 * d)
     return points + delta
 
-def calculate_vector_point(ps, d=DELTA):
+def calculate_vector_point(ps, d=DELTA, random=None):
     """ passed in pairs of points, move in the direction of the vector """
+    if random is None:
+        random = np.random.random
     vector = ps[:, 2:] - ps[:, :2]
-    rand_amnt = np.random.random((ps.shape[0], 2)) * TWOPI
+    rand_amnt = random((ps.shape[0], 2)) * TWOPI
     mag = np.sqrt(np.sum(np.square(vector)))
     norm_vector = vector / mag
     move_vector = norm_vector * (2 * d)
@@ -610,9 +632,11 @@ def sort_coords(arr):
     ind = np.lexsort((arr[:, 1], arr[:, 0]))
     return arr[ind]
 
-def random_points(n):
+def random_points(n, random=None):
     """ utility to get n 2d points """
-    return np.random.random(n*2)
+    if random is None:
+        random = np.random.random
+    return random(n*2)
 
 #------------------------------
 # def bbox functions
@@ -742,7 +766,7 @@ def get_ranges(a):
 #------------------------------
 # def SAMPLING WRAPPER
 #------------------------------
-def sample_wrapper(func, data, n, radius, colour, easing=None):
+def sample_wrapper(func, data, n, radius, colour, easing=None, random=None):
     """ A Wrapper for sample_circle, sample_along_lines,
     bezier1cp and bezier2cp
     Takes the function, applies the data and samp_sig_or_count to it,
@@ -750,7 +774,7 @@ def sample_wrapper(func, data, n, radius, colour, easing=None):
     and combines
     """
     assert(callable(func))
-    sampled = func(data, n, easing=easing)
+    sampled = func(data, n, easing=easing, random=random)
     radius_size = len(data) * n
     repeated_radius = np.repeat(radius, radius_size).reshape((radius_size, 1))
     repeated_colours = np.repeat(colour.reshape((-1,4)), len(sampled), axis=0)

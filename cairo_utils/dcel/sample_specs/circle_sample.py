@@ -15,11 +15,13 @@ class CircleSample(SampleSpec):
         super().__init__(data, postFunction)
         #setup default values
 
-    def secondary_sample(self, core, target, data):
+    def secondary_sample(self, core, target, data, random=None):
         """ Sample within a radius of each point """
         #for the xys, sample each vec_amnt times, along the vector, to distance
         assert("distance" in data)
         assert("vec_amnt" in data)
+        if random is None:
+            random = np.random.random
         sxys = np.zeros((1, data["vec_amnt"], 2))
         if data["vec_amnt"] == 0:
             return sxys[1:]
@@ -27,7 +29,7 @@ class CircleSample(SampleSpec):
         easing_1_fn = self.get_easing("easing_1", data)
         easing_2_fn = self.get_easing("easing_2", data)
         #distance
-        easing_1 = easing_1_fn(np.random.random(data["vec_amnt"]))
+        easing_1 = easing_1_fn(random(data["vec_amnt"]))
         easing_1 *= data["distance"]
 
         easing_2 = easing_2_fn(np.linspace(0, 1, data["vec_amnt"]))
@@ -35,7 +37,7 @@ class CircleSample(SampleSpec):
         shuffler = "shuffle" in data and data["shuffle"]
 
         dist = easing_1
-        rads = random_radian(shape=(data["vec_amnt"], ))
+        rads = random_radian(shape=(data["vec_amnt"],), random=random)
         vec_array = np.array([np.array([1, 0]) @ rotation_matrix(x) for x in rads]).T
         vec_array *= dist
         vec_array *= easing_2
@@ -44,7 +46,7 @@ class CircleSample(SampleSpec):
 
         for a in core:
             if shuffler:
-                rads = random_radian(shape=(data["vec_amnt"], ))
+                rads = random_radian(shape=(data["vec_amnt"],), random=random)
                 vec_array = np.array([np.array([1, 0]) @ rotation_matrix(x) for x in rads]).T
                 vec_array *= dist
                 vec_array *= easing_2

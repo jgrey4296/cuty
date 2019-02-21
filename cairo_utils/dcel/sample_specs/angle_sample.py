@@ -17,22 +17,24 @@ class AngleSample(SampleSpec):
         super().__init__(data, post_function)
         #setup default values
 
-    def secondary_sample(self, core, target, data):
+    def secondary_sample(self, core, target, data, random=None):
         """ Sample in the direction of an angle  """
         assert("rads" in data or "radRange" in data)
         assert("vec_amnt" in data)
         assert("distance" in data)
-
+        if random is None:
+            random = np.random.random
         shuffler = "shuffle" in data and data["shuffle"]
         inc_amount = (data['inc'] if 'inc' in data else 0)
         inc_range = None
         if "inc_range" in data:
             inc_range = random_radian(min_v=data["inc_range"][0],
                                       max_v=data["inc_range"][1],
-                                      shape=(data["vec_amnt"]))
+                                      shape=(data["vec_amnt"]),
+                                      random=random)
 
         easing_1_fn = self.get_easing("easing_1", data)
-        easing_1 = easing_1_fn(np.random.random(data["vec_amnt"]))
+        easing_1 = easing_1_fn(random(data["vec_amnt"]))
 
         initial = np.array([1, 0]) * data["distance"]
         rads = None
@@ -42,7 +44,8 @@ class AngleSample(SampleSpec):
         else:
             rads = random_radian(min_v=data["radRange"][0],
                                  max_v=data["radRange"][1],
-                                 shape=(data["vec_amnt"]))
+                                 shape=(data["vec_amnt"]),
+                                 random=random)
 
         vec_array = np.array([initial @ rotation_matrix(x) for x in rads]).T
         vec_array *= easing_1
@@ -53,7 +56,8 @@ class AngleSample(SampleSpec):
             if shuffler and "radRange" in data:
                 rads = random_radian(min_v=data["radRange"][0],
                                      max_v=data["radRange"][1],
-                                     shape=(data["vec_amnt"]))
+                                     shape=(data["vec_amnt"]),
+                                     random=random)
                 vec_array = np.array([initial @ rotation_matrix(x) for x in rads]).T
                 vec_array *= easing_1
                 vec_array = vec_array.T

@@ -7,7 +7,7 @@ import heapq
 import pickle
 from os.path import isfile
 import numpy as np
-import numpy.random as random
+import numpy.random as base_random
 
 import cairo_utils as utils
 from cairo_utils import Parabola
@@ -35,8 +35,9 @@ BASE_VORONOI_EDGE_DATA = {"VORONOI_EDGE" : True}
 BASE_VORONOI_FACE_DATA = {"VORONOI_FAE" : True}
 
 class Voronoi:
-    """ Creates a random selection of points, and step by step constructs
-        a voronoi diagram
+    """ A Class to construct a voronoi diagram into a given dcel,
+    after initial points are added
+    in init_graph
     """
     def __init__(self, num_of_nodes=10, bbox=BBOX, save_name=SAVENAME,
                  debug_draw=False, n=10, max_steps=MAX_STEPS, dcel=None):
@@ -97,10 +98,13 @@ class Voronoi:
         self.current_step = 0
 
 
-    def init_graph(self, data=None, rerun=False):
+    def init_graph(self, data=None, rerun=False, random=None):
         """ Create a graph of initial random sites """
         logging.debug("Initialising graph")
         self.reset()
+
+        if random is None:
+            random = base_random.random
 
         values = data
         if values is None and not rerun:
@@ -111,7 +115,7 @@ class Voronoi:
         if values is None:
             logging.debug("Generating values")
             for _ in range(self.node_size):
-                rnd_amnt = random.random((1, 2))
+                rnd_amnt = random((1, 2))
                 #scale the new site
                 scaler = self.bbox.reshape((2, 2)).transpose()
                 new_site = scaler[:, 0] + (rnd_amnt * (scaler[:, 1] - scaler[:, 0]))

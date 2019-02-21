@@ -30,14 +30,15 @@ class SampleSpec:
     def __repr__(self):
         return "SampleSpec"
 
-    def __call__(self, ctx, target, data=None):
+    def __call__(self, ctx, target, data=None, random=None):
         #sample
         complete_data = {}
         complete_data.update(self.data)
         if data is not None:
             complete_data.update(data)
         core_positions = self.primary_sample(target, complete_data)
-        secondary_positions = self.secondary_sample(core_positions, target, complete_data)
+        secondary_positions = self.secondary_sample(core_positions, target,
+                                                    complete_data, random=random)
         #post
         core_details, secondary_details = self.post_fn(core_positions,
                                                        secondary_positions,
