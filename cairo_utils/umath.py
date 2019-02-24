@@ -191,6 +191,11 @@ def _interpolate(xy, num_points, smoothing=0.2):
     smoothed_xy = np.column_stack(splev(interpolate_points, spline_tuple))
     return smoothed_xy
 
+def scale(xs, minmax):
+    result = minmax[0] + (xs * (minmax[1] - minmax[0]))
+    return result
+
+
 #------------------------------
 # def direction functions
 #------------------------------
