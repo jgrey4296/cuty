@@ -10,7 +10,7 @@ import numpy as np
 from numpy import cos, sin, pi
 from scipy.interpolate import splprep, splev
 
-from .constants import TWOPI, QUARTERPI, EPSILON, TOLERANCE
+from .constants import PI, TWOPI, QUARTERPI, EPSILON, TOLERANCE
 from .constants import IntersectEnum, DELTA, HALFDELTA, NODE_RECIPROCAL
 from .constants import SAMPLE_DATA_LEN, LINE_DATA_LEN, BEZIER_DATA_LEN, CIRCLE_DATA_LEN
 
@@ -47,39 +47,26 @@ def displace_around_circle(xys, scale, n, random=None):
 
 def sample_circle(xyrs, n, sort_rads=True, sort_radi=True, easing=None, random=None):
     """
-    Given array of np.array([x, y, radian_min, radian_max, radius_min, radius_max])
-    produce n samples for each circle.
-    random is a function of 1 param: size
-    Returns: np.array.shape = (n, 2)
+    https://stackoverflow.com/questions/5837572
     """
-    #pylint: disable=too-many-locals
-    #duplicate the points:
     if random is None:
         random = np.random.random
 
     xyrs_r = xyrs.reshape((-1, 1, CIRCLE_DATA_LEN)).repeat(n, axis=1)
-    #get random rotations
-    rand_i = random((xyrs_r.shape[0], n))
-    if sort_rads:
-        rand_i.sort(axis=1)
-    rand_i_t = rand_i
-    #scale by passed in range
-    rand_i_ts = ((xyrs_r[:, :, 3] - xyrs_r[:, :, 2]) * rand_i_t) + xyrs_r[:, :, 2]
-    #create the circle transform
-    circ = np.array([np.cos(rand_i_ts), np.sin(rand_i_ts)])
-    circ_t = circ.transpose((1, 2, 0))
-    #Add radius:
-    rand_radi = random((xyrs_r.shape[0], n))
-    if sort_radi:
-        rand_radi.sort(axis=1)
-    radi_t = rand_radi
-    radi = ((xyrs_r[:, :, 5] - xyrs_r[:, :, 4]) * radi_t) + xyrs_r[:, :, 4]
-    radi_stacked = np.array([radi, radi]).reshape((-1,n,2))
-    offset = circ_t * radi_stacked
-    #apply the transforms
-    transformed = xyrs_r[:, :, :2] + offset
-    flattened = transformed.reshape((-1, 2))
+
+    r = scale_ndarray(np.sqrt(random((xyrs_r.shape[0], n))), xyrs[:,4:])
+    theta = scale_ndarray(random((xyrs_r.shape[0], n)), xyrs[:,2:4])
+
+    r_shaped = r.reshape((xyrs_r.shape[0],n,1))
+    theta_shaped = theta.reshape((xyrs_r.shape[0],n,1))
+
+    rot = np.dstack((np.cos(theta_shaped), np.sin(theta_shaped)))
+    r_x_rot = r_shaped * rot
+
+    result = xyrs_r[:,:,:2] + r_x_rot
+    flattened = result.reshape((-1, 2))
     return flattened
+
 
 def get_circle_3p(p1, p2, p3, arb_intersect=20000):
     """
@@ -193,6 +180,12 @@ def _interpolate(xy, num_points, smoothing=0.2):
 
 def scale(xs, minmax):
     result = minmax[0] + (xs * (minmax[1] - minmax[0]))
+    return result
+
+def scale_ndarray(xs, minmaxs):
+    mins = minmaxs[:,0].reshape((-1,1))
+    ranges = (minmaxs[:,1] - minmaxs[:,0]).reshape((-1,1))
+    result = mins + (xs * ranges)
     return result
 
 
