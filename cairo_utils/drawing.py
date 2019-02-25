@@ -4,7 +4,7 @@ Drawing: provides basic setup and drawing utilities for cairo:
 
 import logging as root_logger
 import cairo
-from .constants import BACKGROUND, TWOPI, FRONT, FONT_SIZE
+from .constants import BACKGROUND, TWOPI, FRONT, FONT_SIZE, SAMPLE_DATA_LEN, COLOUR_SIZE
 
 logging = root_logger.getLogger(__name__)
 
@@ -74,8 +74,8 @@ def draw_circle(ctx, xyrs, fill=True):
     if fill:
         f = lambda c: c.fill()
     col = lambda c, x: None
-    if len(xyrs[0]) == 7:
-        col = lambda c, x: c.set_source_rgba(*x[-4:])
+    if len(xyrs[0]) == SAMPLE_DATA_LEN:
+        col = lambda c, x: c.set_source_rgba(*x[-COLOUR_SIZE:])
 
     for a in xyrs:
         col(ctx, a)
