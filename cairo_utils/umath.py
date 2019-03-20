@@ -55,7 +55,12 @@ def sample_circle(xyrs, n, sort_rads=True, sort_radi=True, easing=None, random=N
     xyrs_r = xyrs.reshape((-1, 1, CIRCLE_DATA_LEN)).repeat(n, axis=1)
 
     r = scale_ndarray(np.sqrt(random((xyrs_r.shape[0], n))), xyrs[:,4:])
+    if sort_radi:
+        r.sort(axis=1)
+
     theta = scale_ndarray(random((xyrs_r.shape[0], n)), xyrs[:,2:4])
+    if sort_rads:
+        theta.sort(axis=1)
 
     r_shaped = r.reshape((xyrs_r.shape[0],n,1))
     theta_shaped = theta.reshape((xyrs_r.shape[0],n,1))
@@ -327,8 +332,8 @@ def make_vertical_lines(n=1, random=None):
     return np.column_stack((x, y[:, 0], x, y[:, 1]))
 
 def sample_along_lines(xys, n, easing=None, override=None):
-    """ For a set of lines, sample along them len(t) times,
-    with t's distribution
+    """ For a set of lines, sample along them n times,
+    with easings distribution. can be hard overriden with override
     """
     t = np.linspace(0,1,n)
     if override is not None:
@@ -350,7 +355,6 @@ def sample_along_lines(xys, n, easing=None, override=None):
     s_ys = ysrf.sum(axis=1)
     paired = np.hstack((s_xs, s_ys))
     reshaped = paired.reshape((-1, num_points, 2), order='F').reshape((-1,2))
-
     return reshaped
 
 def create_line(xys, n, easing=None):
@@ -490,9 +494,7 @@ def get_midpoint(p1, p2):
 # def rotate functions
 #------------------------------
 
-#FIXME: rename for more accuracy
-#should be radians_between_points
-def angle_between_points(a, b):
+def radians_between_points(a, b):
     """ takes np.arrays
         return the radian relation of b to a (source)
         ie: if > 0: anti-clockwise, < 0: clockwise
@@ -541,9 +543,6 @@ def get_bisector(p1, p2, r=False):
         n_prime = n.dot([[0, 1],
                          [-1, 0]])
     return n_prime
-
-
-
 
 def rotate_point(p, cen=None, rads=None, rad_min=-QUARTERPI, rad_max=QUARTERPI, random=None):
     """ Given a point, rotate it around a centre point by either radians,
@@ -788,3 +787,7 @@ def sample_wrapper(func, data, n, radius, colour, easing=None, random=None):
 def get_normal(p1, p2):
     """ Get the normalized direction from two points """
     raise Exception("Deprecated: Use get_unit_vector")
+
+def angle_between_points(a, b):
+    raise Exception("Deprecated: Use radians_between_points")
+
