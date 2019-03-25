@@ -61,7 +61,7 @@ class TestTime(unittest.TestCase):
         anEvent = Event(Arc(t(0,1), t(1,1)), aPattern, True)
         callResult = anEvent(t(1,2))
         self.assertEqual(len(callResult), 1)
-        self.assertEqual(callResult[0].value, "b")
+        self.assertEqual(callResult[0].values, "b")
 
     #get the base set
     def test_event_base(self):
@@ -89,7 +89,7 @@ class TestTime(unittest.TestCase):
                    Event(Arc(t(0,1),t(1,2)), "b"),
                    Event(Arc(t(2,1),t(3,1)), "c")]
         sorted_events = sorted(events, key=lambda x: x.key())
-        values = [x.value for x in sorted_events]
+        values = [x.values for x in sorted_events]
         self.assertEqual(values, ["b","a","c"])
 
     #check contains
@@ -116,7 +116,7 @@ class TestTime(unittest.TestCase):
                                   Event(Arc(t(1,2),t(1,1)), "b")])
         res = aPattern(t(1,2))
         self.assertEqual(len(res), 1)
-        self.assertEqual(res[0].value, "b")
+        self.assertEqual(res[0].values, "b")
 
     #call with patterns
     def test_pattern_call_with_internal_pattern_start(self):
@@ -209,8 +209,37 @@ class TestTime(unittest.TestCase):
         self.assertFalse(t(7,8) in aPattern)
 
     #get the base set
+    def test_pattern_denominator_simple(self):
+        aPattern = time.parse_string("[ a b c ]")
+        denom = aPattern.denominator()
+        self.assertEqual(denom, 3)
+
+    def test_pattern_denominator_simple_2(self):
+        aPattern = time.parse_string("[a b c d]")
+        denom = aPattern.denominator()
+        self.assertEqual(denom, 4)
+
+    def test_pattern_denominator_nested(self):
+        aPattern = time.parse_string("[a b [c d]]")
+        denom = aPattern.denominator()
+        self.assertEqual(denom, 6)
+
+    def test_pattern_denominator_parallel(self):
+        aPattern = time.parse_string("[a b, c d]")
+        denom = aPattern.denominator()
+        self.assertEqual(denom, 2)
 
     #pretty print pattern
+    def test_pattern_seq__double_cycle(self):
+        p1 = time.parse_string("[a b c d]")
+        p2 = time.parse_string("[e f g h]")
+        p3 = time.PatternSeq(Arc(t(0,1),t(2,1)),
+                             [ p1,p2 ])
+
+        # IPython.embed(simple_prompt=True)
+        self.assertEqual(p3(t(0,1), True)[0], "a")
+        # self.assertEqual(p3(t(1,1), True)[0], "e")
+        self.assertEqual(p3(t(7,4), True)[0], "h")
 
     #--------------------
     # PARSER TESTS
@@ -218,8 +247,27 @@ class TestTime(unittest.TestCase):
     #Parse a pattern
     def test_parse_simple(self):
         aPattern = time.parse_string("[ a b c ]")
-        IPython.embed(simple_prompt=True)
+        self.assertIsInstance(aPattern, time.Pattern)
+        self.assertEqual(len(aPattern.components), 3)
+
+    def test_parse_balance_failure(self):
+        with self.assertRaises(Exception):
+            time.parse_string("[a b c")
+
+    def test_parse_balance_failure_nested(self):
+        with self.assertRaises(Exception):
+            time.parse_string("[a b [c d]")
+
     #Parse a nested pattern
+    def test_parse_nested_simple(self):
+        aPattern = time.parse_string("[ a b [c d]]")
+        self.assertEqual(len(aPattern.components), 3)
+        self.assertIsInstance(aPattern.components[2].values, time.Pattern)
+
+    def test_parse_parallel_nested(self):
+        aPattern = time.parse_string("[ a b , [c d] e]")
+        self.assertEqual(len(aPattern.components), 2)
+        self.assertEqual(len(aPattern.components[1].values.components), 2)
 
     #parse a pretty printed pattern
 
