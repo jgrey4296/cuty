@@ -34,15 +34,16 @@ class Pattern:
 
     def __call__(self, count, just_values=False):
         """ Query the Pattern for a given time """
-        position = count - floor(count)
-        results = []
         pattern_range = self.arc.size()
-        scaled_position = (position / pattern_range)
+        f_count = floor(count)
+        position = count - (f_count * (f_count >= pattern_range))
+        scaled_position = position / pattern_range
+        results = []
         for x in self.components:
             results += x(scaled_position)
 
         if just_values:
-            results = [x.value for x in results]
+            results = [x.values for x in results]
 
         return results
 
@@ -92,4 +93,5 @@ class Pattern:
         return output
 
     def __str__(self):
+        """ Print in the same format the parser reads """
         return repr(self)
