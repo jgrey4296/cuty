@@ -28,7 +28,6 @@ TILDE = s(pp.Literal('~'))
 DOLLAR = s(pp.Literal('$'))
 VBAR = s(pp.Literal('|'))
 
-
 acts = pp.Or([COMMA, OBRACKET, CBRACKET, COLON, QUESTION, LESS, MORE, TILDE])
 
 NAME = pp.Word(pp.alphas)
@@ -50,6 +49,6 @@ VAR.setParseAction(lambda toks: VarPH(toks[0]))
 def parse_string(s):
     """ The primary access point """
     parsed = pattern_contents.parseString(s)
-    logging.info("Parsed: {}".format(parsed))
+    # Stack based constructor:
     return construct_pattern(parsed[:])
 
