@@ -7,7 +7,7 @@ that values are added to.
 Upon exit, it calculates the appropriate time arcs for events
 
 """
-
+import IPython
 from .arc import Arc
 from .event import Event
 from .pattern import Pattern
@@ -35,19 +35,24 @@ def construct_pattern(tokens):
     """   """
     #init stack with a top level pattern placeholder
     stack = []
+    balance_count = 0
     while bool(tokens):
+        logging.debug("Tokens: {}".format(tokens))
         head = tokens.pop(0)
-        logging.info("Head: {}".format(head))
-        logging.info("Stack: {}".format(stack))
+        logging.debug("Head: {}".format(head))
+        logging.debug("Stack: {}".format(stack))
         if isinstance(head, CTOR_ACT):
             if any(head is x for x in [CTOR_ACT.PSTART,
                                        CTOR_ACT.CSTART]):
-                logging.info("Starting a Pattern or Choice")
+                balance_count += 1
+                logging.debug("Starting a Pattern or Choice")
                 stack.append([])
             elif head is CTOR_ACT.PEND:
-                logging.info("Pattern end")
+                logging.debug("Pattern end")
+                balance_count -= 1
                 p_vals = stack.pop()
                 if bool(stack) and isinstance(stack[-1], ParallelPH):
+                    logging.debug("Part of a Parallel Pattern")
                     parPH = stack.pop()
                     parPH.values.append(p_vals)
                     p_vals = parPH
@@ -64,19 +69,22 @@ def construct_pattern(tokens):
                 else:
                     stack.append(processed)
             elif head is CTOR_ACT.PDUAL:
-                logging.info("Parallel")
+                logging.debug("Parallel")
                 #run patterns in parallel
                 #get the current pattern
                 curr = stack.pop()
                 if not bool(stack) or not isinstance(stack[-1], ParallelPH):
+                    logging.debug("Creating new ParallelPH")
                     newPH = ParallelPH([curr])
                     stack.append(newPH)
                     stack.append([])
                 else:
+                    logging.debug("Using Existing ParallelPH")
                     stack[-1].values.append(curr)
                     stack.append([])
             elif head is CTOR_ACT.CEND:
-                logging.info("Choice End")
+                logging.debug("Choice End")
+                balance_count -= 1
                 c_vals = stack.pop()
                 placeholder = ChoicePH(c_vals)
                 stack[-1].append(placeholder)
@@ -90,12 +98,18 @@ def construct_pattern(tokens):
         else:
             #push to list on the top of the stack
             stack[-1].append(head)
+        logging.debug("Post Stack: {}".format(stack))
+        logging.debug("------")
 
+    if (balance_count != 0):
+        raise Exception("Brackets in patterns need to be balanced")
     assert(len(stack) == 1)
     #create the final pattern
     farc= Arc(t(0,1),t(1,1))
     finalPH = stack.pop()
-    if isinstance(finalPH, list):
+    if isinstance(finalPH, ParallelPH):
+        finalEvents = [Event(farc, Pattern(farc, x.values), True) for x in finalPH.values]
+    elif isinstance(finalPH, list):
         finalEvents = [Event(farc, Pattern(farc, x.values), True) for x in finalPH]
     else:
         finalEvents = finalPH.values
@@ -105,7 +119,7 @@ def construct_pattern(tokens):
 
 def prepare_pvals(p_vals):
     """ Prepare pattern values for assembling into a pattern """
-    logging.info("Preparing: {}".format(p_vals))
+    logging.debug("Preparing: {}".format(p_vals))
     p_len = len(p_vals)
     time_vals = []
     #calc times
@@ -126,5 +140,5 @@ def prepare_pvals(p_vals):
     #create pattern placeholder
     placeholder = PatternPH(time_vals)
     #add to new top of stack
-    logging.info("Resulting Placeholder: {}".format(placeholder))
+    logging.debug("Resulting Placeholder: {}".format(placeholder))
     return placeholder
