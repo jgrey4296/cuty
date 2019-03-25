@@ -13,14 +13,15 @@ class Event:
     def __init__(self, a, b, value_is_pattern=False):
         assert(isinstance(a, Arc))
         self.arc = a.copy()
-        self.value = b
+        self.values = b
         self.value_is_pattern = value_is_pattern
 
-    def __call__(self, count):
+    def __call__(self, count, just_values=False):
         """ Get a list of events given a time """
         if count in self.arc:
             if self.value_is_pattern:
-                return self.value(count - self.arc.start)
+                return self.values(count - self.arc.start,
+                                   just_values)
             else:
                 return [self]
         return []
@@ -29,7 +30,7 @@ class Event:
         """ Get all fractions used in this event """
         time_list = self.arc.pair()
         if self.value_is_pattern:
-            time_list += [x - self.arc.start for x in self.value.base()]
+            time_list += [x - self.arc.start for x in self.values.base()]
         return set(time_list)
 
     def key(self):
@@ -40,11 +41,11 @@ class Event:
         return other in self.arc
 
     def __repr__(self):
-        return "{} :: {}".format(str(self.value), str(self.arc))
+        return "{} :: {}".format(str(self.values), str(self.arc))
 
     def print_flip(self, start=True):
         """ Get a string describing the event's entry/exit status """
         fmt_str ="⤒{} "
         if not start:
             fmt_str = "{}⤓"
-        return fmt_str.format(str(self.value))
+        return fmt_str.format(str(self.values))
