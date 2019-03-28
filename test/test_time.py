@@ -35,6 +35,26 @@ class TestTime(unittest.TestCase):
         an_arc = Arc(t(1,4), t(1,2))
         self.assertEqual(an_arc.size(), t(1,4))
 
+    def test_arc_equality(self):
+        an_arc = Arc(t(1,4), t(2,3))
+        an_arc_2 = Arc(t(1,4), t(2,3))
+        self.assertEqual(an_arc, an_arc_2)
+
+    def test_arc_equality_failure(self):
+        an_arc = Arc(t(1,4), t(2,3))
+        an_arc_2 = Arc(t(2,4), t(2,3))
+        self.assertNotEqual(an_arc, an_arc_2)
+
+    def test_arc_bound(self):
+        an_arc = Arc(t(1,4), t(1,2))
+        another_arc = Arc(t(1,3), t(2,3))
+        combined = an_arc.bound(another_arc)
+        combined_other = another_arc.bound(an_arc)
+        self.assertEqual(combined, combined_other)
+        self.assertEqual(combined.start, t(1,4))
+        self.assertEqual(combined.end, t(2,3))
+
+
     #--------------------
     # EVENT TESTS
     def test_event_creation(self):
@@ -240,6 +260,56 @@ class TestTime(unittest.TestCase):
         self.assertEqual(p3(t(0,1), True)[0], "a")
         # self.assertEqual(p3(t(1,1), True)[0], "e")
         self.assertEqual(p3(t(7,4), True)[0], "h")
+
+    def test_pattern_iterator(self):
+        aPattern = time.parse_string("[a b [c d] e]")
+        for i,x in zip([0,1,2,3,4], aPattern):
+            self.assertEqual(x[0], ["a","a",
+                                    "b", "b",
+                                    "c", "d",
+                                    "e", "e"][i])
+
+    def test_pattern_iterator_loop(self):
+        aPattern = time.parse_string("[ a b ]")
+        for i,x in zip(range(8), aPattern):
+            self.assertEqual(x[0], (["a", "b"] * 4)[i])
+
+    def test_pattern_add(self):
+        first_pattern = time.parse_string("[a b]")
+        second_pattern = time.parse_string("[c d]")
+        combined = first_pattern + second_pattern
+        for i,x in zip([0, 1, 2, 3, 4, 5],
+                       combined):
+            self.assertEqual(x[0],
+                            "a b c d a b".split(" ")[i])
+
+    def test_pattern_add_twice(self):
+        first_pattern = time.parse_string("[a b]")
+        second_pattern = time.parse_string("[c d]")
+        combined = first_pattern + second_pattern
+        combined_2 = combined + second_pattern
+        for i,x in zip([0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                       combined_2):
+            self.assertEqual(x[0],
+                            "a b c d c d a b c d".split(" ")[i])
+
+    def test_pattern_stack(self):
+        first_pattern = time.parse_string("[a b]")
+        second_pattern = time.parse_string("[c d]")
+        combined = first_pattern * second_pattern
+        for i,x in zip([0, 1, 2, 3],
+                       combined):
+            self.assertEqual(x[0],
+                             "a b a b".split(" ")[i])
+            self.assertEqual(x[1],
+                             "c d c d".split(" ")[i])
+
+    def test_pattern_subtract(self):
+        return None
+
+    def test_pattern_format(self):
+        return None
+
 
     #--------------------
     # PARSER TESTS
