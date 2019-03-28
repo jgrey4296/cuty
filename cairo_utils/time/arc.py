@@ -41,3 +41,13 @@ class Arc:
     def size(self):
         """ Get the length of time the arc describes """
         return self.end - self.start
+
+    def __eq__(self, other):
+        assert(isinstance(other, Arc))
+        return all([x == y for x,y in zip(self.pair(), other.pair())])
+
+    def bound(self, other):
+        assert(isinstance(other, Arc))
+        start = min(self.start, other.start)
+        end = max(self.end, other.end)
+        return Arc(start, end)
