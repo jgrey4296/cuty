@@ -7,6 +7,7 @@ from functools import reduce
 from math import floor
 import logging as root_logger
 from .utils import TIME_T
+from .pattern_iterator import PatternIterator
 import IPython
 
 logging = root_logger.getLogger(__name__)
@@ -95,3 +96,49 @@ class Pattern:
     def __str__(self):
         """ Print in the same format the parser reads """
         return repr(self)
+
+    def __iter__(self, just_values=True):
+        """ Treat the pattern as an iterator """
+        return PatternIterator(self, just_values=just_values)
+
+    def __add__(self, other):
+        """ Concatenates two patterns together """
+        l_comps = [self]
+        r_comps = [other]
+        if isinstance(self, PatternSeq):
+            l_comps = self.components
+        if isinstance(other, PatternSeq):
+            r_comps = other.components
+
+        return PatternSeq(self.arc,
+                          l_comps + r_comps)
+
+    def __sub__(self, other):
+        return None
+
+    def __mul__(self, other):
+        """ Stacks two patterns together """
+        l_comps = [self]
+        r_comps = [other]
+        if isinstance(self, PatternSeq):
+            l_comps = self.components
+        if isinstance(other, PatternSeq):
+            r_comps = other.components
+
+        return Pattern(self.arc,
+                       l_comps + r_comps)
+
+    def format(self, a_dict):
+        return None
+
+    def copy(self):
+        return None
+
+
+class PatternSeq(Pattern):
+
+    def __call__(self, count, just_values=False):
+        """ Query the Pattern for a given time """
+        f_count = floor(count)
+        mod_f = f_count % len(self.components)
+        return self.components[mod_f](count, just_values)
