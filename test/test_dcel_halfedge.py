@@ -21,6 +21,7 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.dc = None
         return 1
 
+
     #----------
     def test_halfedge_creation(self):
         """ Check Basic Halfedge construction """
@@ -29,7 +30,6 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertIsInstance(self.he, dcel.HalfEdge)
         self.assertIsInstance(self.e, dcel.HalfEdge)
 
-    
     def test_export_import(self):
         """ Check the exported fieldnames """
         exported = self.e._export()
@@ -49,7 +49,6 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertTrue(otherEnd.twin.origin == self.e.origin)
 
     #todo: test splitting on a point that isn't on the line
-        
     def test_split_by_ratio(self):
         """ Test splitting by a fraction of the edge instead of a defined point """
         (newPoint, new_edge) = self.e.split_by_ratio(r=0.5)
@@ -82,20 +81,19 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertEqual(edgeI, utils.constants.IntersectEnum.VRIGHT)
 
     #todo: add in a double edge bbox intersection test, and a null test
-
     def test_within(self):
         """ Test whether edges are inside or outside bboxs """
         self.assertTrue(self.e.within(np.array([-0.5, -0.5, 1.5, 1.5])))
         self.assertTrue(self.e.outside(np.array([1.5, 1.5, 2,2])))
         self.assertFalse(self.e.outside(np.array([-0.5, -0.5, 1.5, 1.5])))
         self.assertFalse(self.e.within(np.array([1.5, .5, 2, 2])))
-        
+
     def test_within_circle(self):
         """ Test whether the edge is within the radius of a circle """
         self.assertTrue(np.all(self.e.within_circle(np.array([0,0]), 2) == np.array([True,True])))
         self.assertTrue(np.all(self.e.within_circle(np.array([0,0]), 0.2) == np.array([True, False])))
         self.assertTrue(np.all(self.e.within_circle(np.array([1,0]), 0.2) == np.array([False, True])))
-                         
+
     def test_constrain(self):
         """ Test the calculation of a line adjust to be constrained within
         a bbox """
@@ -117,9 +115,9 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         #check it is unmodified
         self.assertTrue(all(self.e.to_array().flatten() == edgeAsArray))
         self.assertTrue(all(self.e.to_array().flatten() == result.flatten()))
-        
+
     def test_connections_align_succeed(self):
-        """ Test that a halfedge is coherent """ 
+        """ Test that a halfedge is coherent """
         self.assertTrue(self.e.connections_align(self.e.twin))
         self.assertFalse(self.e.connections_align(self.he))
 
@@ -144,8 +142,8 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         #check get_vertices:
         tv1, tv2 = e.get_vertices()
         self.assertTrue(tv1 == v1)
-        self.assertTrue(tv2 == v2)        
-            
+        self.assertTrue(tv2 == v2)
+
         #check the vertices have registered the halfedges:
         self.assertTrue(e in v1.half_edges)
         self.assertTrue(he in v2.half_edges)
@@ -155,7 +153,6 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertIsNone(e.twin.origin)
         self.assertTrue(e not in v1.half_edges)
         self.assertTrue(he not in v2.half_edges)
-
 
     def test_faceSwap(self):
         """ Test the swapping of faces on two halfedges """
@@ -173,7 +170,6 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
 
         self.assertEqual(e.face, f2)
         self.assertEqual(e.twin.face, f1)
-        
 
     def test_ordering(self):
         """ Test counter clockwise ordering of 3 points """
@@ -182,7 +178,6 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         a = np.array([1,0])
         b = np.array([0,1])
         self.assertTrue(dcel.HalfEdge.ccw(centre, a, b))
-        
 
     def test_vertex_retrieval(self):
         """ Test vertices can be retrieved from a halfedge """
@@ -191,7 +186,7 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         vs = e.get_vertices()
         self.assertIsInstance(vs, tuple)
         self.assertTrue(all([isinstance(x, dcel.Vertex) for x in vs]))
-        
+
         asArray = e.to_array()
         self.assertIsInstance(asArray, np.ndarray)
         self.assertEqual(asArray.shape, (2,2))
@@ -220,7 +215,6 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertEqual(closer, e1.origin)
         self.assertEqual(further, e1.twin.origin)
 
-        
     def test_closer_and_further_switched(self):
         """ Test that get_closer_and_further will order correctly """
         e1 = self.dc.create_edge(np.array([2,0]), np.array([1,0]))
@@ -229,7 +223,6 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertIsInstance(further, dcel.Vertex)
         self.assertEqual(closer, e1.twin.origin)
         self.assertEqual(further, e1.origin)
-
 
     def test_closer_and_further2(self):
         """ Check the ordering works when you move the target point """
@@ -248,7 +241,6 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertIsInstance(further, dcel.Vertex)
         self.assertEqual(closer, e1.twin.origin)
         self.assertEqual(further, e1.origin)
-
 
     def test_rotate_modified(self):
         """ Test rotating by modification of a line """
@@ -272,7 +264,7 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         e3_coords = e3.to_array()
         self.assertTrue(np.allclose(e3_coords, np.array([[2,0], [2,1]])))
         self.assertTrue(np.allclose(e2.to_array(), np.array([[3,0], [4,0]])))
-        
+
     def test_rotate_modified_force(self):
         """ Test rotating by forcing modifcation over creating a new line """
         #rotate the edge around a point
@@ -285,7 +277,7 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         e3_coords = e3.to_array()
         self.assertTrue(np.allclose(e3_coords, np.array([[2,0], [2,1]])))
         self.assertTrue(np.allclose(e2.to_array(), np.array([[2,1], [4,0]])))
-        
+
     def test_rotate_modified_by_candidates(self):
         """ Test rotating by passing in a set of connections that don't constrain """
         #rotate the edge around a point
@@ -306,15 +298,13 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertEqual(edit_e, EditE.MODIFIED)
         self.assertTrue(e1 == e2)
         self.assertTrue(np.allclose(e1.to_array(), np.array([[4,-2],[5,-2]])))
-        
-        
+
     def test_extend(self):
         """ Test extending a line to a target """
         e = self.dc.create_edge(np.array([4,0]), np.array([5,0]))
         e2 = e.extend(target=np.array([6,0]))
         self.assertTrue(e2.prev == e)
         self.assertTrue(e.next == e2)
-
 
     def test_avg_direction_single(self):
         """ Test getting the average direction of a sequence of lines """
@@ -345,7 +335,7 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertEqual(chain[1], edges[-1])
         self.assertEqual(len(chain), len(edges))
         self.assertEqual(chain[-1], edges[1])
-        
+
     def test_follow_sequence_guard(self):
         edges = [self.dc.create_edge(np.random.random(2), np.random.random(2)) for x in range(20)]
         for a,b in zip(edges, islice(cycle(edges), 1, None)):
@@ -353,10 +343,8 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         chain = edges[0].follow_sequence(guard=10)
         self.assertEqual(chain[1], edges[1])
         self.assertEqual(len(chain), 10)
-        self.assertEqual(chain[-1], edges[9])    
+        self.assertEqual(chain[-1], edges[9])
 
-        
-        
     def test_point_is_on_line(self):
         """ Test whether a point lies on a line or not """
         self.assertTrue(self.e.point_is_on_line(np.array([0.5,0])))
@@ -378,7 +366,7 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         b = np.array([0,1])
         c = np.array([1,0])
         self.assertFalse(dcel.HalfEdge.ccw(a,b,c))
-        
+
     def test_fix_faces_single(self):
         """ Test the Automatic assignment of two faces to two halfedges """
         #create the halfedge
@@ -393,7 +381,7 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertTrue(all([x is None for x in [e1.prev, e1.next, e2.prev, e2.next, e2.face,
                                                  e2.twin.face, e1.twin.prev, e1.twin.next,
                                                  e2.twin.prev, e2.twin.next]]))
-        e2.fix_faces(e1)        
+        e2.fix_faces(e1)
         self.assertTrue(e1.twin.face == e2.twin.face)
         self.assertTrue(e1.face == e2.face)
         self.assertTrue(e1.next == e2)
@@ -420,7 +408,7 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertTrue(e3.face == f1)
         self.assertTrue(e2.twin.face == f2)
         self.assertTrue(e3.twin.face != f1 and e3.twin.face != f2)
-        
+
     def test_halfedge_has_constraints_false(self):
         """ A Halfedge isn't constrained by default """
         he = dcel.HalfEdge()
@@ -438,7 +426,6 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         e = self.dc.new_edge(v1,v2)
         self.assertFalse(e.has_constraints())
 
-
     def test_halfedge_has_constraints_true_dualEdge(self):
         """ a halfedge is constrained by a shared halfedge on a vertex """
         v1 = self.dc.new_vertex(np.array([5,5]))
@@ -455,7 +442,6 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         e2 = self.dc.new_edge(v1,v2)
         self.assertFalse(e.has_constraints(set([e2, e2.twin])))
 
-
     def test_halfedge_constrain_to_circle(self):
         e = self.dc.create_edge(np.array([5,0]), np.array([7,0]))
         originalTwinVert = e.twin.origin
@@ -470,8 +456,8 @@ class DCEL_HALFEDGE_Tests(unittest.TestCase):
         self.assertEqual(edit_e, EditE.MODIFIED)
         self.assertTrue(np.allclose(e.twin.origin.to_array(), np.array([6,0])))
         self.assertEqual(originalTwinVert, e.twin.origin)
-    
-    
+
+
 if __name__ == "__main__":
       #use python $filename to use this logging setup
       LOGLEVEL = logging.INFO

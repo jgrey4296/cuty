@@ -56,7 +56,6 @@ class Vertex(Drawable):
             self.dcel.vertex_quad_tree.insert(item=self, bbox=self.bbox())
 
 
-
     def copy(self):
         """ Create an isolated copy of this vertex. Doesn't copy halfedge connections,
         but does copy data """
@@ -70,7 +69,6 @@ class Vertex(Drawable):
     #------------------------------
     # def exporting
     #------------------------------
-
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
         logging.debug("Exporting Vertex: {}".format(self.index))
@@ -86,6 +84,7 @@ class Vertex(Drawable):
             "non_enum_data": non_enum_data,
             "active" : self.active
         }
+
 
     #------------------------------
     # def Human Readable Representations
@@ -112,6 +111,7 @@ class Vertex(Drawable):
         """ Removes the object from being drawn """
         self.active = False
 
+
     #------------------------------
     # def bboxes
     #------------------------------
@@ -128,6 +128,7 @@ class Vertex(Drawable):
         assert(isinstance(loc, np.ndarray))
         loc = loc.astype(np.float64)
         return np.array([loc - e, loc + e]).flatten()
+
 
     #------------------------------
     #def queries
@@ -207,12 +208,14 @@ class Vertex(Drawable):
         sorted_verts = self.dcel.order_vertices(self.loc, verts)
         return [opp_hedges[x] for x in sorted_verts]
 
+
     #------------------------------
     # def Coordinate access
     #------------------------------
     def to_array(self):
         """ Convert the Vertex's coords to a simple numpy array """
         return self.loc
+
 
     #------------------------------
     # Def Modifiers
@@ -232,7 +235,6 @@ class Vertex(Drawable):
         #make the edge have faces:
         self.register_half_edge(new_edge)
         return new_edge
-
 
     def translate(self, direction, d=1, absolute=False, candidates=None, force=False):
         """ Move the vertex by the vector dir, scaled by distance d,

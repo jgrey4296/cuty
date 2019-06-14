@@ -26,6 +26,7 @@ class HeapWrapper:
         else:
             return "{} - {} : {}".format(self.ordinal, self.desc, repr(self.data))
 
+
 def pop_while_same(heap):
     """ Pop while the head is equal to the first value poppped """
     assert(all([isinstance(x, HeapWrapper) for x in heap]))

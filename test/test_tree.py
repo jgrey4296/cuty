@@ -26,7 +26,7 @@ class Tree_Tests(unittest.TestCase):
       #search
 
       #getRange
-      
+
 
 if __name__ == "__main__":
       #use python $filename to use this logging setup

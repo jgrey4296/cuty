@@ -24,6 +24,7 @@ class VEvent:
     def __lt__(self, other):
         return (VEvent.offset - self.y()) < (VEvent.offset - other.y())
 
+
 class SiteEvent(VEvent):
     """ Subclass for representing individual points / cell centres """
     def __init__(self, site_loc, i=None, face=None):
@@ -32,6 +33,7 @@ class SiteEvent(VEvent):
 
     def __str__(self):
         return "Site Event: Loc: {}".format(self.loc)
+
 
 class CircleEvent(VEvent):
     """ Subclass for representing the lowest point of a circle,

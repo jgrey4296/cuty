@@ -4,7 +4,8 @@ A PyParsing parser to create patterns
 # from .pattern import Pattern
 # from .event import Event
 # from .arc import Arc
-from .pattern_constructor import CTOR_ACT, VarPH, construct_pattern
+from .pattern_constructor import CTOR_ACT, construct_pattern
+from .utils import TimeVar
 from enum import Enum
 from fractions import Fraction
 import pyparsing as pp
@@ -44,7 +45,7 @@ LESS.setParseAction(lambda x: CTOR_ACT.CSTART)
 MORE.setParseAction(lambda x: CTOR_ACT.CEND)
 TILDE.setParseAction(lambda x: CTOR_ACT.SIL)
 
-VAR.setParseAction(lambda toks: VarPH(toks[0]))
+VAR.setParseAction(lambda toks: TimeVar(toks[0]))
 
 def parse_string(s):
     """ The primary access point """

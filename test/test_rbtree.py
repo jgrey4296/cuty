@@ -24,7 +24,7 @@ class RBTree_Tests(unittest.TestCase):
     def test_empty(self):
         self.assertEqual(len(self.t), 0)
         self.assertFalse(bool(self.t))
-          
+
     #insert
     def test_insert_empty(self):
         self.t.insert(2)
@@ -40,7 +40,7 @@ class RBTree_Tests(unittest.TestCase):
         m = self.t.min()
         self.assertIsInstance(m, rbtree.Node)
         self.assertEqual(m.value, 1)
-    
+
     #max
     def test_max(self):
         self.t.insert(4,2,6,5,2,7,8,4,2,5,2,1)
@@ -48,7 +48,7 @@ class RBTree_Tests(unittest.TestCase):
         m = self.t.max()
         self.assertIsInstance(m, rbtree.Node)
         self.assertEqual(m.value, 8)
-    
+
     def test_cmp(self):
         """ Swaps the ordering using a custom cmp function """
         self.t.cmpFunc = CompFuncs.inverted_comparison
@@ -60,7 +60,7 @@ class RBTree_Tests(unittest.TestCase):
         self.assertIsInstance(ma, rbtree.Node)
         self.assertEqual(mi.value, 1)
         self.assertEqual(ma.value, 8)
-        
+
     #delete
     def test_delete(self):
         self.t.insert(4,2,6,5,2,7,8,4,2,5,2,1)
@@ -70,7 +70,7 @@ class RBTree_Tests(unittest.TestCase):
         self.assertEqual(m.value, 8)
         self.t.delete(m)
         self.assertEqual(len(self.t), 11)
-    
+
     #search
     def test_search(self):
         self.t.insert(4,2,6,5,2,7,8,4,2,5,2,1)
@@ -78,13 +78,13 @@ class RBTree_Tests(unittest.TestCase):
         found, side = self.t.search(4)
         self.assertIsNotNone(found)
         self.assertIsInstance(found, rbtree.Node)
-        
+
     def test_search_missing(self):
         self.t.insert(4,2,6,5,2,7,8,4,2,5,2,1)
         self.assertEqual(len(self.t),12)
         found, side = self.t.search(55)
         self.assertIsNone(found)
-        
+
     def test_get_chain(self):
         baseList = [4,2,6,5,2,7,8,4,2,5,2,1]
         self.t.insert(*baseList)

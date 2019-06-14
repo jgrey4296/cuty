@@ -62,7 +62,6 @@ class VoronoiDebug:
                                           faces=faces, edges=edges, verts=verts)
         utils.drawing.write_to_png(self.surface, join(self.save_dir, "voronoi_debug"))
 
-
     def draw_intermediate_states(self, i,
                                  sites=True,
                                  beachline=True,
@@ -109,7 +108,6 @@ class VoronoiDebug:
 
         #self.instance.dcel.import_data(backup_dcel_data)
         utils.drawing.write_to_png(self.surface, join(self.save_dir, "voronoi_intermediate"), i=i)
-
 
     def draw_sites(self):
         """ Draw the individual sites """

@@ -26,7 +26,7 @@ class DCEL_LINE_INTERSECT_Tests(unittest.TestCase):
         e1 = self.dc.create_edge(np.array([0,1]), np.array([0,0]))
         e2 = self.dc.create_edge(np.array([1,1]), np.array([1,0]))
         self.assertEqual(li.line_cmp(MockNode(e1), e2, {"nudge": 1e-2, "y": 0.5}), Directions.RIGHT)
-    
+
     def test_comparison_function_simple_left(self):
         e1 = self.dc.create_edge(np.array([0,1]), np.array([0,0]))
         e2 = self.dc.create_edge(np.array([1,1]), np.array([1,0]))
@@ -46,7 +46,7 @@ class DCEL_LINE_INTERSECT_Tests(unittest.TestCase):
         e1 = self.dc.create_edge(np.array([0,1]), np.array([1,0]))
         e2 = self.dc.create_edge(np.array([1,1]), np.array([0,0]))
         self.assertEqual(li.line_cmp(MockNode(e1), e2, {"nudge": 1e-2, "y": 0}), Directions.LEFT)
-        
+
     def test_comparison_function_crossover_defaults_to_left(self):
         e1 = self.dc.create_edge(np.array([0,1]), np.array([1,0]))
         e2 = self.dc.create_edge(np.array([1,1]), np.array([0,0]))
@@ -56,12 +56,12 @@ class DCEL_LINE_INTERSECT_Tests(unittest.TestCase):
         e1 = self.dc.create_edge(np.array([0.5,1]), np.array([0.5,0]))
         e2 = self.dc.create_edge(np.array([0,0.5]), np.array([1,0.5]))
         self.assertEqual(li.line_cmp(MockNode(e1), e2, {"nudge": 1e-2, "y": 0.5, "x": 0.6}), Directions.RIGHT)
-        
+
     def test_comparison_function_flat_simple_left(self):
         e1 = self.dc.create_edge(np.array([0.5,1]), np.array([0.5,0]))
         e2 = self.dc.create_edge(np.array([0,0.5]), np.array([1,0.5]))
         self.assertEqual(li.line_cmp(MockNode(e1), e2, {"nudge": 1e-2, "y": 0.5, "x": 0.4}), Directions.LEFT)
-        
+
     def test_comparison_function_flat_simple_defaults_to_left(self):
         e1 = self.dc.create_edge(np.array([0.5,1]), np.array([0.5,0]))
         e2 = self.dc.create_edge(np.array([0,0.5]), np.array([1,0.5]))
@@ -71,7 +71,7 @@ class DCEL_LINE_INTERSECT_Tests(unittest.TestCase):
         e1 = self.dc.create_edge(np.array([0.5,0]), np.array([1,0]))
         e2 = self.dc.create_edge(np.array([0.2,0]), np.array([0.7,0]))
         self.assertEqual(li.line_cmp(MockNode(e1), e2, {"nudge": 1e-2, "y": 0, "x": 0}), Directions.LEFT)
-    
+
     def test_comparison_function_double_flat_in_bounds(self):
         e1 = self.dc.create_edge(np.array([0.5,0]), np.array([1,0]))
         e2 = self.dc.create_edge(np.array([0.2,0]), np.array([0.7,0]))
@@ -89,7 +89,7 @@ class DCEL_LINE_INTERSECT_Tests(unittest.TestCase):
         e2 = self.dc.create_edge(np.array([0.7, 0]), np.array([1.2,0]))
         #reminder: can two hlines have one to the right?
         self.assertEqual(li.line_cmp(MockNode(e1), e2, {"nudge": 1e-2, "y":0, "x":1.1}), Directions.RIGHT)
-        
+
     def test_comparison_function_double_flat_left(self):
         e1 = self.dc.create_edge(np.array([0.5,0]), np.array([1,0]))
         e2 = self.dc.create_edge(np.array([0.2,0]), np.array([0.7,0]))
@@ -117,7 +117,7 @@ class DCEL_LINE_INTERSECT_Tests(unittest.TestCase):
     def test_comparison_function_flat_vert_ends_touch(self):
         e1 = self.dc.create_edge(np.array([1,1]), np.array([1,0]))
         e2 = self.dc.create_edge(np.array([0,0]), np.array([1,0]))
-        
+
         self.assertEqual(li.line_cmp(MockNode(e1), e2, {"nudge": 1e-2, "y": 0, 'x': 1}), Directions.RIGHT)
         self.assertEqual(li.line_cmp(MockNode(e1), e2, {"nudge": 1e-2, "y": 0, 'x': 0}), Directions.LEFT)
 
@@ -125,11 +125,10 @@ class DCEL_LINE_INTERSECT_Tests(unittest.TestCase):
         e1 = self.dc.create_edge(np.array([0,0]), np.array([1,0]))
         self.assertEqual(li.line_cmp(MockNode(e1), e1, {"nudge": 1e-2, "y": 0, "x":0.5}), Directions.RIGHT)
 
-        
+
     #TODO: test intersections with added deltas, start points.
     #TODO: horizontal end points touching a line middle
-        
-    
+
     def test_intersect_halfedges_simple(self):
         logging.debug("Test Intersect HalfEdges Simple")
         #create some edges
@@ -177,7 +176,7 @@ class DCEL_LINE_INTERSECT_Tests(unittest.TestCase):
         i3 = [x for x in results if np.allclose(x.vertex.loc, np.array([0.5,0.25]))][0]
         self.assertTrue(e1.twin in i3.contain)
         self.assertTrue(e3 in i3.contain)
-        
+
     def test_intersect_halfedges_no_intersections(self):
         logging.debug("Test Intersect HalfEdges no intersections")
         #create
@@ -188,7 +187,7 @@ class DCEL_LINE_INTERSECT_Tests(unittest.TestCase):
         results = self.dc.intersect_half_edges()
         #verify
         self.assertEqual(len(results), 0)
-        
+
     def test_intersect_halfedges_endpoints(self):
         logging.debug("Test Intersect HalfEdges endpoints")
         e1 = self.dc.create_edge(np.array([0,0]), np.array([1,0]))
@@ -202,13 +201,13 @@ class DCEL_LINE_INTERSECT_Tests(unittest.TestCase):
         v1 = self.dc.create_edge(np.array([0,0]), np.array([0,2000]))
         v2 = self.dc.create_edge(np.array([1000,0]), np.array([1000,2000]))
         v3 = self.dc.create_edge(np.array([2000,0]), np.array([2000,2000]))
-        
+
         h1 = self.dc.create_edge(np.array([0,2000]), np.array([2000,2000]))
         results = self.dc.intersect_half_edges(edge_set=set([v1,v2,v3,h1]))
         self.assertEqual(len(results), 3)
-        
-        
-        
+
+
+
 if __name__ == "__main__":
       #use python $filename to use this logging setup
       LOGLEVEL = logging.DEBUG

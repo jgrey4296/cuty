@@ -104,6 +104,7 @@ class Face(Drawable):
         hull_coords = np.array([coords[x] for x in hull.vertices])
         return hull_coords
 
+
     #------------------------------
     # def Human Readable Representations
     #------------------------------
@@ -224,6 +225,7 @@ class Face(Drawable):
         if force_centre:
             ctx.translate(*(mid_point * -1))
 
+
     #------------------------------
     # def Exporting
     #------------------------------
@@ -245,7 +247,6 @@ class Face(Drawable):
         }
 
 
-
     def get_bbox(self):
         """ Get a rough bbox of the face """
         #TODO: fix this? its rough
@@ -263,6 +264,7 @@ class Face(Drawable):
         """ Schedules the face for cleanup """
         self.marked_for_cleanup = True
 
+
     #------------------------------
     # def centroids
     #------------------------------
@@ -273,7 +275,6 @@ class Face(Drawable):
             return self.site.copy()
         else:
             return self.get_avg_centroid()
-
 
     def get_avg_centroid(self):
         """ Get the averaged centre point of the face from the vertices of the edges """
@@ -359,7 +360,6 @@ class Face(Drawable):
     #------------------------------
     # def modifiers
     #------------------------------
-
 
     def subdivide(self, edge, ratio=None, angle=0):
         """ Bisect / Divide a face in half by creating a new line
@@ -482,7 +482,6 @@ class Face(Drawable):
         self.edge_list[i].translate(transform, force=True)
         return (self, EditE.MODIFIED)
 
-
     def scale(self, amnt=None, target=None, vert_weights=None, edge_weights=None,
               force=False, candidates=None):
         """ Scale an entire face by amnt,
@@ -515,7 +514,6 @@ class Face(Drawable):
 
         return (self, EditE.MODIFIED)
 
-
     def cut_out(self, candidates=None, force=False):
         """ Cut the Face out from its verts and halfedges that comprise it,
         creating new verts and edges, so the face can be moved and scaled
@@ -540,7 +538,6 @@ class Face(Drawable):
         for l in self.edge_list:
             l.rotate(c=target, r=rads, candidates=candidates, force=True)
         return (self, EditE.MODIFIED)
-
 
     def constrain_to_circle(self, centre, radius, candidates=None, force=False):
         """ Constrain the vertices and edges of a face to be within a circle """
@@ -579,7 +576,6 @@ class Face(Drawable):
             edge.constrain_to_bbox(bbox, candidates=candidates, force=True)
 
         return (self, EditE.MODIFIED)
-
 
 
     #------------------------------

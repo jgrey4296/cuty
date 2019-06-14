@@ -222,6 +222,7 @@ class DCEL:
         output_mapping['faces'] = {x.data['i'] : x.key for x in local_faces.values()}
         return output_mapping
 
+
     @staticmethod
     def loadfile(filename):
         """ Create a DCEL from a saved pickle """
@@ -328,7 +329,6 @@ class DCEL:
 
         return target_update
 
-
     def purge_vertex(self, target):
         """ Clean up and delete a vertex """
         assert(isinstance(target, Vertex))
@@ -347,7 +347,6 @@ class DCEL:
 
         return target_update
 
-
     def purge_face(self, target):
         """ Clean up and delete a face """
         assert(isinstance(target, Face))
@@ -360,7 +359,6 @@ class DCEL:
             target_update.add(edge)
         self.faces.remove(target)
         return target_update
-
 
     def purge(self, targets=None):
         """ Run all purge methods in correct order """
@@ -390,6 +388,7 @@ class DCEL:
             purged.add(current)
 
         self.calculate_quad_tree()
+
 
     #------------------------------
     # def Vertex, Edge, HalfEdge Creation
@@ -607,7 +606,6 @@ class DCEL:
                 processed.add(current.index)
 
 
-
     def constrain_to_circle(self, centre, radius, candidates=None, force=False):
         """ Limit all faces, edges, and vertices to be within a circle,
         adding boundary verts and edges as necessary """
@@ -638,7 +636,6 @@ class DCEL:
             if not v.within_circle(centre, radius):
                 v.mark_for_cleanup()
 
-
     def constrain_to_bbox(self, bbox, candidates=None, force=False):
         """ Constrain the entire dcel to a bbox """
         assert(isinstance(bbox, np.ndarray))
@@ -667,8 +664,6 @@ class DCEL:
                 v.mark_for_cleanup()
 
 
-
-
     #------------------------------
     # def Utilities
     #------------------------------
@@ -679,7 +674,6 @@ class DCEL:
 
         li = LineIntersector(self)
         return li(edge_set=edge_set)
-
 
     def order_vertices(self, focus, vertices):
         """ Given a focus point and a list of vertices, sort them
@@ -693,7 +687,6 @@ class DCEL:
         # rads = (np.arctan2(verts[:, 1], verts[:, 0]) + TWOPI) % TWOPI
         # ordered = sorted(zip(rads, opp_hedges))
         return [vert for loc, vert in sorted_angled]
-
 
     def create_corner_vertex(self, e1, e2, bbox):
         """ Given two intersections (0-3) describing the corner,

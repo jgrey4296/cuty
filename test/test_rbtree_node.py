@@ -44,7 +44,7 @@ class RBTree_Tests(unittest.TestCase):
         self.assertEqual(n3.get_black_height(), 2)
         n1.red = False
         self.assertEqual(n3.get_black_height(), 3)
-    
+
     def test_link_left(self):
         n1 = Node(2)
         n2 = Node(3)
@@ -73,7 +73,7 @@ class RBTree_Tests(unittest.TestCase):
         n1.link_left(n2)
         with self.assertRaises(Exception):
             n2.link_left(n1)
-            
+
     def test_link_right_fails(self):
         n1 = Node(5)
         with self.assertRaises(Exception):
@@ -107,7 +107,7 @@ class RBTree_Tests(unittest.TestCase):
         n1.add_left(n2)
         self.assertEqual(n1.get_predecessor(), n2)
         self.assertIsNone(n2.get_predecessor())
-        
+
     def test_get_predecessor_basic_2(self):
         n1 = Node(2)
         n2 = Node(3)
@@ -147,7 +147,6 @@ class RBTree_Tests(unittest.TestCase):
         self.assertEqual(n3.get_successor(), n1)
 
     #test getPred/Succ_while
-
     def test_min(self):
         n1 = Node(2)
         n2 = Node(3)
@@ -163,7 +162,7 @@ class RBTree_Tests(unittest.TestCase):
         n1.add_right(n2)
         n2.add_right(n3)
         self.assertEqual(n1.max(), n3)
-        
+
     def test_disconnect_from_parent(self):
         n1 = Node(2)
         n2 = Node(3)
@@ -183,7 +182,7 @@ class RBTree_Tests(unittest.TestCase):
         n1.disconnect_left()
         self.assertIsNone(n2.parent)
         self.assertIsNone(n1.left)
-        
+
     def test_disconnect_right(self):
         n1 = Node(2)
         n2 = Node(3)
@@ -193,7 +192,7 @@ class RBTree_Tests(unittest.TestCase):
         n1.disconnect_right()
         self.assertIsNone(n2.parent)
         self.assertIsNone(n1.right)
-        
+
     def test_on_left(self):
         n1 = Node(2)
         n2 = Node(3)
@@ -236,7 +235,7 @@ class RBTree_Tests(unittest.TestCase):
         self.assertEqual(n1.right, n4)
         self.assertEqual(n4.parent, n1)
         self.assertEqual(n0.right, newHead)
-        
+
     def test_get_pred_succ_while_no_condition(self):
         n1 = Node(2)
         n2 = Node(3)
@@ -259,9 +258,9 @@ class RBTree_Tests(unittest.TestCase):
         self.assertFalse(n1.is_leaf())
         n1.add_right(Node(5))
         self.assertFalse(n1.is_leaf())
-        
+
     #----------
-        
+
 if __name__ == "__main__":
     #use python $filename to use this logging setup
       LOGLEVEL = logging.INFO

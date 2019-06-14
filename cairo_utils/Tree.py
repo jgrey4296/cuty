@@ -37,7 +37,6 @@ class Tree:
             else:
                 self.right.insert(value, data=data)
 
-
     def __str__(self):
         if self.left is not None:
             left_string = self.left.__str__()
@@ -48,7 +47,6 @@ class Tree:
         else:
             right_string = "()"
         return "( V: {} Left: {}, Right: {} )".format(self.value, left_string, right_string)
-
 
     def search(self, value):
         """ Search the tree for a value """

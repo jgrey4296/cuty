@@ -118,6 +118,7 @@ class TestTime(unittest.TestCase):
         self.assertTrue(t(1,4) in anEvent)
         self.assertFalse(t(3,4) in anEvent)
 
+
     #--------------------
     # PATTERN TESTS
     def test_pattern_creation(self):
@@ -263,7 +264,7 @@ class TestTime(unittest.TestCase):
 
     def test_pattern_iterator(self):
         aPattern = time.parse_string("[a b [c d] e]")
-        for i,x in zip([0,1,2,3,4], aPattern):
+        for i,x in zip([0,1,2,3,4], aPattern.iter()):
             self.assertEqual(x[0], ["a","a",
                                     "b", "b",
                                     "c", "d",
@@ -271,15 +272,20 @@ class TestTime(unittest.TestCase):
 
     def test_pattern_iterator_loop(self):
         aPattern = time.parse_string("[ a b ]")
-        for i,x in zip(range(8), aPattern):
+        for i,x in zip(range(8), aPattern.iter()):
             self.assertEqual(x[0], (["a", "b"] * 4)[i])
+
+    def test_pattern_iterator_events(self):
+        aPattern = time.parse_string("[ a b c ]")
+        for i,x in zip(range(4), aPattern.iter(False)):
+            self.assertIsInstance(x[0], Event)
 
     def test_pattern_add(self):
         first_pattern = time.parse_string("[a b]")
         second_pattern = time.parse_string("[c d]")
         combined = first_pattern + second_pattern
         for i,x in zip([0, 1, 2, 3, 4, 5],
-                       combined):
+                       combined.iter()):
             self.assertEqual(x[0],
                             "a b c d a b".split(" ")[i])
 
@@ -289,7 +295,7 @@ class TestTime(unittest.TestCase):
         combined = first_pattern + second_pattern
         combined_2 = combined + second_pattern
         for i,x in zip([0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                       combined_2):
+                       combined_2.iter()):
             self.assertEqual(x[0],
                             "a b c d c d a b c d".split(" ")[i])
 
@@ -298,7 +304,7 @@ class TestTime(unittest.TestCase):
         second_pattern = time.parse_string("[c d]")
         combined = first_pattern * second_pattern
         for i,x in zip([0, 1, 2, 3],
-                       combined):
+                       combined.iter()):
             self.assertEqual(x[0],
                              "a b a b".split(" ")[i])
             self.assertEqual(x[1],
@@ -313,7 +319,6 @@ class TestTime(unittest.TestCase):
 
     #--------------------
     # PARSER TESTS
-
     #Parse a pattern
     def test_parse_simple(self):
         aPattern = time.parse_string("[ a b c ]")

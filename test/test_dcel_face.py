@@ -31,7 +31,7 @@ class DCEL_FACE_Tests(unittest.TestCase):
         self.assertIsInstance(f, dcel.Face)
 
     def test_hull_creation(self):
-        """ Test construction of a hull from a set of vertices """ 
+        """ Test construction of a hull from a set of vertices """
         #A Set of Vertices:
         rawCoords = np.array([[1,0],[0,1],[-1,0],[0,-1]])
         verts = [self.dc.new_vertex(x) for x in rawCoords]
@@ -58,7 +58,6 @@ class DCEL_FACE_Tests(unittest.TestCase):
         f = self.dc.new_face(coords=np.array([[10,10],[9,11],[8,10],[9,9]]))
         self.assertTrue(np.all(f.get_avg_centroid() == np.array([9,10])))
 
-        
     def test_has_edges(self):
         """ Test whether a face has edges or not """
         self.assertTrue(self.f.has_edges())
@@ -77,7 +76,7 @@ class DCEL_FACE_Tests(unittest.TestCase):
         self.assertTrue(aFace.has_edges())
         self.assertIsNotNone(anEdge.face)
         self.assertEqual(anEdge.face, aFace)
-    
+
     def test_edge_removal(self):
         """ Test the removal of an edge from a face """
         anEdge = self.dc.create_edge(np.array([0,0]), np.array([1,0]))
@@ -88,7 +87,7 @@ class DCEL_FACE_Tests(unittest.TestCase):
         aFace.remove_edge(anEdge)
         self.assertFalse(aFace.has_edges())
         self.assertIsNone(anEdge.face)
-        
+
     def test_sort_edges(self):
         """ Test internally sorting the face's edges ccw """
         original = self.hes.copy()
@@ -113,7 +112,7 @@ class DCEL_FACE_Tests(unittest.TestCase):
         self.assertEqual(f1, self.f)
         self.assertTrue(all([x.face==f1 for x in f1.edge_list]))
         self.assertTrue(all([x.face==f2 for x in f2.edge_list]))
-        
+
     def test_add_vertex(self):
         """ Test adding a free vertex to a face """
         v1 = self.dc.new_vertex(np.array([0,0]))
@@ -121,7 +120,7 @@ class DCEL_FACE_Tests(unittest.TestCase):
         self.assertFalse(bool(emptyFace.free_vertices))
         emptyFace.add_vertex(v1)
         self.assertTrue(bool(emptyFace.free_vertices))
-        
+
     def test_translate_edge_modified(self):
         """ Test modifying a face by moving an edge """
         original_coords = self.f.edge_list[0].to_array()
@@ -131,8 +130,7 @@ class DCEL_FACE_Tests(unittest.TestCase):
         for e in f2.edge_list:
             self.assertTrue(np.allclose(e.twin.origin.loc, e.next.origin.loc))
         self.assertTrue(np.allclose(f2.edge_list[0].to_array(), original_coords + np.array([1,0])))
-        
-        
+
     def test_translate_edge_new(self):
         """ Test creating a new face from an existing one, by moving an edge """
         e = self.dc.create_edge(np.array([1,0]), np.array([4,0]))
@@ -144,7 +142,6 @@ class DCEL_FACE_Tests(unittest.TestCase):
             self.assertTrue(np.allclose(edge.twin.origin.loc, edge.next.origin.loc))
         self.assertTrue(np.allclose(f2.edge_list[0].to_array(), original_coords + np.array([1,0])))
 
-    
     def test_translate_edge_force(self):
         """ Test forcing modification of a face by moving an edge """
         e = self.dc.create_edge(np.array([1,0]), np.array([4,0]))
@@ -156,7 +153,6 @@ class DCEL_FACE_Tests(unittest.TestCase):
             self.assertTrue(np.allclose(edge.twin.origin.loc, edge.next.origin.loc))
         self.assertTrue(np.allclose(f2.edge_list[0].to_array(), original_coords + np.array([1,0])))
 
-    
     def test_translate_edge_modified_by_candidates(self):
         """ Test modification of a face by designating non-constraining links """
         e = self.dc.create_edge(np.array([1,0]), np.array([4,0]))
@@ -168,8 +164,6 @@ class DCEL_FACE_Tests(unittest.TestCase):
             self.assertTrue(np.allclose(edge.twin.origin.loc, edge.next.origin.loc))
         self.assertTrue(np.allclose(f2.edge_list[0].to_array(), original_coords + np.array([1,0])))
 
-        
-        
     def test_merge_faces_initial(self):
         """ Test merging two faces into one, of the simplest case """
         f2 = self.dc.new_face()
@@ -188,7 +182,7 @@ class DCEL_FACE_Tests(unittest.TestCase):
         mergedVerts = mergedFace.get_all_vertices()
         self.assertEqual(originalVerts, mergedVerts)
         self.assertTrue(len(discarded) == 1)
-    
+
     def test_cut_out_modified(self):
         """ Test doing a no-op when a face is unconstrained """
         f1 = self.dc.new_face(coords=np.array([[2,0],[3,0],[2,4]]))
@@ -270,7 +264,6 @@ class DCEL_FACE_Tests(unittest.TestCase):
         f2_indices = set([x.index for x in f2.get_all_vertices()])
         self.assertTrue(len(original_indices.intersection(f2_indices)) == 3)
 
-        
     def test_scale_modified(self):
         """ Test scaling a face """
         f2, edit_e = self.f.copy().scale(amnt=np.array([2,2]))
@@ -282,8 +275,7 @@ class DCEL_FACE_Tests(unittest.TestCase):
             b_twin = b.twin.origin.loc
             self.assertTrue(np.allclose(a_origin * 2, b_origin))
             self.assertTrue(np.allclose(a_twin * 2, b_twin))
-        
-    
+
     def test_scale_new(self):
         """ Test cloning a face then scaling it """
         e2 = self.dc.create_edge(np.array([1,0]), np.array([2,4]))
@@ -296,7 +288,6 @@ class DCEL_FACE_Tests(unittest.TestCase):
             b_twin = b.twin.origin.loc
             self.assertTrue(np.allclose(a_origin * 2, b_origin))
             self.assertTrue(np.allclose(a_twin * 2, b_twin))
-
 
     def test_scale_force(self):
         """ Test forcing modification by scaling """
@@ -327,7 +318,7 @@ class DCEL_FACE_Tests(unittest.TestCase):
             self.assertTrue(np.allclose(a_origin * 2, b_origin))
             self.assertTrue(np.allclose(a_twin * 2, b_twin))
         self.assertTrue(np.allclose(e2.origin.loc, np.array([2,0])))
-    
+
     def test_rotate(self):
         """ Test rotating by modification """
         f1 = self.dc.new_face(coords=np.array([[2,0],[3,0],[2,-1]]))
@@ -398,7 +389,7 @@ class DCEL_FACE_Tests(unittest.TestCase):
         new_verts = f.get_all_vertices()
         new_asArray = np.array([x.to_array() for x in new_verts])
         self.assertTrue((get_distance_raw(new_asArray, central_loc) <= 2).all())
-    
+
     def test_fixup(self):
         e1 = self.dc.create_edge(np.array([0,0]), np.array([1,0]))
         e2 = self.dc.create_edge(np.array([1,0]), np.array([0,1]))
@@ -412,8 +403,8 @@ class DCEL_FACE_Tests(unittest.TestCase):
             self.assertEqual(a.next, b)
             self.assertEqual(b.prev, a)
             self.assertEqual(a.face, f)
-        
-        
+
+
 if __name__ == "__main__":
       #use python $filename to use this logging setup
       LOGLEVEL = logging.INFO

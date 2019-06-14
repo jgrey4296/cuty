@@ -26,7 +26,6 @@ def construct_matrix_multiplier(a):
 #------------------------------
 # def circle functions
 #------------------------------
-
 def displace_around_circle(xys, scale, n, random=None):
     """ displace the data around a scaled noisy circle """
     #pylint: disable=invalid-name
@@ -71,7 +70,6 @@ def sample_circle(xyrs, n, sort_rads=True, sort_radi=True, easing=None, random=N
     result = xyrs_r[:,:,:2] + r_x_rot
     flattened = result.reshape((-1, 2))
     return flattened
-
 
 def get_circle_3p(p1, p2, p3, arb_intersect=20000):
     """
@@ -133,10 +131,10 @@ def in_circle(centre, radius, points):
     d = get_distance_raw(centre, points)
     return d < pow(radius, 2)
 
+
 #------------------------------
 # def interpolation functions
 #------------------------------
-
 def granulate(xys, grains=10, mult=2, random=None):
     """ Given a set of points, offset each slightly
     by the direction between the points
@@ -151,7 +149,6 @@ def granulate(xys, grains=10, mult=2, random=None):
         sub_granules = xys[i, :] + (d * directions[i, :]*(random((grains, 1))) * mult)
         granulated = np.row_stack((granulated, sub_granules))
     return granulated[1:]
-
 
 def vary(xys, step_size, pix, random=None):
     """
@@ -204,7 +201,6 @@ def get_random_directions(n=1, random=None):
         random = lambda a, x: np.random.choice(a, size=x*2, replace=True, p=None)
     result = random(dirs, n).reshape((n, 2))
     return result
-
 
 def get_directions(xys):
     """ Given a set of points, get the unit direction
@@ -322,7 +318,6 @@ def make_horizontal_lines(n=1, random=None):
     y = random(n).reshape((-1, 1))
     return np.column_stack((x[:, 0], y, x[:, 1], y))
 
-
 def make_vertical_lines(n=1, random=None):
     """ utility Describe a vertical line as a vector of start and end points """
     if random is None:
@@ -427,6 +422,7 @@ def bezier2cp(a_cpcp_b, n=None, p=None, easing=None):
         results = np.hstack((results, t_lines.reshape(-1,1,2)))
     return results[:,1:,:].reshape((-1,2))
 
+
 #------------------------------
 # def distance functions
 #------------------------------
@@ -490,10 +486,10 @@ def get_midpoint(p1, p2):
     m = (p1 + p2) / 2
     return m
 
+
 #------------------------------
 # def rotate functions
 #------------------------------
-
 def radians_between_points(a, b):
     """ takes np.arrays
         return the radian relation of b to a (source)
@@ -501,8 +497,6 @@ def radians_between_points(a, b):
     """
     c = b - a
     return atan2(c[1], c[0])
-
-
 
 def is_clockwise(*args, cartesian=True):
     """ Test whether a set of points are in clockwise order  """
@@ -569,7 +563,6 @@ def rotate_point(p, cen=None, rads=None, rad_min=-QUARTERPI, rad_max=QUARTERPI, 
     result = cen + applied
     return result
 
-
 def __rotate_point_obsolete(p, cen, rads):
     """ Does what rotate point does, explicitly instead
     of with matrix multiplication """
@@ -584,7 +577,6 @@ def __rotate_point_obsolete(p, cen, rads):
     un_centered = np.column_stack((nx, ny)) + cen
     return un_centered
 
-
 def random_radian(min_v=-TWOPI, max_v=TWOPI, shape=(1,), random=None):
     """ Get a random value within the range of radians -2pi -> 2pi """
     if random is None:
@@ -596,13 +588,13 @@ def rotation_matrix(rad):
     return np.array([[cos(rad), -sin(rad)],
                      [sin(rad), cos(rad)]])
 
+
 #------------------------------
 # def point functions
 #------------------------------
 def node_to_position(x, y):
     """ Convert a nodes XY Position to its actual position """
     return [NODE_RECIPROCAL * x, NODE_RECIPROCAL * y]
-
 
 def calculate_single_point(points, d=DELTA, random=None):
     """ points passed in, move in a random direction """
@@ -634,6 +626,7 @@ def random_points(n, random=None):
     if random is None:
         random = np.random.random
     return random(n*2)
+
 
 #------------------------------
 # def bbox functions
@@ -700,7 +693,6 @@ def calc_bbox_corner(bbox, ies, epsilon=EPSILON):
     else:
         raise Exception("Calculating box corner failed for: {}".format(ies))
 
-
 def within_bbox(point, bbox, tolerance=TOLERANCE):
     """ Test whether a point is within the given bbox """
     assert(isinstance(bbox, np.ndarray))
@@ -760,6 +752,7 @@ def get_ranges(a):
     ranges = np.array([a.min(axis=0), a.max(axis=0)])
     return ranges.T
 
+
 #------------------------------
 # def SAMPLING WRAPPER
 #------------------------------
@@ -782,8 +775,6 @@ def sample_wrapper(func, data, n, radius, colour, easing=None, random=None):
 #------------------------------
 # def DEPRECATED
 #------------------------------
-
-
 def get_normal(p1, p2):
     """ Get the normalized direction from two points """
     raise Exception("Deprecated: Use get_unit_vector")

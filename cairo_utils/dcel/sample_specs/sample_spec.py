@@ -60,11 +60,9 @@ class SampleSpec:
         else:
             raise Exception("TODO: Step Down Automatically on Missing Sample Functions")
 
-
     def primary_vertex(self, target, data):
         """ Samples a single vertex """
         return np.array([target.toArray()])
-
 
     def primary_halfedge(self, target, data):
         """ Sample the halfEdge to start with """
@@ -95,7 +93,6 @@ class SampleSpec:
                                                    num_points)))
         assert(pxys is not None)
         return pxys[1:]
-
 
     def primary_face(self, target, data):
         """ Samples a single Face """
@@ -149,7 +146,6 @@ class SampleSpec:
             logging.warning(e)
             easing_fn = easings.lookup(easings.ENAMES[0])
             return (lambda xs: easing_fn(xs, 1, codomain_e=easings.CODOMAIN.FULL))
-
 
 
 

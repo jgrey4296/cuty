@@ -21,7 +21,6 @@ def gen_heightmap_and_edges(size, minheight, layers, oct=3, repeatx=None,
     edges = detect_edges(qhm, layers)
     return (hm, qhm, edges)
 
-
 def heightmap(size, minheight, oct=3, repeatx=None, repeaty=None, base=0.0):
     """ Generate a height map """
     matrix = np.zeros((size,size))
@@ -59,7 +58,6 @@ def quantize(matrix, layers):
     qmatrix *= quantize_base
     qmatrix *= scaling_recip
     return qmatrix
-
 
 def detect_edges(matrix, layers):
     """ Given a quantized heightmap and the number of steps,

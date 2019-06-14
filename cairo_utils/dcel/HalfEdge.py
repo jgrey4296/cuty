@@ -93,12 +93,9 @@ class HalfEdge(Drawable):
         return e
 
 
-
     #------------------------------
     # def export
     #------------------------------
-
-
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
         logging.debug("Exporting Edge: {}".format(self.index))
@@ -131,6 +128,7 @@ class HalfEdge(Drawable):
             "enum_data" : enum_data,
             "non_enum_data": non_enum_data
         }
+
 
     #------------------------------
     # def Human Readable Representations
@@ -289,6 +287,7 @@ class HalfEdge(Drawable):
         self.length_sq = get_distance_raw(as_array[0], as_array[1])
         return self.length_sq
 
+
     #------------------------------
     # def Modifiers
     #------------------------------
@@ -357,7 +356,6 @@ class HalfEdge(Drawable):
             assert(edit1 == edit2)
             assert(edit1 == EditE.MODIFIED)
             return (self, EditE.MODIFIED)
-
 
     def extend(self, target=None, direction=None, rotate=None, d=1, in_sequence=True):
         """ Extend the line with a new line in the direction of 'target',
@@ -520,8 +518,6 @@ class HalfEdge(Drawable):
         return (self, EditE.MODIFIED)
 
 
-
-
     #------------------------------
     # def Comparison
     #------------------------------
@@ -566,14 +562,12 @@ class HalfEdge(Drawable):
         assert(len(result) < 3)
         return result
 
-
     def point_is_on_line(self, point):
         """ Test to see if a particular x, y coord is on a line """
         assert(isinstance(point, np.ndarray))
         assert(point.shape == (2, ))
         coords = self.to_array()
         return is_point_on_line(point, coords)
-
 
     def __call__(self, x=None, y=None):
         """ Pass in a value and calculate the other """
@@ -634,7 +628,6 @@ class HalfEdge(Drawable):
 
     def __lt__(self, other):
         return HalfEdge.compare_edges(self.face.get_centroid(), self, other)
-
 
     def he_ccw(self, centre):
         """ Verify the halfedge is ccw ordered """
@@ -703,8 +696,6 @@ class HalfEdge(Drawable):
         return edges
 
 
-
-
     #------------------------------
     # def Verification
     #------------------------------
@@ -744,10 +735,6 @@ class HalfEdge(Drawable):
             for e in f2_sequence:
                 self.prev.face.remove_edge(e)
                 twin_face.add_edge(e)
-
-
-
-
 
     def has_constraints(self, candidate_set=None):
         """ Tests whether the halfedge, and its vertices, are used by things other than the
@@ -809,7 +796,6 @@ class HalfEdge(Drawable):
         verts = [x for x in self.get_vertices() if x is not None]
         return all([x.outside(bbox) for x in verts])
 
-
     def to_constrained(self, bbox):
         """ get the coords of the half-edge to within the
             bounding box of [min_x, min_y, max_x, max_y]
@@ -870,14 +856,12 @@ class HalfEdge(Drawable):
             logging.debug("Clearing vertex {} from edge {}".format(v2.index, self.twin.index))
             v2.unregister_half_edge(self.twin)
 
-
     def replace_vertex(self, new_vert):
         """ Replace the vertex of this halfedge with a new one, unregistering the old """
         assert(isinstance(new_vert, Vertex))
         self.origin.unregister_half_edge(self)
         self.origin = new_vert
         self.origin.register_half_edge(self)
-
 
     def get_vertices(self):
         """ Get a tuple of the vertices of this halfedge """

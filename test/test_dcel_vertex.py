@@ -23,7 +23,7 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
     def test_dcel_creation(self):
         """ Check the dcel exists """
         self.assertIsInstance(self.dc, dcel.DCEL)
-        
+
     #test Vertex
     def test_vertex_creation(self):
         """ Check the Simple Vertex can be created """
@@ -52,7 +52,7 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
         v1 = self.dc.new_vertex(np.array([3,3]))
         v2 = self.dc.new_vertex(np.array([3,3]))
         self.assertEqual(v1.index, v2.index)
-        
+
     def test_vertex_export_import(self):
         """ Check the exported vertex data has a minimum set of fields """
         exported = self.v._export()
@@ -91,20 +91,19 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
 
         free_bbox = dcel.Vertex.free_bbox(np.array([0.2, 0.6]), e=1)
         self.assertTrue(all(free_bbox == bbox))
-        
+
         #within_circle:
         self.assertTrue(self.v.within_circle(np.array([0,0]), 1.5))
         self.assertFalse(self.v.within_circle(np.array([0,0]), 0.2))
         self.assertFalse(self.v.within_circle(np.array([-2,-2]),1))
         self.assertTrue(self.v.within_circle(np.array([-2,-2]),4))
-        
+
         #within:
         self.assertTrue(self.v.within(free_bbox))
         self.assertFalse(self.v.within( free_bbox - 5))
         #outside:
         self.assertFalse(self.v.outside(free_bbox))
         self.assertTrue(self.v.outside(free_bbox - 5))
-        
 
     def test_vertex_get_nearby(self):
         """ Check a vertex can call through to its dcel to get nearby vertices """
@@ -124,7 +123,7 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
         self.assertIsInstance(arr, np.ndarray)
         self.assertEqual(arr.shape, (2,))
         self.assertTrue(all(arr == np.array([0.2, 0.6])))
-        
+
     def test_vertex_extend_to_line(self):
         """ Check a vertex can be extended to create a line """
         #create a line appropriately
@@ -135,7 +134,7 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
         self.assertTrue(all(e.twin.origin.to_array() == np.array([1,0])))
         self.assertTrue(all(e.origin.to_array() == np.array([0,0])))
         self.assertFalse(v1.is_edgeless())
-        
+
     def test_vertex_get_sorted_edges(self):
         """ Check edges from a vertex can be sorted ccw and returned """
         #create multiple lines from,
@@ -150,8 +149,6 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
         sorted_edges = v1.get_sorted_edges()
         self.assertEqual(len(sorted_edges), len(coords))
         #todo: verify the sorting
-        
-
     def test_has_constraints_false(self):
         """ A Vertex doesn't have constraints by default """
         v1 = self.dc.new_vertex(np.array([0,0]))
@@ -177,7 +174,7 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
         self.assertTrue(v1.has_constraints())
 
     def test_has_constraints_two_edges_false(self):
-        """ a vertex with multiple edges isnt constrained if both are passed in as candidates """  
+        """ a vertex with multiple edges isnt constrained if both are passed in as candidates """
         v1 = self.dc.new_vertex(np.array([0,0]))
         v2 = self.dc.new_vertex(np.array([0,0]))
         e = self.dc.new_edge(v1, v2)
@@ -185,7 +182,7 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
         self.assertFalse(v1.has_constraints(set([e, e2, e.twin, e2.twin])))
 
     def test_has_constraints_two_edges_true(self):
-        """ a vertex with multiple edges is constrained if not all its edges as candidates """  
+        """ a vertex with multiple edges is constrained if not all its edges as candidates """
         v1 = self.dc.new_vertex(np.array([0,0]))
         v2 = self.dc.new_vertex(np.array([0,0]))
         e = self.dc.new_edge(v1, v2)
@@ -218,7 +215,7 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
         self.assertNotEqual(v1, v2)
         self.assertTrue(np.allclose(v2.to_array(), np.array([6,6])))
         self.assertTrue(np.allclose(v1.to_array(), np.array([5,5])))
-        
+
     def test_translate_modified_by_candidates(self):
         """ check translate can modify if its constraints match the passed in set """
         e = self.dc.create_edge(np.array([5,5]), np.array([6,6]))
@@ -235,7 +232,7 @@ class DCEL_VERTEX_Tests(unittest.TestCase):
         self.assertEqual(edit_e, EditE.MODIFIED)
         self.assertEqual(v1, v2)
         self.assertTrue(np.allclose(v2.to_array(), np.array([0,5])))
-        
+
     def test_rotate_new(self):
         """ Check rotate can create a new vertex when constrained """
         e = self.dc.create_edge(np.array([5,0]), np.array([6,0]))

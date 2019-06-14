@@ -43,10 +43,10 @@ class RBTree:
         self.eq_func = eq_func
         self.cleanup_func = cleanup_func
 
+
     #------------------------------
     # def Basic Access
     #------------------------------
-
     def __len__(self):
         return len(self.nodes)
 
@@ -107,6 +107,7 @@ class RBTree:
                 return (c, b, a)
         return None
 
+
     #------------------------------
     # def Query
     #------------------------------
@@ -152,7 +153,6 @@ class RBTree:
     #------------------------------
     # def Public Update
     #------------------------------
-
     def update_values(self, func, func_data):
         """ Call a function on all stored values,
         function signature:  f(value, func_data)
@@ -207,7 +207,6 @@ class RBTree:
         else:
             return self.insert_successor(parent, value, data=data)
 
-
     def insert_successor(self, existing_node, new_value, data=None):
         """ Insert a new value as a successor to a specific node """
         assert(existing_node is None or isinstance(existing_node, Node))
@@ -238,10 +237,10 @@ class RBTree:
         assert(isinstance(node, Node))
         rb_tree_fixup(self, node)
 
+
     #------------------------------
     # def Debug
     #------------------------------
-
     def count_black_height(self, node=None):
         """ Given a node, count all paths and check they have the same black height """
         if node is None:

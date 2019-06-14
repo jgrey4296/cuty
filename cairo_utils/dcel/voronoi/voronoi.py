@@ -81,6 +81,7 @@ class Voronoi:
         if self.debug_draw:
             self.debug = Voronoi_Debug(n, IMAGE_DIR, self)
 
+
     #--------------------
     # PUBLIC METHODS
     #--------------------
@@ -96,7 +97,6 @@ class Voronoi:
                                        eq_func=arc_equality)
 
         self.current_step = 0
-
 
     def init_graph(self, data=None, rerun=False, random=None):
         """ Create a graph of initial random sites """
@@ -231,7 +231,6 @@ class Voronoi:
                 return pickle.load(f)
         else:
             raise Exception("bad save file name specified to load")
-
 
 
     #--------------------
@@ -426,7 +425,6 @@ class Voronoi:
             logging.debug("Direction: {}".format(direction))
         return (closest_arc_node, direction)
 
-
     def _split_beachline(self, direction, node, arc, event_face):
         #If site is directly below the arc, or on the right of the arc, add it as a successor
         if direction is Directions.RIGHT:
@@ -494,6 +492,7 @@ class Voronoi:
     def _update_arcs(self, d):
         """ Trigger the update of all stored arcs with a new frontier line position """
         self.beachline.update_values(lambda v, q: v.update_d(q), d)
+
 
     #-------------------- DCEL Completion
     def _complete_edges(self):
@@ -577,6 +576,7 @@ class Voronoi:
                                                             self.halfedges[BreakWrapper(bp1, bp2)]))
         del self.halfedges[BreakWrapper(bp1, bp2)]
 
+
     #-------------------- Circle Event Interaction
     def _add_circle_event(self, loc, source_node, voronoi_vertex, left=True):
         if loc[1] > self.sweep_position.y():# or np.allclose(loc[1], self.sweep_position.y()):
@@ -602,6 +602,7 @@ class Voronoi:
             pre.data[CIRCLE_EVENTS.RIGHT].deactivate()
         if post is not None and CIRCLE_EVENTS.LEFT in post.data:
             post.data[CIRCLE_EVENTS.LEFT].deactivate()
+
 
 class BreakWrapper:
     """ A Simple Breakpoint Wrapper """

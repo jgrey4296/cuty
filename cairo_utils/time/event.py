@@ -10,13 +10,18 @@ logging = root_logger.getLogger(__name__)
 class Event:
     """ A Value active during a timespan """
 
-    def __init__(self, a, b, value_is_pattern=False):
+    def __init__(self, a, b, value_is_pattern=False,
+                 params=None):
         assert(isinstance(a, Arc))
         self.arc = a.copy()
         self.values = b
+        self.parameters = {}
         self.value_is_pattern = value_is_pattern
 
-    def __call__(self, count, just_values=False):
+        if params is not None:
+            self.parameters.update(params)
+
+    def __call__(self, count, just_values=False, rand_s=None):
         """ Get a list of events given a time """
         if count in self.arc:
             if self.value_is_pattern:
@@ -49,3 +54,7 @@ class Event:
         if not start:
             fmt_str = "{}⤓"
         return fmt_str.format(str(self.values))
+
+    def __getitem__(self, val):
+        """ event[x] """
+        return self.parameters[val]

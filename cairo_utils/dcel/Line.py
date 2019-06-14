@@ -47,7 +47,6 @@ class Line:
         self.slope = m
         self.slope_intersect = b
 
-
     def __repr__(self):
         return "Line(S: {}, D: {}, L: {}, SW: {})".format(self.source,
                                                           self.direction,
@@ -103,7 +102,6 @@ class Line:
 
         return new_points
 
-
     def destination(self, l=None, r=None):
         """ Calculate the destination vector of the line """
         if r is not None:
@@ -118,7 +116,6 @@ class Line:
             return np.row_stack((self.destination(), self.source))
         else:
             return np.row_stack((self.source, self.destination()))
-
 
     def intersect_with_circle(self, centre, radius):
         """
@@ -146,7 +143,6 @@ class Line:
 
         result = self.source + (np.array([[t], [t2]]) * self.direction)
         return result
-
 
     def intersect(self, other):
         """ Intersect a line with another """

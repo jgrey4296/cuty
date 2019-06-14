@@ -34,11 +34,9 @@ class Node:
         #todo: create templates for data.
         #for arc/voronoi/beachline: left and right circle events
 
-
     #------------------------------
     # def Basic Info
     #------------------------------
-
     def __hash__(self):
         if self.value is not None and hasattr(self.value, "id"):
             return self.value.id
@@ -59,7 +57,6 @@ class Node:
                                     int(self.value.id/26), self.id)
         else:
             return "({}:{})".format(self.value, self.id)
-
 
     def get_black_height(self):
         """ Get the number of black nodes between self and the root """
@@ -131,7 +128,6 @@ class Node:
             current = current.get_predecessor()
         return results
 
-
     def get_successor_while(self, condition):
         """ Collect successors while the condition is true """
         assert(isinstance(condition, (FunctionType, partial)))
@@ -141,7 +137,6 @@ class Node:
             results.append(current)
             current = current.get_successor()
         return results
-
 
     def get_neighbours_while(self, condition):
         """ Collect left and right nodes whlie the condition is true """
@@ -154,10 +149,10 @@ class Node:
         """ Test if this node has no children """
         return self.left is None and self.right is None
 
+
     #------------------------------
     # def Basic Update
     #------------------------------
-
     def add_left(self, node, force=False):
         """ Add a node to the immediate left """
         if self == node:
@@ -167,7 +162,6 @@ class Node:
         else:
             self.get_predecessor().add_right(node)
         logging.debug("{}: Adding {} to Left".format(self, node))
-
 
     def add_right(self, node, force=False):
         """ Add a node to the immediate right """
@@ -192,7 +186,6 @@ class Node:
             self.left.parent = self
         logging.debug("{} L-> {}".format(self, node))
 
-
     def link_right(self, node):
         """ Connect the passed in node as a successor """
         assert(node is not self)
@@ -205,7 +198,6 @@ class Node:
         if self.right is not None:
             self.right.parent = self
         logging.debug("{} R-> {}".format(self, node))
-
 
     def disconnect_from_parent(self):
         """ Symmetrically disconnect this node from its parent """

@@ -81,7 +81,6 @@ def pow_max_abs(xs, a, r=None, codomain_e=CODOMAIN.FULL):
     ixs_zero = np.column_stack((np.abs(ixs) * 2 - 1, np.zeros(len(ixs))))
     return 1 - pow(np.max(ixs_zero, axis=1), a)
 
-
 def sigmoid(xs, a, r=None, codomain_e=CODOMAIN.FULL):
     """ 1 / (1 + e^(-5 * x)
     Var a does nothing

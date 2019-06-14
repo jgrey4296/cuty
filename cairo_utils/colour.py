@@ -45,7 +45,6 @@ def __row_func(the_slice):
     hue *= 60
     return np.array((hue, *the_slice[-3:]))
 
-
 def hsla2rgba(hsla):
     """ Expects 0 <= h <= 360,
     0 <= sla <= 1
@@ -64,7 +63,6 @@ def hsla2rgba(hsla):
 
 
     return np.column_stack((ht_r, ht_g, ht_b, hsla[:,-1]))
-
 
 def __calc_hue(h_div, n, l, a):
     k = ((h_div + n)) % 12

@@ -85,7 +85,6 @@ def transplant(tree, target, replacement):
         target.disconnect_from_parent()
         parent.link_right(replacement)
 
-
 def rb_tree_delete(tree, node):
     """ Delete a node from the tree and rotate nodes as needed """
     target = node

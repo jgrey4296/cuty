@@ -29,7 +29,6 @@ CTOR_ACT = Enum("Actions for Pattern Constructor",
 PatternPH = namedtuple("PatternPH", "values")
 ChoicePH = namedtuple("ChoicePH", "values")
 ParallelPH = namedtuple("ParallelPH", "values")
-VarPH = namedtuple("VariablePH", "value")
 
 def construct_pattern(tokens):
     """   """

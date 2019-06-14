@@ -35,7 +35,6 @@ def setup_cairo(n=5,
     clear_canvas(ctx, colour=background)
     return (surface, ctx, size, n)
 
-
 def write_to_png(surface, filename, i=None):
     """ Write the given surface to a png, with optional numeric postfix
     surface : The surface to write
@@ -81,7 +80,6 @@ def draw_circle(ctx, xyrs, fill=True):
         col(ctx, a)
         ctx.arc(*a[:3], 0, TWOPI)
         f(ctx)
-
 
 def draw_text(ctx, xy, text):
     """ Utility to simplify drawing text

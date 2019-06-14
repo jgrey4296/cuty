@@ -35,8 +35,7 @@ class CUMath_Tests(unittest.TestCase):
         self.assertTrue((i_arr >= 0).all())
         self.assertTrue((i_arr <= 1).all())
 
-
-    #gerDirections
+    #getDirections
     def test_getDirections(self):
         return
 
@@ -90,8 +89,6 @@ class CUMath_Tests(unittest.TestCase):
             self.assertTrue(np.allclose(radius, np.array([1])))
             self.assertTrue(np.allclose(centre, np.array([0,0])))
 
-
-
     #extend_line
     def test_extend_line(self):
         return
@@ -105,7 +102,6 @@ class CUMath_Tests(unittest.TestCase):
         a = np.array([1,0])
         result = cumath.rotate_point(a, rads=math.radians(90))
         self.assertTrue(np.allclose(result, np.array([0,1])))
-
 
     #randomRad
     def test_randomRad(self):
@@ -222,8 +218,6 @@ class CUMath_Tests(unittest.TestCase):
         self.assertIsInstance(result, np.ndarray)
         self.assertEqual(result.shape, (2,))
 
-
-
     #isClockwise
     def test_isClockwise(self):
         return
@@ -262,7 +256,6 @@ class CUMath_Tests(unittest.TestCase):
         self.assertTrue((lines[1] == np.array([1,4,3,4])).all())
         self.assertTrue((lines[2] == np.array([1,2,1,4])).all())
         self.assertTrue((lines[3] == np.array([3,2,3,4])).all())
-
 
 
 

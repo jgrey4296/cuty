@@ -37,6 +37,7 @@ class IntersectResult:
                                                                           self.contain,
                                                                           self.end)
 
+
 #------------------------------
 # def Comparison functions
 #------------------------------
@@ -90,6 +91,7 @@ def line_eq_vert(a, b, cd):
     """ test for equality between a line and a point """
     return np.allclose(a.value(y=cd['y']), b)
 
+
 #------------------------------
 # def MAIN CLASS
 #------------------------------
@@ -114,6 +116,7 @@ class LineIntersector:
         #Heap of (vert, edge) pairs,
         #with invariant: all([e.is_upper() for v, e in event_list])
         self.event_list = []
+
 
     #------------------------------
     # def MAIN CALL
@@ -163,7 +166,6 @@ class LineIntersector:
         assert(self.sweep_y != inf)
         assert(not bool(self.event_list))
         return self.results
-
 
     def initialise_data(self, edge_set=None):
         """ Setup the internal structures to run a line sweep algorithm """
@@ -302,6 +304,7 @@ class LineIntersector:
             heapq.heappush(self.event_list, wrapped)
             heapq.heappush(self.event_list, wrapped2)
 
+
     #------------------------------
     # def UTILITIES
     #------------------------------
@@ -317,7 +320,6 @@ class LineIntersector:
             if x in encountered:
                 raise Exception("Duplicated: {}".format(x))
             encountered.add(x)
-
 
     def report_intersections(self, v, u, c, l):
         """ Add intersection results when applicable """
@@ -346,7 +348,6 @@ class LineIntersector:
         #Verify:
         chain = [x.value.index for x in self.status_tree.get_chain()]
         assert(all([x.index not in chain for x in values]))
-
 
     def insert_values(self, candidates, curr_x):
         """ Insert values into the status tree """

@@ -40,7 +40,7 @@ class Parabola_Tests(unittest.TestCase):
       #toStandardForm
 
       #toVertexForm
-      
+
 
 if __name__ == "__main__":
       #use python $filename to use this logging setup
