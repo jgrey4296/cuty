@@ -53,11 +53,11 @@ def sample_circle(xyrs, n, sort_rads=True, sort_radi=True, easing=None, random=N
 
     xyrs_r = xyrs.reshape((-1, 1, CIRCLE_DATA_LEN)).repeat(n, axis=1)
 
-    r = scale_ndarray(np.sqrt(random((xyrs_r.shape[0], n))), xyrs[:,4:])
+    r = scale_ndarray(np.sqrt(random((n, 1))), xyrs_r[0,:,4:])
     if sort_radi:
         r.sort(axis=1)
 
-    theta = scale_ndarray(random((xyrs_r.shape[0], n)), xyrs[:,2:4])
+    theta = scale_ndarray(random((n, 1)), xyrs_r[0,:,2:4])
     if sort_rads:
         theta.sort(axis=1)
 
@@ -781,4 +781,3 @@ def get_normal(p1, p2):
 
 def angle_between_points(a, b):
     raise Exception("Deprecated: Use radians_between_points")
-
