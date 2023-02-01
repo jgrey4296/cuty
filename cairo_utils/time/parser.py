@@ -13,26 +13,26 @@ import logging as root_logger
 
 logging = root_logger.getLogger(__name__)
 #Base Syntax
-s = pp.Suppress
-op = pp.Optional
-opLn = s(op(pp.lineEnd))
-comment = s(pp.dblSlashComment)
+s                = pp.Suppress
+op               = pp.Optional
+opLn             = s(op(pp.lineEnd))
+comment          = s(pp.dblSlashComment)
 
-COMMA = s(pp.Literal(','))
-OBRACKET = s(pp.Literal('['))
-CBRACKET = s(pp.Literal(']'))
-COLON = s(pp.Literal(':'))
-QUESTION = s(pp.Literal('?'))
-LESS = s(pp.Literal('<'))
-MORE = s(pp.Literal('>'))
-TILDE = s(pp.Literal('~'))
-DOLLAR = s(pp.Literal('$'))
-VBAR = s(pp.Literal('|'))
+COMMA            = s(pp.Literal(','))
+OBRACKET         = s(pp.Literal('['))
+CBRACKET         = s(pp.Literal(']'))
+COLON            = s(pp.Literal(':'))
+QUESTION         = s(pp.Literal('?'))
+LESS             = s(pp.Literal('<'))
+MORE             = s(pp.Literal('>'))
+TILDE            = s(pp.Literal('~'))
+DOLLAR           = s(pp.Literal('$'))
+VBAR             = s(pp.Literal('|'))
 
-acts = pp.Or([COMMA, OBRACKET, CBRACKET, COLON, QUESTION, LESS, MORE, TILDE])
+acts             = pp.Or([COMMA, OBRACKET, CBRACKET, COLON, QUESTION, LESS, MORE, TILDE])
 
-NAME = pp.Word(pp.alphas)
-VAR = DOLLAR + NAME
+NAME             = pp.Word(pp.alphas)
+VAR              = DOLLAR + NAME
 
 pattern_contents = pp.OneOrMore(pp.Or([VAR, NAME, acts]))
 

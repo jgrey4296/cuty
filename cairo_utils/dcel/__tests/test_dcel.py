@@ -2,7 +2,7 @@ from test_context import cairo_utils as utils
 from cairo_utils import dcel
 import unittest
 import logging
-import IPython
+
 #Import TestCase Instances here:
 from test_dcel_vertex import DCEL_VERTEX_Tests
 from test_dcel_halfedge import DCEL_HALFEDGE_Tests

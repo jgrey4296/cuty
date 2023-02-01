@@ -5,7 +5,7 @@ from math import radians
 from test_context import cairo_utils as utils
 from cairo_utils import dcel
 from cairo_utils.dcel.constants import EditE
-import IPython
+
 
 class DCEL_VERTEX_Tests(unittest.TestCase):
     def setUp(self):

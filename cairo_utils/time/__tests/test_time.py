@@ -4,7 +4,7 @@ from test_context import cairo_utils as utils
 import cairo_utils.time as time
 from cairo_utils.time.arc import Arc
 from cairo_utils.time.event import Event
-import IPython
+
 t = time.Time
 
 class TestTime(unittest.TestCase):
@@ -257,7 +257,6 @@ class TestTime(unittest.TestCase):
         p3 = time.PatternSeq(Arc(t(0,1),t(2,1)),
                              [ p1,p2 ])
 
-        # IPython.embed(simple_prompt=True)
         self.assertEqual(p3(t(0,1), True)[0], "a")
         # self.assertEqual(p3(t(1,1), True)[0], "e")
         self.assertEqual(p3(t(7,4), True)[0], "h")

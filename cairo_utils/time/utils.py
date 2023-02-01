@@ -6,10 +6,10 @@ from fractions import Fraction, gcd
 from functools import reduce
 import logging as root_logger
 
-logging = root_logger.getLogger(__name__)
+logging   = root_logger.getLogger(__name__)
 
 PATTERN_T = Enum("Pattern Type", "DISCRETE ANALOG")
-TIME_T = Enum("Time Type", "CLOCK EVENT SET SYMBOLIC")
+TIME_T    = Enum("Time Type", "CLOCK EVENT SET SYMBOLIC")
 
 def time_str(time):
     return "{}/{}".format(time.numerator,time.denominator)

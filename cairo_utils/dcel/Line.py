@@ -1,16 +1,31 @@
 """ Line: Representation of a 2d line """
 #pylint: disable=too-many-arguments
 import logging as root_logger
+from dataclasses import InitVar, dataclass, field
 from math import sqrt
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
+
 import numpy as np
 
 logging = root_logger.getLogger(__name__)
 
 CENTRE = np.array([[0.5, 0.5]])
 
+@dataclass
 class Line:
     """ A line as a start position, a unit direction, and a length, useful for
     algebraic manipulation """
+
+    source               : np.ndarray = field()
+    direction            : np.ndarray = field()
+    length               : float      = field()
+    #slope and intersect :
+    slope                : float      = field()
+    slope_intersect      : np.ndarray = field()
+    swapped              : bool       = field(default=False)
+    origin_array         : np.ndarray = field(default=None)
 
     @staticmethod
     def new_line(a):
@@ -36,22 +51,14 @@ class Line:
         return Line(a[0], d, l, m, b, origin_array=a)
 
 
-    def __init__(self, s, d, l, m, b, swapped=False, origin_array=None):
+    def __post_init__(self):
         assert(all([isinstance(x, np.ndarray) for x in [s, d]]))
-        self.source = s
-        self.direction = d
-        self.length = l
-        self.swapped = swapped
-        self.origin_array = origin_array
-        #slope and intersect:
-        self.slope = m
-        self.slope_intersect = b
 
     def __repr__(self):
-        return "Line(S: {}, D: {}, L: {}, SW: {})".format(self.source,
-                                                          self.direction,
-                                                          self.length,
-                                                          self.swapped)
+        return "<Line S: {}, D: {}, L: {}, SW: {}>".format(self.source,
+                                                           self.direction,
+                                                           self.length,
+                                                           self.swapped)
 
     def constrain(self, min_x, min_y, max_x, max_y):
         """ Intersect the line with a bounding box, adjusting points as necessary """

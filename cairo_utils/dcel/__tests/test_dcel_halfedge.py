@@ -1,6 +1,6 @@
 import unittest
 import logging
-import IPython
+
 import numpy as np
 from itertools import islice, cycle
 from test_context import cairo_utils as utils

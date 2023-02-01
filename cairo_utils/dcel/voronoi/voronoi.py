@@ -1,23 +1,28 @@
 """ Voronoi.py : Contains the Voronoi Class, which calculates a graphics independent DCEL
     of a Voronoi Diagram.
 """
-import sys
-import logging as root_logger
 import heapq
+import logging as root_logger
 import pickle
+import sys
+from dataclasses import InitVar, dataclass, field
 from os.path import isfile
-import numpy as np
-import numpy.random as base_random
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
 
 import cairo_utils as utils
-from cairo_utils import Parabola
-from cairo_utils import rbtree
-from cairo_utils.rbtree.comparison_functions import arc_comparison, Directions, arc_equality
-
+import numpy as np
+import numpy.random as base_random
+from cairo_utils import Parabola, rbtree
 from cairo_utils.dcel import DCEL, HalfEdge
-from cairo_utils.umath import get_distance_raw, bound_line_in_bbox, isClockwise, bbox_centre
+from cairo_utils.rbtree.comparison_functions import (Directions,
+                                                     arc_comparison,
+                                                     arc_equality)
+from cairo_utils.umath import (bbox_centre, bound_line_in_bbox,
+                               get_distance_raw, isClockwise)
 
-from .events import SiteEvent, CircleEvent, VEvent, CIRCLE_EVENTS
+from .events import CIRCLE_EVENTS, CircleEvent, SiteEvent, VEvent
 from .voronoi_drawing import Voronoi_Debug
 
 logging = root_logger.getLogger(__name__)
@@ -34,18 +39,40 @@ BASE_VORONOI_VERT_DATA = {"VORONOI_VERTEX" : True}
 BASE_VORONOI_EDGE_DATA = {"VORONOI_EDGE" : True}
 BASE_VORONOI_FACE_DATA = {"VORONOI_FAE" : True}
 
+@dataclass
 class Voronoi:
     """ A Class to construct a voronoi diagram into a given dcel,
     after initial points are added
     in init_graph
     """
-    def __init__(self, num_of_nodes=10, bbox=BBOX, save_name=SAVENAME,
+
+    node_size      : int                 = field(default=10)
+    max_steps      : int                 = field(default=MAX_STEPS)
+    bbox           : np.ndarray          = field(default=BBOX)
+    debug_draw     : bool                = field(default=False)
+    #File name to pickle data to
+    save_file_name : str                 = field(default=SAVENAME)
+    dcel           : 'DCEL'              = field(default=None)
+
+    current_step   : int                 = field(init=False, default=0)
+    #Min Heap of site/circle events
+    events         : List[Event]         = field(init=False, default_factory=list)
+    #backup of the original sites
+    sites          : List[Vertex]        = field(init=False, default_factory=list)
+    #backup of all circle events
+    circles        : List[Event]         = field(init=False, default_factory=list)
+    #storage of breakpoint tuples -> halfedge
+    halfedges      : Dict[int, HalfEdge] = field(init=False, default_factory=dict)
+    #The Beach Line Data Structure
+    beachline      : Beachline           = field(init=False, default=None)
+    #The sweep line position
+    sweep_position : Vertex              = field(init=False, default=None)
+    debug          : Voronoi_Debug       = field(init=False, default=None)
+
+    def __post_init__(self, num_of_nodes=10, bbox=BBOX, save_name=SAVENAME,
                  debug_draw=False, n=10, max_steps=MAX_STEPS, dcel=None):
         assert(isinstance(bbox, np.ndarray))
         assert(bbox.shape == (4, ))
-        self.current_step = 0
-        self.node_size = num_of_nodes
-        self.max_steps = max_steps
         #The output voronoi diagram as a DCEL
         if dcel is None:
             self.__protect_dcel = False
@@ -56,28 +83,9 @@ class Voronoi:
             if self.dcel.bbox != bbox:
                 #todo: check this
                 self.bbox = self.bbox
-        #Min Heap of site/circle events
-        self.events = []
-        #backup of the original sites
-        self.sites = []
-        #backup of all circle events
-        self.circles = []
-        #storage of breakpoint tuples -> halfedge
-        self.halfedges = {}
-        #The bbox of the diagram
-        self.bbox = bbox
+
         VEvent.offset = self.bbox[3] - self.bbox[1]
 
-        #The Beach Line Data Structure
-        self.beachline = None
-        #The sweep line position
-        self.sweep_position = None
-
-
-        #File name to pickle data to:
-        self.save_file_name = save_name
-
-        self.debug_draw = debug_draw
         if self.debug_draw:
             self.debug = Voronoi_Debug(n, IMAGE_DIR, self)
 
@@ -88,13 +96,13 @@ class Voronoi:
     def reset(self):
         """ Reset the internal data structures """
         if not self.__protect_dcel:
-            self.dcel = DCEL(bbox=self.bbox)
-        self.events = []
-        self.circles = []
-        self.halfedges = {}
+            self.dcel       = DCEL(bbox=self.bbox)
+        self.events         = []
+        self.circles        = []
+        self.halfedges      = {}
         self.sweep_position = None
-        self.beachline = rbtree.RBTree(cmp_func=arc_comparison,
-                                       eq_func=arc_equality)
+        self.beachline      = rbtree.RBTree(cmp_func=arc_comparison,
+                                            eq_func=arc_equality)
 
         self.current_step = 0
 
@@ -604,12 +612,13 @@ class Voronoi:
             post.data[CIRCLE_EVENTS.LEFT].deactivate()
 
 
+
+@dataclass
 class BreakWrapper:
     """ A Simple Breakpoint Wrapper """
 
-    def __init__(self, bp1, bp2):
-        self.bp1 = bp1
-        self.bp2 = bp2
+    bp1 : Any = field()
+    bp2 : Any = field()
 
     def __eq__(self, other):
         assert(isinstance(other, BreakWrapper))

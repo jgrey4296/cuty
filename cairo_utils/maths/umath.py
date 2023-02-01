@@ -2,7 +2,7 @@
 Math Utilities
 TODO: Refactor into submodules
 """
-import IPython
+
 import logging as root_logger
 from functools import partial
 from math import atan2, copysign
@@ -10,9 +10,9 @@ import numpy as np
 from numpy import cos, sin, pi
 from scipy.interpolate import splprep, splev
 
-from .constants import PI, TWOPI, QUARTERPI, EPSILON, TOLERANCE
-from .constants import IntersectEnum, DELTA, HALFDELTA, NODE_RECIPROCAL
-from .constants import SAMPLE_DATA_LEN, LINE_DATA_LEN, BEZIER_DATA_LEN, CIRCLE_DATA_LEN
+from ..constants import PI, TWOPI, QUARTERPI, EPSILON, TOLERANCE
+from ..constants import IntersectEnum, DELTA, HALFDELTA, NODE_RECIPROCAL
+from ..constants import SAMPLE_DATA_LEN, LINE_DATA_LEN, BEZIER_DATA_LEN, CIRCLE_DATA_LEN
 
 
 logging = root_logger.getLogger(__name__)

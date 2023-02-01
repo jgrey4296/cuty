@@ -10,20 +10,20 @@ import cairo_utils as utils
 logging = root_logger.getLogger(__name__)
 
 #Constants:
-COLOUR = [0.2, 0.1, 0.6, 1.0]
-COLOUR_TWO = [1.0, 0.2, 0.4, 0.5]
-SITE_COLOUR = [1, 0, 0, 1]
-SITE_RADIUS = 10
-CIRCLE_COLOUR = [1, 1, 0, 1]
-CIRCLE_COLOUR_INACTIVE = [0, 0, 1, 1]
-CIRCLE_RADIUS = 10
-BEACH_LINE_COLOUR = [0, 1, 0]
-BEACH_LINE_COLOUR_TWO = [1, 1, 0]
+COLOUR                    = [0.2, 0.1, 0.6, 1.0]
+COLOUR_TWO                = [1.0, 0.2, 0.4, 0.5]
+SITE_COLOUR               = [1, 0, 0, 1]
+SITE_RADIUS               = 10
+CIRCLE_COLOUR             = [1, 1, 0, 1]
+CIRCLE_COLOUR_INACTIVE    = [0, 0, 1, 1]
+CIRCLE_RADIUS             = 10
+BEACH_LINE_COLOUR         = [0, 1, 0]
+BEACH_LINE_COLOUR_TWO     = [1, 1, 0]
 BEACH_NO_INTERSECT_COLOUR = [1, 0, 0, 1]
-BEACH_RADIUS = 10
-SWEEP_LINE_COLOUR = [0, 0, 1, 1]
-LINE_WIDTH = 3
-NUM_POINTS = 2000
+BEACH_RADIUS              = 10
+SWEEP_LINE_COLOUR         = [0, 0, 1, 1]
+LINE_WIDTH                = 3
+NUM_POINTS                = 2000
 
 class VoronoiDebug:
     """ Contains methods to draw various stages of the voronoi calculation """

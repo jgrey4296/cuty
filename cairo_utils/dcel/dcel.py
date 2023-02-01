@@ -1,90 +1,95 @@
 """ The Top Level DCEL DataStructure. """
 #pylint: disable=too-many-public-methods
 import logging as root_logger
+import pickle
 from collections import namedtuple
+from dataclasses import InitVar, dataclass, field
+from itertools import cycle, islice
 from math import atan2, degrees
 from os.path import isfile
-from itertools import cycle, islice
-import pickle
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
+
 import numpy as np
 import pyqtree
 
+from .constants import EdgeE, FaceE, VertE
 from .face import Face
 from .halfedge import HalfEdge
-from .vertex import Vertex
-from .constants import EdgeE, VertE, FaceE
 from .line_intersector import LineIntersector
+from .vertex import Vertex
 
 logging = root_logger.getLogger(__name__)
-
 
 #for importing data into the dcel:
 DataPair = namedtuple('DataPair', 'key obj data')
 
+@dataclass
 class DCEL:
     """ The total DCEL data structure, stores vertices, edges, and faces,
     Based on de Berg's Computational Geometry
     """
-    Vertex = Vertex
-    HalfEdge = HalfEdge
-    Face = Face
+    bbox                : np.ndarray     = field(default=np.array([-200, -200, 200, 200]))
+    vertices            : Set[Vertex]    = field(default_factory=set)
+    faces               : Set[Face]      = field(default_factory=set)
+    half_edges          : Set[HalfEdge]  = field(default_factory=set)
 
+    #todo               : make this a stack of quadtrees
 
-    def __init__(self, bbox=None):
-        if bbox is None:
-            bbox = np.array([-200, -200, 200, 200])
+    quad_tree_stack     : List[Any]      = field(default_factory=list)
+    frontier            : Set[Any]       = field(default_factory=set)
+    should_merge_stacks : bool           = field(default=True)
+    data                : Dict[Any, Any] = field(default_factory=dict)
+
+    vertex_quad_tree    : 'pyqtree'      = field(init=False, default=None)
+    Vertex                               = Vertex
+    HalfEdge                             = HalfEdge
+    Face                                 = Face
+
+    def __post_init__(self, bbox=None):
         assert(isinstance(bbox, np.ndarray))
         assert(len(bbox) == 4)
-        self.vertices = set([])
-        self.faces = set([])
-        self.half_edges = set([])
-        self.bbox = bbox
         #todo: make this a stack of quadtrees
         self.vertex_quad_tree = pyqtree.Index(bbox=self.bbox)
-        self.quad_tree_stack = []
-        self.frontier = set([])
-        self.should_merge_stacks = True
 
-        self.data = {}
 
-    def reset_frontier(self):
-        """ Clear the general incremental algorithm frontier """
-        self.frontier = set([])
+    def __enter__(self):
+        """ Makes the Dcel a reusable context manager, that pushes
+        and pops vertex quad trees for collision detection """
+        self.push_quad_tree()
 
-    def copy(self):
-        """ Completely duplicate the dcel """
-        new_dcel = DCEL(self.bbox)
-        new_dcel.import_data(self.export_data())
-        return new_dcel
+    def __exit__(self, e_type, value, traceback):
+        self.pop_quad_tree()
 
     def __str__(self):
         """ Create a text description of the DCEL """
         #pylint: disable=too-many-locals
-        vertices_description = "Vertices: num: {}".format(len(self.vertices))
-        edges_description = "HalfEdges: num: {}".format(len(self.half_edges))
-        faces_description = "Faces: num: {}".format(len(self.faces))
+        vertices_description      = "Vertices: num: {}".format(len(self.vertices))
+        edges_description         = "HalfEdges: num: {}".format(len(self.half_edges))
+        faces_description         = "Faces: num: {}".format(len(self.faces))
 
-        all_vertices = [x.getVertices() for x in self.half_edges]
-        flattened_vertices = [x for (x, y) in all_vertices for x in (x, y)]
-        set_of_vertices = set(flattened_vertices)
-        vertex_set = "Vertex Set: num: {}/{}/{}".format(len(set_of_vertices),
+        all_vertices              = [x.getVertices() for x in self.half_edges]
+        flattened_vertices        = [x for (x, y) in all_vertices for x in (x, y)]
+        set_of_vertices           = set(flattened_vertices)
+        vertex_set                = "Vertex Set: num: {}/{}/{}".format(len(set_of_vertices),
                                                         len(flattened_vertices),
                                                         len(self.vertices))
 
-        infinite_edges = [x for x in self.half_edges if x.is_infinite()]
+        infinite_edges            = [x for x in self.half_edges if x.is_infinite()]
         infinite_edge_description = "Infinite Edges: num: {}".format(len(infinite_edges))
 
-        complete_edges = set()
+        complete_edges            = set()
         for x in self.half_edges:
             if not x in complete_edges and x.twin not in complete_edges:
                 complete_edges.add(x)
 
-        complete_edge_description = "Complete Edges: num: {}".format(len(complete_edges))
+        complete_edge_description        = "Complete Edges: num: {}".format(len(complete_edges))
 
-        edgeless_vertices = [x for x in self.vertices if x.is_edgeless()]
-        edgeless_vertices_description = "Edgeless vertices: num: {}".format(len(edgeless_vertices))
+        edgeless_vertices                = [x for x in self.vertices if x.is_edgeless()]
+        edgeless_vertices_description    = "Edgeless vertices: num: {}".format(len(edgeless_vertices))
 
-        edge_count_for_faces = [str(len(f.edge_list)) for f in self.faces]
+        edge_count_for_faces             = [str(len(f.edge_list)) for f in self.faces]
         edge_count_for_faces_description = \
                 "Edge Counts for Faces: {}".format("-".join(edge_count_for_faces))
 
@@ -114,6 +119,20 @@ class DCEL:
     #------------------------------
     # def IO
     #------------------------------
+
+
+    def __repr__(self):
+        return "<DECL>"
+
+    def reset_frontier(self):
+        """ Clear the general incremental algorithm frontier """
+        self.frontier = set([])
+
+    def copy(self):
+        """ Completely duplicate the dcel """
+        new_dcel = DCEL(self.bbox)
+        new_dcel.import_data(self.export_data())
+        return new_dcel
 
     def export_data(self):
         """ Export a simple format to define vertices, halfedges, faces,
@@ -282,19 +301,6 @@ class DCEL:
         for x in verts:
             self.vertex_quad_tree.insert(item=x, bbox=x.bbox())
 
-
-    def __enter__(self):
-        """ Makes the Dcel a reusable context manager, that pushes
-        and pops vertex quad trees for collision detection """
-        self.push_quad_tree()
-
-    def __exit__(self, e_type, value, traceback):
-        self.pop_quad_tree()
-
-
-    #------------------------------
-    # def PURGING
-    #------------------------------
 
     def purge_edge(self, target):
         """ Clean up and delete an edge """

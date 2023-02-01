@@ -1,7 +1,14 @@
 """ Provides the basic Drawing Superclass """
 #pylint: disable=no-self-use
+import logging as root_logger
+from dataclasses import InitVar, dataclass, field
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
+
 from ..drawing import draw_circle
 
+logging = root_logger.getLogger(__name__)
 
 class Drawable:
     """ A Basic Drawable Superclass """

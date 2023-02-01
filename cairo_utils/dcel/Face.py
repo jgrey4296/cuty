@@ -5,49 +5,51 @@
 #pylint: disable=too-many-locals
 #pylint: disable=too-many-public-methods
 import logging as root_logger
+from dataclasses import InitVar, dataclass, field
 from itertools import cycle, islice
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
+
 import numpy as np
 from scipy.spatial import ConvexHull
 
+from ..maths import umath as cumath
+from ..constants import END, FACE, SMALL_RADIUS, START, TWOPI, VERTEX, WIDTH
+from ..drawing import clear_canvas, draw_circle, draw_text
 from ..umath import calc_bbox_corner, within_bbox
-from .. import umath as cumath
-from ..constants import START, END, SMALL_RADIUS, FACE, VERTEX, WIDTH
-from ..constants import TWOPI
-from ..drawing import draw_circle, clear_canvas, draw_text
 from .constants import EditE, FaceE
-from .vertex import Vertex
-from .halfedge import HalfEdge
 from .drawable import Drawable
+from .halfedge import HalfEdge
+from .vertex import Vertex
 
 logging = root_logger.getLogger(__name__)
 
+@dataclass
 class Face(Drawable):
     """ A Face with a start point for its outer component list,
     and all of its inner components """
 
+    #Site is the voronoi point that the face is built around
+    site               : np.ndarray     = field()
+    dcel               : DCEL           = field()
+    #Primary list of ccw edges for this face
+    edge_list          : List[Any]      = field(default_factory=list)
+    coord_list         : List[Any]      = field(default_factory=list)
+    #free vertices to build a convex hull from:
+    free_vertices      : Set[Any]       = field(default_factory=set)
+    data               : Dict[Any, Any] = field(default_factory=dict)
+    index              : int            = field(default=None)
+
+    marked_for_cleanup : bool           = field(init=False, default=False)
     nextIndex = 0
 
-    def __init__(self, site=None, index=None, data=None, dcel=None):
+    def __post_init__(self):
         if site is not None:
             #site = np.array([0, 0])
             assert(isinstance(site, np.ndarray))
-        #Site is the voronoi point that the face is built around
-        self.site = site
-        #Primary list of ccw edges for this face
-        self.edge_list = []
-        self.coord_list = None
-        #mark face for cleanup:
-        self.marked_for_cleanup = False
-        #Additional Data:
-        self.data = {}
-        if data is not None:
-            self.data.update(data)
-        self.dcel = dcel
 
-        #free vertices to build a convex hull from:
-        self.free_vertices = set()
-
-        if index is None:
+        if self.index is None:
             logging.debug("Creating Face {}".format(Face.nextIndex))
             self.index = Face.nextIndex
             Face.nextIndex += 1
@@ -115,7 +117,7 @@ class Face(Drawable):
 
     def __repr__(self):
         edge_list = len(self.edge_list)
-        return "(Face: {}, edge_list: {})".format(self.index, edge_list)
+        return "<Face: {}, edge_list: {}>".format(self.index, edge_list)
 
     def draw(self, ctx, clear=False, force_centre=False, text=False, data_override=None):
         """ Draw a single Face from a dcel.
@@ -135,16 +137,16 @@ class Face(Drawable):
             clear_canvas(ctx)
 
         #Data Retrieval:
-        line_wdith = WIDTH
-        vert_colour = START
-        vert_rad = SMALL_RADIUS
-        face_col = FACE
-        radius = SMALL_RADIUS
-        text_string = "F: {}".format(self.index)
+        line_wdith         = WIDTH
+        vert_colour        = START
+        vert_rad           = SMALL_RADIUS
+        face_col           = FACE
+        radius             = SMALL_RADIUS
+        text_string        = "F: {}".format(self.index)
         should_offset_text = FaceE.TEXT_OFFSET in data
-        centroid_col = VERTEX
-        draw_centroid = FaceE.CENTROID in data
-        sample_descr = None
+        centroid_col       = VERTEX
+        draw_centroid      = FaceE.CENTROID in data
+        sample_descr       = None
 
         if draw_centroid and isinstance(data[FaceE.CENTROID], (list, np.ndarray)):
             centroid_col = data[FaceE.CENTROID]
@@ -234,29 +236,29 @@ class Face(Drawable):
     def _export(self):
         """ Export identifiers rather than objects, to allow reconstruction """
         logging.debug("Exporting face: {}".format(self.index))
-        enum_data = {a.name:b for a, b in self.data.items() if a in FaceE}
+        enum_data     = {a.name:b for a, b in self.data.items() if a in FaceE}
         non_enum_data = {a:b for a, b in self.data.items() if a not in FaceE}
 
         return {
-            'i' : self.index,
-            'edges' : [x.index for x in self.edge_list if x is not None],
-            'sitex' : self.site[0],
-            'sitey' : self.site[1],
-            "enum_data" : enum_data,
-            "non_enum_data": non_enum_data
+            'i'             : self.index,
+            'edges'         : [x.index for x in self.edge_list if x is not None],
+            'sitex'         : self.site[0],
+            'sitey'         : self.site[1],
+            "enum_data"     : enum_data,
+            "non_enum_data" : non_enum_data
         }
 
 
     def get_bbox(self):
         """ Get a rough bbox of the face """
         #TODO: fix this? its rough
-        vertices = [x.origin for x in self.edge_list]
+        vertices      = [x.origin for x in self.edge_list]
         vertex_arrays = [x.to_array() for x in vertices if x is not None]
         if not bool(vertex_arrays):
             return np.array([[0, 0], [0, 0]])
         all_vertices = np.array([x for x in vertex_arrays])
-        bbox = np.array([np.min(all_vertices, axis=0),
-                         np.max(all_vertices, axis=0)])
+        bbox         = np.array([np.min(all_vertices, axis=0),
+                                 np.max(all_vertices, axis=0)])
         logging.debug("Bbox for Face {}  : {}".format(self.index, bbox))
         return bbox
 

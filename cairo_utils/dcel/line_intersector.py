@@ -1,22 +1,29 @@
 """ A General Line Intersector submodule """
 #pylint: disable=too-few-public-methods
+from typing import List, Set, Dict, Tuple, Optional, Any
+from typing import Callable, Iterator, Union, Match
+from typing import Mapping, MutableMapping, Sequence, Iterable
+from typing import cast, ClassVar, TypeVar, Generic
+from dataclasses import dataclass, field, InitVar
+
 import heapq
 import logging as root_logger
 from functools import partial
 from math import inf
+
 import numpy as np
 
-from ..heaputils import pop_while_same, HeapWrapper
-from ..rbtree import RBTree, Directions
 from ..constants import D_EPSILON
+from ..heaputils import HeapWrapper, pop_while_same
+from ..rbtree import Directions, RBTree
 from .constants import SWEEP_NUDGE
-from .vertex import Vertex
 from .halfedge import HalfEdge
+from .vertex import Vertex
 
-
-logging = root_logger.getLogger(__name__)
+logging             = root_logger.getLogger(__name__)
 NEIGHBOUR_CONDITION = lambda v, n: n.value.contains_vertex(v)
 
+@dataclass
 class IntersectResult:
     """ Utility class to collect the start and end sets of halfedges,
     along with the set of intersections contained within halfedges,
@@ -25,11 +32,10 @@ class IntersectResult:
     Starting and Ending are defined from Top -> Bottom, Left -> Right
     """
 
-    def __init__(self, vert, start, contain, end):
-        self.vertex = vert
-        self.start = start
-        self.contain = contain
-        self.end = end
+    vertex  : Vertex   = field()
+    start   : HalfEdge = field()
+    contain : Any      = field()
+    end     : HalfEdge = field()
 
     def __repr__(self):
         return "Intersection: {}\nStart: {}\nContain: {}\nEnd: {}".format(self.vertex,
@@ -96,26 +102,28 @@ def line_eq_vert(a, b, cd):
 # def MAIN CLASS
 #------------------------------
 
+@dataclass
 class LineIntersector:
     """ Processes a DCEL to intersect half_edges,
     in a self contained class
     """
 
+    dcel            : 'DCEL'         = field()
+    edge_set        : Set[HalfEdge]  = field(init=False, default_factory=set)
+    lower_edges     : List[HalfEdge] = field(init=False, default_factory=list)
+    results         : List[Any]      = field(init=False, default_factory=list)
+    discovered      : Set[Any]       = field(init=False, default_factory=set)
+    sweep_y         : float          = field(init=False, default=inf)
+    sweep_y_prev    : float          = field(init=False, default=inf)
+    #Tree to keep active edges in,
+    #Sorted by the x's for the current y of the sweep line
+    status_tree     : RBTree         = field(init=False, default=None)
+    #Heap of (vert, edge) pairs,
+    #with invariant : all([e.is_upper() for v, e in event_list])
+    event_list      : List[Event]    = field(init=False, default_factory=list)
+
     def __init__(self, dcel):
-        self.dcel = dcel
-        self.edge_set = set()
-        self.lower_edges = []
-        self.results = []
-        self.discovered = set()
-        self.sweep_y = inf
-        self.sweep_y_prev = inf
-        #Tree to keep active edges in,
-        #Sorted by the x's for the current y of the sweep line
-        self.status_tree = RBTree(cmp_func=line_cmp,
-                                  eq_func=line_eq)
-        #Heap of (vert, edge) pairs,
-        #with invariant: all([e.is_upper() for v, e in event_list])
-        self.event_list = []
+        self.status_tree = RBTree(cmp_func=line_cmp, eq_func=line_eq)
 
 
     #------------------------------

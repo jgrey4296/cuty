@@ -1,6 +1,6 @@
 import unittest
 import logging
-import IPython
+
 from test_context import cairo_utils as utils
 from cairo_utils import rbtree
 from cairo_utils.rbtree import comparison_functions as CompFuncs

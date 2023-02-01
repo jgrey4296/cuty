@@ -2,51 +2,93 @@
 Provides the Parabola Class, mainly used for Voronoi calculation
 """
 import logging as root_logger
+from dataclasses import InitVar, dataclass, field
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
+
 import numpy as np
+
 from .quadratic import Quadratic as Q
 
 logging = root_logger.getLogger(__name__)
 MAX = 5000
 
+@dataclass
+class VertexForm:
+    """ Vertex form of a parabola:
+    y = a(x-h)^2 + k """
+    a : float = field(default=0)
+    h : float = field(default=0)
+    k : float = field(default=0)
+
+    def __call__(self, x):
+        return self.a * pow(x + self.h, 2) + self.k
+
+    def to_standard_form(self):
+        """ Calculate the standard form of the parabola from a vertex form """
+        return StandardForm(self.a, -2*self.a*self.h, a*pow(self.h, 2)+self.k)
+
+@dataclass
+class StandardForm:
+    """ standard form of a parabolar:
+    y = ax^2 + bx + c """
+    a : float = field()
+    b : float = field()
+    c : float = field()
+
+    def __str__(self):
+        return "y = {0:.2f} * x^2 + {1:.2f} x + {2:.2f}".format(self.a, self.b, self.c)
+
+    def __call__(self, x):
+        return (self.a * pow(x, 2)) + (self.b * x) + self.c
+
+    def to_vertex_form(self):
+        """ Calculate the vertex form of the parabola from a standard form """
+        return VertexForm(a, -b/(2*a), c-(a * (pow(b, 2) / 4 * a)))
+
+@dataclass
 class Parabola:
-    """ A class to represent and calculate a parabola. holds both forms of definition,
+    """
+    A class to represent and calculate a parabola. holds both forms of definition,
     focus/directrix AND standard form.
     Handles the degenerate case of focus and directrix being the same by designating
     as a vertical line
     """
+    fx            : float = field()
+    fy            : float = field()
+    d             : float = field()
+    vertical_line : bool  = field(default=True)
+    p             : float = field(init=False, default=0)
+
+    vert          : VertexForm   = field(init=False)
+    stan          : StandardForm = field(init=False)
+
     id = 0
 
-    def __init__(self, fx, fy, d):
+    def __post_init__(self):
         """ Create a parabola with a focus x and y, and a directrix d """
         #pylint: disable=invalid-name
-        self.id = Parabola.id
+        self.id            = Parabola.id
         Parabola.id += 1
-        self.vertical_line = True
-        self.fx = fx
-        self.fy = fy
-        self.d = d
         #focal parameter: the distance from vertex to focus/directrix
         self.p = 0.5 * (self.fy - self.d)
-        #Vertex form: y = a(x-h)^2 + k
-        if np.allclose(self.fy, self.d):
-            self.va = 0
-        else:
-            self.va = 1/(2*(self.fy-self.d))
-        self.vh = -self.fx
-        self.vk = self.fy - self.p
-        #standard form: y = ax^2 + bx + c
-        self.sa = self.va
-        self.sb = 2 * self.sa * self.vh
-        self.sc = self.sa * (pow(self.vh, 2)) + self.vk
+
+        va = 0
+        if not np.allclose(self.fy, self.d):
+            va = 1/(2*(self.fy-self.d))
+
+        self.vert = VertexForm(va, -self.fx, self.fy - self.p)
+        self.stan = StandardForm(va, 2 * va * -self.fx, va * (pow(-self.fx, 2)) + self.self.fy - self.p)
 
     def __hash__(self):
         return hash(self.id)
 
     def __str__(self):
-        return "y = {0:.2f} * x^2 + {1:.2f} x + {2:.2f}".format(self.sa, self.sb, self.sc)
+        return str(self.stan)
 
     def __repr__(self):
-        return "y = {} * x^2 + {} x + {}".format(self.sa, self.sb, self.sc)
+        return "<Parabola>"
 
     def is_left_of_focus(self, x):
         """ Given an x, is it smaller than the focus of this parabola """
@@ -96,13 +138,13 @@ class Parabola:
         """ Get the y value of the parabola at an x position using the standard
             form equation. Should equal calc_vertex_form(x)
         """
-        return (self.sa * pow(x, 2)) + (self.sb * x) + self.sc
+        raise DeprecationWarning("use standard form obj")
 
     def calc_vertex_form(self, x):
         """ Get the y value of the parabola at an x position using
             the vertex form equation. Should equal calc_standard_form(x)
         """
-        return self.va * pow(x + self.vh, 2) + self.vk
+        raise DeprecationWarning("use vertex form obj")
 
     def calc(self, x):
         """ For given xs, return an (n, 2) array of xy pairs of the parabola """
@@ -145,17 +187,9 @@ class Parabola:
     @staticmethod
     def to_standard_form(a, h, k):
         """ Calculate the standard form of the parabola from a vertex form """
-        return [
-            a,
-            -2*a*h,
-            a*pow(h, 2)+k
-        ]
+        raise DeprecationWarning("Use Vert/Standard Form dataclass")
 
     @staticmethod
     def to_vertex_form(a, b, c):
         """ Calculate the vertex form of the parabola from a standard form """
-        return [
-            a,
-            -b/(2*a),
-            c-(a * (pow(b, 2) / 4 * a))
-        ]
+        raise DeprecationWarning("Use Vert/Standard Form dataclass")

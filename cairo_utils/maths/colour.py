@@ -4,7 +4,7 @@ Code modifed from:
 https://stackoverflow.com/questions/3018313/
 """
 import numpy as np
-import IPython
+
 
 def rgba2hsla(rgba):
     """ expects in range 0-1 """

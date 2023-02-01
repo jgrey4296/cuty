@@ -1,7 +1,7 @@
 import unittest
 import logging
 import numpy as np
-import IPython
+
 from random import shuffle
 from math import radians
 from itertools import islice, cycle

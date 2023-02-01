@@ -2,22 +2,25 @@
 Provides a Quadratic Clss, allowing manipulation of quadratic equations
 """
 import logging as root_logger
+from dataclasses import InitVar, dataclass, field
 from math import sqrt
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
+
 import numpy as np
 
 logging = root_logger.getLogger(__name__)
 
+@dataclass
 class Quadratic:
     """ A Class to hold a quadratic equation
     (y = ax^2 + bx + c)
     and perform operations on it """
 
-    #pylint: disable=invalid-name
-    def __init__(self, a, b, c):
-        self.a = a
-        self.b = b
-        self.c = c
-    #pylint: enable=invalid-name
+    a : float = field(default=0)
+    b : float = field(default=0)
+    c : float = field(default=0)
 
     def __call__(self, x):
         """ Shorthand to get y for a given x """
@@ -48,8 +51,9 @@ class Quadratic:
         """ Solve the quadratic, returning up to two values"""
         return_value = []
         discriminant = self.discriminant()
-        numerator_a = -self.b
-        denominator = 2 * self.a
+        numerator_a  = -self.b
+        denominator  = 2 * self.a
+
         if discriminant < 0:
             return_value = [None, None]
         elif np.allclose(discriminant, 0) or np.allclose(self.a, 0):
@@ -73,6 +77,7 @@ class Quadratic:
                 (numerator_a + z) / denominator,
                 (numerator_a - z) / denominator,
             ]
+
         return return_value
 
     # def solve(self):
@@ -81,3 +86,6 @@ class Quadratic:
     #     pos = -self.b + sqrtb4ac
     #     neg = -self.b - sqrtb4ac
     #     return [neg, pos]
+
+    def __repr__(self):
+        return f"<Quadratic: {self.a} x^2 + {self.b} x + {self.x}>"

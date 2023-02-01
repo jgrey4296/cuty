@@ -7,7 +7,7 @@ from .utils import TIME_T
 from fractions import Fraction, gcd
 from functools import reduce
 from math import floor
-import IPython
+
 import logging as root_logger
 
 logging = root_logger.getLogger(__name__)

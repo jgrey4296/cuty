@@ -3,14 +3,19 @@ Utilities for using heapq
 """
 import heapq
 import logging as root_logger
+from dataclasses import InitVar, dataclass, field
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
+
 logging = root_logger.getLogger(__name__)
 
+@dataclass
 class HeapWrapper:
     """ Utility to wrap an ordinal with data to use in the heap """
-    def __init__(self, ordinal, data, desc=None):
-        self.ordinal = ordinal
-        self.data = data
-        self.desc = desc
+    ordinal : int
+    data    : Any
+    desc    : str = field(default=None)
 
     def __lt__(self, other):
         assert(isinstance(other, HeapWrapper))

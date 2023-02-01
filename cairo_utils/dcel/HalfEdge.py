@@ -2,47 +2,61 @@
 #pylint: disable=too-many-arguments
 #pylint: disable=no-self-use
 import logging as root_logger
-from math import pi, atan2, degrees
-from itertools import islice, cycle
+from dataclasses import InitVar, dataclass, field
+from itertools import cycle, islice
+from math import atan2, degrees, pi
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
+
 import numpy as np
-from ..umath import in_circle, intersect, sample_along_lines
-from ..umath import get_unit_vector, extend_line, rotate_point, is_point_on_line
-from ..umath import get_distance_raw, bbox_to_lines, get_midpoint, get_ranges
-from ..constants import TWOPI, EPSILON, TOLERANCE
-from ..constants import START, END, EDGE, D_EPSILON
-from ..drawing import draw_circle, clear_canvas, draw_text
-from .constants import EditE, EDGE_FOLLOW_GUARD, EdgeE
-from .vertex import Vertex
-from .line import Line
+
+from ..constants import D_EPSILON, EDGE, END, EPSILON, START, TOLERANCE, TWOPI
+from ..drawing import clear_canvas, draw_circle, draw_text
+from ..umath import (bbox_to_lines, extend_line, get_distance_raw,
+                     get_midpoint, get_ranges, get_unit_vector, in_circle,
+                     intersect, is_point_on_line, rotate_point,
+                     sample_along_lines)
+from .constants import EDGE_FOLLOW_GUARD, EdgeE, EditE
 from .drawable import Drawable
+from .line import Line
+from .vertex import Vertex
 
 logging = root_logger.getLogger(__name__)
 
-PI = pi
-TWOPI = 2 * PI
+PI     = pi
+TWOPI  = 2 * PI
 HALFPI = PI * 0.5
-QPI = PI * 0.5
+QPI    = PI * 0.5
 
+@dataclass
 class HalfEdge(Drawable):
     """ A Canonical Half-Edge. Has an origin point, and a twin
     	half-edge for its end point,
         Auto-maintains counter-clockwise vertex order with it's twin.
     	Two HalfEdges make an Edge
     """
+
+    origin             : Vertex         = field()
+    twin               : 'HalfEdge'     = field()
+    dcel               : 'DCEL'         = field()
+    data               : Dict[Any, Any] = field(default_factory=dict)
+    index              : int            = field(default=None)
+    length_sq          : float          = field(default=-1)
+    face               : Face           = field(default=None)
+    next               : 'HalfEdge'     = field(default=None)
+    prev               : 'HalfEdge'     = field(default=None)
+
+    marked_for_cleanup : bool           = field(init=False, default=False)
+    constrained        : bool           = field(init=False, default=False)
+    drawn              : bool           = field(init=False, default=False)
+    fixed              : bool           = field(init=False, default=False)
+
     nextIndex = 0
 
-    def __init__(self, origin=None, twin=None, index=None, data=None, dcel=None):
+    def __post_init__(self):
         assert(origin is None or isinstance(origin, Vertex))
         assert(twin is None or isinstance(twin, HalfEdge))
-        self.origin = origin
-        self.twin = twin
-        self.length_sq = -1
-        #need to generate new faces:
-        self.face = None
-        #connected edges:
-        self.next = None
-        self.prev = None
-        self.dcel = dcel
 
         if index is None:
             logging.debug("Creating Edge {}".format(HalfEdge.nextIndex))
@@ -59,14 +73,6 @@ class HalfEdge(Drawable):
         if origin is not None:
             self.origin.register_half_edge(self)
 
-        #Additional:
-        self.marked_for_cleanup = False
-        self.constrained = False
-        self.drawn = False
-        self.fixed = False
-        self.data = {}
-        if data is not None:
-            self.data.update(data)
         if self.dcel is not None and self not in self.dcel.half_edges:
             self.dcel.half_edges.add(self)
 
@@ -134,29 +140,30 @@ class HalfEdge(Drawable):
     # def Human Readable Representations
     #------------------------------
 
-    def __str__(self):
-        return "HalfEdge {}: {} - {}".format(self.index, self.origin, self.twin.origin)
-
     def __repr__(self):
-        origin = "n/a"
-        twin = "n/a"
+        return "<HalfEdge {}: {} - {}>".format(self.index, self.origin, self.twin.origin)
+
+    def __str__(self):
+        origin     = "n/a"
+        twin       = "n/a"
+        n          = "n/a"
+        p          = "n/a"
+        f          = "n/a"
+
         if self.origin is not None:
             origin = self.origin.index
         if self.twin is not None:
-            twin = self.twin.index
-        n = "n/a"
-        p = "n/a"
+            twin   = self.twin.index
         if self.next is not None:
-            n = self.next.index
+            n      = self.next.index
         if self.prev is not None:
-            p = self.prev.index
-        f = "n/a"
+            p      = self.prev.index
         if self.face is not None:
-            f = self.face.index
+            f      = self.face.index
 
-        coords = [str(x) for x in self.get_vertices()]
+        coords     = [str(x) for x in self.get_vertices()]
 
-        data = (self.index, f, origin, twin, p, n, coords)
+        data       = (self.index, f, origin, twin, p, n, coords)
         return "(HE: {}, f: {}, O: {}, T: {}, P: {}, N: {}, XY: {})".format(*data)
 
     def draw(self, ctx, data_override=None, clear=False, text=False, width=None):
@@ -170,44 +177,44 @@ class HalfEdge(Drawable):
             data.update(data_override)
 
         #defaults
-        colour = EDGE
-        start_end_points = False
-        start_col = START
-        end_col = END
-        start_rad = width
-        end_rad = width
-        write_text = "HE:{}.{}".format(self.index, self.twin.index)
-        bezier = False
-        bezier_simp = False
+        colour             = EDGE
+        start_end_points   = False
+        start_col          = START
+        end_col            = END
+        start_rad          = width
+        end_rad            = width
+        write_text         = "HE:{}.{}".format(self.index, self.twin.index)
+        bezier             = False
+        bezier_simp        = False
         sample_description = None
 
         #retrieve custom values
         if EdgeE.WIDTH in data:
-            width = data[EdgeE.WIDTH]
-            start_rad = width
-            end_rad = width
+            width              = data[EdgeE.WIDTH]
+            start_rad          = width
+            end_rad            = width
         if EdgeE.STROKE in data:
-            colour = data[EdgeE.STROKE]
+            colour             = data[EdgeE.STROKE]
         if EdgeE.START in data and isinstance(data[EdgeE.START], (list, np.ndarray)):
-            start_col = data[EdgeE.START]
+            start_col          = data[EdgeE.START]
         if EdgeE.END in data and isinstance(data[EdgeE.END], (list, np.ndarray)):
-            end_col = data[EdgeE.END]
+            end_col            = data[EdgeE.END]
         if EdgeE.START in data and EdgeE.END in data:
-            start_end_points = True
+            start_end_points   = True
         if EdgeE.STARTRAD in data:
-            start_rad = data[EdgeE.STARTRAD]
+            start_rad          = data[EdgeE.STARTRAD]
         if EdgeE.ENDRAD in data:
-            end_rad = data[EdgeE.ENDRAD]
+            end_rad            = data[EdgeE.ENDRAD]
         if EdgeE.TEXT in data:
             if isinstance(data[EdgeE.TEXT], str):
-                write_text = data[EdgeE.TEXT]
+                write_text     = data[EdgeE.TEXT]
             elif not data[EdgeE.TEXT]:
-                write_text = None
+                write_text     = None
         if EdgeE.BEZIER in data:
-            bezier = data[EdgeE.BEZIER]
+            bezier             = data[EdgeE.BEZIER]
             assert(isinstance(bezier, list))
         if EdgeE.BEZIER_SIMPLIFY in data:
-            bezier_simp = True
+            bezier_simp        = True
         if EdgeE.SAMPLE in data:
             sample_description = data[EdgeE.SAMPLE]
 

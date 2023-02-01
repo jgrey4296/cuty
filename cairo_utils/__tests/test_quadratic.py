@@ -1,6 +1,6 @@
 import unittest
 import logging
-import IPython
+
 import numpy as np
 from test_context import cairo_utils as utils
 from cairo_utils import Quadratic

@@ -3,29 +3,30 @@ Utility Module to simplify making a GIF from individual images
 """
 #pylint: disable=too-many-arguments
 import logging as root_logger
-from os.path import isfile, join
-from os import listdir
 import re
+from dataclasses import InitVar, dataclass, field
+from os import listdir
+from os.path import isfile, join
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
+
 import imageio
-
-
 
 logging = root_logger.getLogger(__name__)
 
+@dataclass
 class MakeGif:
     """ A Utility class to easily create gifs from a number of images """
 
-    def __init__(self, output_dir=".",
-                 gif_name="anim.gif",
-                 source_dir="images",
-                 file_format=".png", fps=12):
-        self.output_dir = output_dir
-        self.gif_name = gif_name
-        self.source_dir = source_dir
-        self.file_format = file_format
-        self.fps = fps
+    output_dir  : str = field(default=".")
+    gif_name    : str = field(default="anim.gif")
+    source_dir  : str = field(default="images")
+    file_format : str = field(default=".png")
+    fps         : int = field(default=12)
 
-        self.num_regex = re.compile(r'(\d+)')
+    num_regex = re.compile(r'(\d+)')
+
 
     def get_num(self, s):
         """ Given a String, extract a number from it,

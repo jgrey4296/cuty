@@ -1,20 +1,22 @@
 """
 Provides the main RBTree class
 """
-#pylint: disable=wildcard-import
-#pylint: disable=no-self-use
-#pylint: disable=too-many-arguments
+import logging as root_logger
+from dataclasses import InitVar, dataclass, field
 from functools import partial
 from types import FunctionType
-import logging as root_logger
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
 
-from .operations import rb_tree_delete, rb_tree_fixup
-from .comparison_functions import Directions, default_comparison, default_equality
+from .comparison_functions import (Directions, default_comparison,
+                                   default_equality)
 from .node import Node
-
+from .operations import rb_tree_delete, rb_tree_fixup
 
 logging = root_logger.getLogger(__name__)
 
+@dataclass
 class RBTree:
     """ A Red-Black Tree Implementation
     Properties of RBTrees:
@@ -25,24 +27,18 @@ class RBTree:
     5) All paths from a node to its leaves contain the same number of black nodes
     """
 
-    def __init__(self, cmp_func=None, eq_func=None, cleanup_func=None):
+    cmp_func     : Callable = field(default=default_comparison)
+    eq_func      : Callable = field(default=default_equality)
+    cleanup_func : Callable = field(default=lambda x: [])
+
+    nodes : List[Node] = field(default_factory=list)
+    root : Node = field(default=None)
+
+    def __post_init__(self):
         """ Initialise the rb tree container, ie: the node list """
         #Default Comparison and Equality functions with dummy data ignored
-        if cmp_func is None:
-            cmp_func = default_comparison
-        if eq_func is None:
-            eq_func = default_equality
-        if cleanup_func is None:
-            cleanup_func = lambda x: []
         assert(isinstance(cmp_func, (partial, FunctionType)))
         assert(isinstance(eq_func, (partial, FunctionType)))
-
-        self.nodes = []
-        self.root = None
-        self.cmp_func = cmp_func
-        self.eq_func = eq_func
-        self.cleanup_func = cleanup_func
-
 
     #------------------------------
     # def Basic Access
@@ -52,9 +48,9 @@ class RBTree:
 
     def __repr__(self):
         if self.root is None:
-            return "RBTree(_)"
+            return "<RBTree>"
 
-        return "RBTree( Len: {})".format(len(self))
+        return "<RBTree: {}>".format(len(self))
 
     def min(self):
         """ Get the min value of the tree """

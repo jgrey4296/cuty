@@ -1,43 +1,43 @@
 """ Vertex: The lowest level data structure in a dcel """
 #pylint: disable=too-many-arguments
 import logging as root_logger
+from dataclasses import InitVar, dataclass, field
+from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
+                    List, Mapping, Match, MutableMapping, Optional, Sequence,
+                    Set, Tuple, TypeVar, Union, cast)
+
 import numpy as np
 
-from .constants import EditE, VertE
-from ..constants import TWOPI, D_EPSILON, TOLERANCE, VERTEX, VERTRAD, ALLCLOSE_TOLERANCE
-from ..umath import in_circle, rotate_point
+from ..constants import (ALLCLOSE_TOLERANCE, D_EPSILON, TOLERANCE, TWOPI,
+                         VERTEX, VERTRAD)
 from ..drawing import draw_circle
+from ..umath import in_circle, rotate_point
+from .constants import EditE, VertE
 from .drawable import Drawable
 
 logging = root_logger.getLogger(__name__)
 
+@dataclass
 class Vertex(Drawable):
     """ A Simple vertex for two dimensions.
     Has a pair of coordinates, and stores the edges associated with it.
     """
 
+    loc                               : np.ndarray     = field()
+    dcel                              : DCEL           = field()
+    #The edges this vertex is part of :
+    half_edges                        : List[HalfEdge] = field(default_factory=list)
+    #Custom data of the vertex        :
+    data                              : Dict[Any, Any] = field(default_factory=dict)
+    index                             : int            = field(default=None)
+
+    marked_for_cleanup                : bool           = field(init=False, default=False)
+    active                            : bool           = field(init=False, default=True)
     nextIndex = 0
 
-    def __init__(self, loc, edges=None, index=None, data=None, dcel=None, active=None):
+    def __post_init__(self):
         assert(isinstance(loc, np.ndarray))
         assert(edges is None or isinstance(edges, list))
-        self.loc = loc
-        #The edges this vertex is part of:
-        self.half_edges = set()
-        if edges is not None:
-            self.half_edges.update(edges)
-        #Custom data of the vertex:
-        self.data = {}
-        if data is not None:
-            self.data.update(data)
-        #Reference back to the dcel
-        self.dcel = dcel
-        self.marked_for_cleanup = False
-
-        self.active = True
-        if active is not None:
-            assert(isinstance(active, bool))
-            self.active = active
 
         if index is None:
             logging.debug("Creating vertex {} at: {:.3f} {:.3f}".format(Vertex.nextIndex,
@@ -72,17 +72,17 @@ class Vertex(Drawable):
     def _export(self):
         """ Export identifiers instead of objects to allow reconstruction """
         logging.debug("Exporting Vertex: {}".format(self.index))
-        enum_data = {a.name:b for a, b in self.data.items() if a in VertE}
+        enum_data     = {a.name:b for a, b in self.data.items() if a in VertE}
         non_enum_data = {a:b for a, b in self.data.items() if a not in VertE}
 
         return {
-            'i': self.index,
-            'x': self.loc[0],
-            'y': self.loc[1],
-            'half_edges' : [x.index for x in self.half_edges],
-            "enum_data" : enum_data,
-            "non_enum_data": non_enum_data,
-            "active" : self.active
+            'i'             : self.index,
+            'x'             : self.loc[0],
+            'y'             : self.loc[1],
+            'half_edges'    : [x.index for x in self.half_edges],
+            "enum_data"     : enum_data,
+            "non_enum_data" : non_enum_data,
+            "active"        : self.active
         }
 
 
@@ -96,8 +96,8 @@ class Vertex(Drawable):
     def __repr__(self):
         edges = [x.index for x in self.half_edges]
         edges += [x.twin.index for x in self.half_edges]
-        return "(V: {}, edges: {}, ({:.3f}, {:.3f}))".format(self.index, edges,
-                                                             self.loc[0], self.loc[1])
+        return "<Vertex V: {}, edges: {}, ({:.3f}, {:.3f})>".format(self.index, edges,
+                                                                    self.loc[0], self.loc[1])
 
 
     #------------------------------

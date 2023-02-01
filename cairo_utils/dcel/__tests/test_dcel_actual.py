@@ -1,6 +1,6 @@
 import unittest
 import logging
-import IPython
+
 import numpy as np
 from random import shuffle
 from math import radians
