@@ -10,7 +10,7 @@ batch-sleep   = 1
 
 [tool.doot.directories]
 src     = "cairo_utils"
-codegen = "_codegen"
+codegen = "cairo_utils/_codegen"
 temp    = ".temp"
 build   = "build"
 docs    = "docs"

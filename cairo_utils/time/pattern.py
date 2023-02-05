@@ -1,6 +1,8 @@
 """
 A Pattern collects events together and cycles them
 """
+##-- imports
+from __future__ import annotations
 
 from .pattern_iterator import PatternIterator
 from .utils import TIME_T
@@ -9,6 +11,8 @@ from functools import reduce
 from math import floor
 
 import logging as root_logger
+##-- end imports
+
 
 logging = root_logger.getLogger(__name__)
 
@@ -26,21 +30,21 @@ class Pattern:
         return result
 
     def __init__(self, a, vals=None):
-        if vals is None:
-            vals = []
-        self.arc = a.copy()
+        self.arc        = a.copy()
         # components :: [ Event || Pattern ]
-        self.components = sorted(vals, key=lambda x: x.key())
-        self.time_type = TIME_T.CLOCK
+        self.components = sorted(vals or [], key=lambda x: x.key())
+        self.time_type  = TIME_T.CLOCK
 
     # TODO: add a state for random generator
     def __call__(self, count, just_values=False, rand_s=None):
-        """ Query the Pattern for a given time """
-        pattern_range = self.arc.size()
-        f_count = floor(count)
-        position = count - (f_count * (f_count >= pattern_range))
+        """
+        Query the Pattern for a given time
+        """
+        pattern_range   = self.arc.size()
+        f_count         = floor(count)
+        position        = count - (f_count * (f_count >= pattern_range))
         scaled_position = position / pattern_range
-        results = []
+        results         = []
         # TODO: this could probably be better as a binary tree / beachline
         for x in self.components:
             results += x(scaled_position)
@@ -50,27 +54,11 @@ class Pattern:
 
         return results
 
-    def key(self):
-        """ Key the Pattern by its start time, for sorting """
-        return self.arc.start
 
     def __contains__(self, other):
         """ Test whether a given object or time is within this patterns bounds """
         return other in self.arc
 
-    def base(self):
-        """ Get all used fractions within this arc, scaled appropriately by offset
-        and pattern size """
-        counts = set()
-        pattern_range = self.arc.size()
-        for x in self.components:
-            counts.update([a * pattern_range for a in x.base()])
-        return counts
-
-    def denominator(self):
-        #TODO: use https://stackoverflow.com/questions/49981286/
-        base_count = reduce(gcd, self.base(), 2).denominator
-        return base_count
 
     def __repr__(self):
         base_count = self.denominator()
@@ -99,9 +87,6 @@ class Pattern:
         """ Print in the same format the parser reads """
         return repr(self)
 
-    def iter(self, just_values=True, rand_s=None):
-        """ Treat the pattern as an iterator """
-        return PatternIterator(self, just_values=just_values, rand_s=rand_s)
 
     def __add__(self, other):
         """ Concatenates two patterns together """
@@ -134,42 +119,68 @@ class Pattern:
         return Pattern(self.arc,
                        l_comps + r_comps)
 
+    def key(self):
+        """ Key the Pattern by its start time, for sorting """
+        return self.arc.start
+
+    def base(self):
+        """ Get all used fractions within this arc, scaled appropriately by offset
+        and pattern size """
+        counts = set()
+        pattern_range = self.arc.size()
+        for x in self.components:
+            counts.update([a * pattern_range for a in x.base()])
+        return counts
+
+    def denominator(self):
+        #TODO: use https://stackoverflow.com/questions/49981286/
+        base_count = reduce(gcd, self.base(), 2).denominator
+        return base_count
+
+    def iter(self, just_values=True, rand_s=None):
+        """ Treat the pattern as an iterator """
+        return PatternIterator(self, just_values=just_values, rand_s=rand_s)
+
     def format(self, a_dict):
         """ Apply a substitution dictionary to variables in the pattern """
-        return None
+        raise NotImplementedError()
 
     def copy(self, deep=False):
         """ Copy the pattern for modification """
-        return None
+        raise NotImplementedError()
 
     def apply_to(self, other):
         """ Combine two patterns, using the structure of left one """
-        return None
-
+        raise NotImplementedError()
 
 class PatternSeq(Pattern):
 
     def __call__(self, count, just_values=False, rand_s=None):
-        """ Query the Pattern for a given time """
+        """
+        Query the Pattern for a given time
+        """
         f_count = floor(count)
         mod_f = f_count % len(self.components)
         return self.components[mod_f](count, just_values)
 
 class PatternChoice(Pattern):
     def __call__(self, count, just_values=False, rnd_s=None):
-        """ When called chooses from one of the options,
-        using the random_state """
-        return []
+        """
+        When called chooses from one of the options,
+        using the random_state
+        """
+        raise NotImplementedError()
 
 class PatternOptional(Pattern):
     def __call__(self, count, just_values=False, rnd_s=None):
-        """ When called, either returns nothing, or
-        calcs the components as normal """
+        """
+        When called, either returns nothing, or
+        calcs the components as normal
+        """
         #if rand_s:
         # TODO: make call take a dict,
         # and return ([], {})?
         ## return []
         # else:
         # return super().__call__ ...
-        return []
-
+        raise NotImplementedError()

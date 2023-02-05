@@ -7,6 +7,8 @@ that values are added to.
 Upon exit, it calculates the appropriate time arcs for events
 
 """
+##-- imports
+from __future__ import annotations
 
 from .arc import Arc
 from .event import Event
@@ -15,6 +17,8 @@ from collections import namedtuple
 from enum import Enum
 from fractions import Fraction as t
 import logging as root_logger
+##-- end imports
+
 logging = root_logger.getLogger(__name__)
 
 # PStart/End : SubPattern
@@ -117,9 +121,11 @@ def construct_pattern(tokens):
     return result
 
 def prepare_pvals(p_vals):
-    """ Prepare pattern values for assembling into a pattern """
-    logging.debug("Preparing: {}".format(p_vals))
-    p_len = len(p_vals)
+    """
+    Prepare pattern values for assembling into a pattern
+    """
+    logging.debug("Preparing: %s", p_vals)
+    p_len     = len(p_vals)
     time_vals = []
     #calc times
     for i,x in enumerate(p_vals):
@@ -139,5 +145,5 @@ def prepare_pvals(p_vals):
     #create pattern placeholder
     placeholder = PatternPH(time_vals)
     #add to new top of stack
-    logging.debug("Resulting Placeholder: {}".format(placeholder))
+    logging.debug("Resulting Placeholder: ", placeholder)
     return placeholder

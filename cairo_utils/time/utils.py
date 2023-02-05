@@ -1,10 +1,14 @@
 """
 Utils related to rational time
 """
+##-- imports
+from __future__ import annotations
 from enum import Enum
 from fractions import Fraction, gcd
 from functools import reduce
 import logging as root_logger
+
+##-- end imports
 
 logging   = root_logger.getLogger(__name__)
 
@@ -12,14 +16,16 @@ PATTERN_T = Enum("Pattern Type", "DISCRETE ANALOG")
 TIME_T    = Enum("Time Type", "CLOCK EVENT SET SYMBOLIC")
 
 def time_str(time):
-    return "{}/{}".format(time.numerator,time.denominator)
+    return f"{time.numerator}/{time.denominator}"
 
 def run_pattern(pat, num_cycles=3, action=None):
     #TODO
-    return None
+    raise NotImplementedError()
 
 def print_run_pattern(pat, num_cycles=3):
-    """ Given a pattern, output the Events Per Cycle """
+    """
+    Given a pattern, output the Events Per Cycle
+    """
     #Calculate the subdivision necessary
     base_count = reduce(gcd, pat.base(), 2).denominator
     logging.info("Base Count: {}".format(base_count))

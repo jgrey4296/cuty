@@ -1,35 +1,42 @@
 """
 Events express when a value holds in time
 """
+##-- imports
+from __future__ import annotations
 from .arc import Arc
 from fractions import Fraction
 import logging as root_logger
+
+##-- end imports
 
 logging = root_logger.getLogger(__name__)
 
 class Event:
     """ A Value active during a timespan """
 
-    def __init__(self, a, b, value_is_pattern=False,
-                 params=None):
+    def __init__(self, a, b, value_is_pattern=False, params=None):
         assert(isinstance(a, Arc))
-        self.arc = a.copy()
-        self.values = b
-        self.parameters = {}
+        self.arc              = a.copy()
+        self.values           = b
+        self.parameters       = params or {}
         self.value_is_pattern = value_is_pattern
-
-        if params is not None:
-            self.parameters.update(params)
 
     def __call__(self, count, just_values=False, rand_s=None):
         """ Get a list of events given a time """
-        if count in self.arc:
-            if self.value_is_pattern:
-                return self.values(count - self.arc.start,
-                                   just_values)
-            else:
+        match (count in self.arc), self.value_is_pattern:
+            case True, True:
+                return self.values(count - self.arc.start, just_values)
+            case False, True:
                 return [self]
-        return []
+            case _:
+                return []
+
+    def __contains__(self, other):
+        return other in self.arc
+
+    def __repr__(self):
+        return f"{self.values} :: {self.arc}"
+
 
     def base(self):
         """ Get all fractions used in this event """
@@ -42,18 +49,9 @@ class Event:
         """ Get the start of the event, for sorting """
         return self.arc.start
 
-    def __contains__(self, other):
-        return other in self.arc
-
-    def __repr__(self):
-        return "{} :: {}".format(str(self.values), str(self.arc))
-
     def print_flip(self, start=True):
         """ Get a string describing the event's entry/exit status """
-        fmt_str ="⤒{} "
-        if not start:
-            fmt_str = "{}⤓"
-        return fmt_str.format(str(self.values))
+        return f"⤒{self.values} " if start else f"{self.values}⤓"
 
     def __getitem__(self, val):
         """ event[x] """

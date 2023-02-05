@@ -1,15 +1,17 @@
 """"
 A PyParsing parser to create patterns
 """
-# from .pattern import Pattern
-# from .event import Event
-# from .arc import Arc
+##-- imports
+from __future__ import annotations
+
 from .pattern_constructor import CTOR_ACT, construct_pattern
 from .utils import TimeVar
 from enum import Enum
 from fractions import Fraction
 import pyparsing as pp
 import logging as root_logger
+
+##-- end imports
 
 logging = root_logger.getLogger(__name__)
 #Base Syntax

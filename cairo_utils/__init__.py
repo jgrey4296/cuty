@@ -4,6 +4,8 @@ Author: John Grey
 
 A Module to simplify use of cairo in python
 """
+from __future__ import annotations
+
 # from .maths.quadratic import Quadratic
 # from .maths.parabola import Parabola
 # from .tree import Tree
@@ -16,5 +18,7 @@ A Module to simplify use of cairo in python
 # from . import easings
 # from . import heightmap
 
-_AUTHOR = "jgrey"
-_VERSION = "0.1.3"
+__AUTHOR__  = "jgrey"
+__VERSION__ = "0.1.3"
+
+config : None|Tomler = None
