@@ -1,9 +1,9 @@
 [project]
 name            = "cairo_utils"
-version         = "0.0.1"
+version         = "0.1.0"
 description     = "Utils for drawing Inconvergent-esque images"
 readme          = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license         = {file = "LICENSE"}
 keywords        = ["numpy", "art", "cairo", "inconvergent", "DCEL"]
 authors         = [
@@ -11,17 +11,16 @@ authors         = [
     {name  = "J Grey"}
 ]
 classifiers     = [
-    "Programming Language :: Python :: 3.10"
+    "Programming Language :: Python :: 3.11"
 ]
 
 dependencies   = [
-   "pycairo >= 1.21.0",
-   # "cairo >= 1.14.12",
-   "imageio >= 2.6.1",
+   "pycairo >= 1.23",
+   "imageio >= 2.6",
    "noise >= 1.2.2",
-   "numpy >= 1.18.1",
-   "Pillow >= 7.1.2",
-   "scipy >= 1.4.1"
+   "numpy >= 1.24",
+   "Pillow >= 9.4",
+   "scipy >= 1.10"
 ]
 
 [project.optional-dependencies]
@@ -29,27 +28,23 @@ test = [
     "pytest > 7.0.0",
 ]
 
+##-- urls
 [project.urls]
 homepage      = "https://github.com/jgrey4296/cairo_utils"
 documentation = "https://readthedocs.org/cairo_utils"
 repository    = "https://github.com/jgrey4296/cairo_utils"
 changelog     = "https://github.com/jgrey4296/cairo_utils/blob/master/CHANGELOG.md"
 
+##-- end urls
+
+##-- scripts
 [project.scripts]
-# todo: add template generation scripts
 
 [project.gui-scripts]
-# spam-gui      = "spam:main_gui"
 
-[project.entry-points."nothing"]
-# tomatoes      = "spam:main_tomatoes"
+##-- end scripts
 
-[tool.pytest.ini_options]
-log_cli       = false
-log_level     = "INFO"
-log_cli_level = "WARN"
-log_format    = "%(levelname)s %(name)s : %(message)s"
-
+##-- build system
 [build-system]
 requires = [
          "setuptools >= 63.1.0",
@@ -59,19 +54,32 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-# packages = ['cairo_utils']
 include-package-data = true
 
 [tool.setuptools.packages.find]
 namespaces = true
-where = ["."]
+where      = ["."]
+include    = ["cairo_utils"]
 
 [tool.setuptools.package-data]
+"*" = ["*"]
 
 [tool.setuptools.exclude-package-data]
 
+##-- end build system
 
+# Tools #######################################################################
 
+##-- pytest
+[tool.pytest.ini_options]
+log_cli       = false
+log_level     = "INFO"
+log_cli_level = "WARN"
+log_format    = "%(levelname)s %(name)s : %(message)s"
+
+##-- end pytest
+
+##-- pyright
 [tool.pyright]
 # strict = cairo_utils.*
 verboseOutput               = true
@@ -88,3 +96,5 @@ reportUnknownParameterType  = "information"
 reportUnknownVariableType   = "warning"
 reportUnnecessaryCast       = "information"
 reportUnnecessaryIsInstance = "warning"
+
+##-- end pyright

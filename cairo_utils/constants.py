@@ -36,3 +36,16 @@ NODE_RECIPROCAL    : Final =  1 / NODE_NUM
 VERTRAD            : Final =  10
 
 IntersectEnum      : Final =  Enum("BBox Intersect Edge", "VLEFT VRIGHT HTOP HBOTTOM")
+
+TEXT              = [0, 1, 1, 1]
+EDGE              = [1, 0, 0, 1]
+VERTEX            = [1, 0, 1, 1]
+FACE              = [0, 0, 1, 1]
+START             = [0, 1, 0, 1]
+END               = [1, 0, 0, 1]
+BACKGROUND        = [0, 0, 0, 1]
+FRONT             = [0.8, 0.1, 0.71, 0.5]
+FACE_COLOUR       = [0.2, 0.2, 0.9, 1]
+EDGE_COLOUR       = [0.4, 0.8, 0.1, 1]
+VERT_COLOUR       = [0.9, 0.1, 0.1, 1]
+BACKGROUND_COLOUR = [0, 0, 0, 1]

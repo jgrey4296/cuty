@@ -31,7 +31,7 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 import cairo
-import cauto_utils as cu
+import cairo_utils as cu
 import cairo_utils.constants as constants
 from cairo_utils.struct.colour import Colour
 
@@ -49,7 +49,7 @@ class DrawSettings:
     font_size  : int    = field(default=constants.FONT_SIZE)
     scale      : bool   = field(default=True)
     cartesian  : bool   = field(default=False)
-    background : Colour = field(default_factory=Colour)
+    background : Colour = field(default_factory=lambda: Colour(constants.BACKGROUND))
 
     @property
     def full_size(self):
@@ -65,16 +65,16 @@ class DrawMixin:
         size          = settings.full_size
         self.settings = settings
         self.surface  = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
-        self.ctx      = cairo.Context(surface)
+        self.ctx      = cairo.Context(self.surface)
 
         if settings.cartesian:
             self.ctx.scale(1, -1)
             self.ctx.translate(0, -size)
         if settings.scale:
             self.ctx.scale(size, size)
-        self.ctx.set_font_size(font_size)
+        self.ctx.set_font_size(self.settings.font_size)
         self.clear_canvas(colour=settings.background)
-        return (surface, ctx, size, n)
+        return (self.surface, self.ctx, size, self.settings.size)
 
     def write_to_png(self, filename, i=None):
         """ Write the given surface to a png, with optional numeric postfix
@@ -82,15 +82,12 @@ class DrawMixin:
         filename : Does not need file type postfix
         i : optional numeric
         """
-        logging.info("Drawing To File")
-        if i:
-            self.surface.write_to_png("{}_{}.png".format(filename, i))
-        else:
-            self.surface.write_to_png("{}.png".format(filename))
+        logging.info(f"Drawing To File: {filename}")
+        self.surface.write_to_png(filename)
 
     def draw_rect(self, xyxys:np.array, fill=True):
         """ Draw simple rectangles.
-        Takes the context and a (n,4) array
+        Takes a (n,4) array
         """
         #ctx.set_source_rgba(*FRONT)
         match fill:
@@ -156,4 +153,4 @@ class DrawMixin:
         else:
             self.ctx.rectangle(*bbox)
         self.ctx.fill()
-        self.ctx.set_source_rgba(*cu.data.FRONT)
+        self.ctx.set_source_rgba(*constants.FRONT)

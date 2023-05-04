@@ -1,17 +1,24 @@
 verbosity                = 2
 default_tasks            = ["locs::report"]
 action_string_formatting = "new"
+subtask                  = { sleep = 1 }
+batch                    = { sleep = 1 }
+notify                   = { say-on-exit = false }
 
-[tool.doot]
-say-on-exit   = false
-glob_ignores  = ['.git', '.DS_Store', "__pycache__"]
-subtask-sleep = 1
-batch-sleep   = 1
+[globbing]
+ignores  = ['.git', '.DS_Store', "__pycache__"]
 
-[tool.doot.directories]
+[logging]
+stream = { level = "INFO", format  = "{levelname:<8} : {message}", filters = ["doot"] }
+file   = { level = "DEBUG", format = "{levelname:<8} : {message:<20} :|: ({module}.{lineno}.{funcName})", filters =  ["doot"] }
+
+[[directories]]
 src     = "cairo_utils"
 codegen = "cairo_utils/_codegen"
 temp    = ".temp"
 build   = "build"
 docs    = "docs"
 data    = "data"
+
+[group.pip]
+[group.python]
